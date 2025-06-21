@@ -1,0 +1,349 @@
+import React, { useState } from "react";
+import { useChampionshipStore } from "../store/championship";
+import { GroupStandingsTable } from "../components/championship/GroupStandingsTable";
+import { MatchCard } from "../components/championship/MatchCard";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../components/ui/tabs";
+import { Progress } from "../components/ui/progress";
+import {
+  Users,
+  Trophy,
+  BarChart3,
+  ChevronRight,
+  Download,
+  ArrowRight,
+  Target,
+} from "lucide-react";
+import { generateGroupReport, calculateTournamentStats } from "../utils";
+
+export const GroupsManagement: React.FC = () => {
+  const {
+    currentChampionship,
+    updateMatchResult,
+    setWalkover,
+    generateKnockoutBracket,
+    getQualifiedAthletes,
+  } = useChampionshipStore();
+
+  const [selectedGroup, setSelectedGroup] = useState<string>("");
+
+  if (!currentChampionship) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="p-8 text-center">
+            <Trophy className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Nenhum campeonato selecionado
+            </h2>
+            <p className="text-gray-500">
+              Selecione um campeonato para gerenciar os grupos
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const stats = calculateTournamentStats(currentChampionship);
+  const qualifiedAthletes = getQualifiedAthletes();
+  const allGroupsCompleted = currentChampionship.groups.every(
+    (g) => g.isCompleted
+  );
+
+  const handleAdvanceToKnockout = async () => {
+    if (allGroupsCompleted && qualifiedAthletes.length > 0) {
+      await generateKnockoutBracket();
+    }
+  };
+
+  const handleDownloadGroupReport = (groupId: string) => {
+    const group = currentChampionship.groups.find((g) => g.id === groupId);
+    if (group) {
+      generateGroupReport(group, currentChampionship);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Fase de Grupos - {currentChampionship.name}
+              </h1>
+              <p className="text-gray-600 mt-1">
+                {new Date(currentChampionship.date).toLocaleDateString("pt-BR")}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <Badge
+                className={
+                  allGroupsCompleted
+                    ? "bg-green-100 text-green-800"
+                    : "bg-blue-100 text-blue-800"
+                }
+              >
+                {allGroupsCompleted ? "Fase Concluída" : "Em Andamento"}
+              </Badge>
+
+              {allGroupsCompleted &&
+                currentChampionship.status === "groups" && (
+                  <Button
+                    onClick={handleAdvanceToKnockout}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    Avançar para Mata-mata
+                  </Button>
+                )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Estatísticas da Fase */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <Users className="h-8 w-8 text-blue-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Grupos</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {currentChampionship.groups.length}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <BarChart3 className="h-8 w-8 text-green-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Partidas</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {stats.completedMatches}/{stats.totalMatches}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <Trophy className="h-8 w-8 text-yellow-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">
+                    Concluídos
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {stats.groupsCompleted}/{stats.totalGroups}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <Target className="h-8 w-8 text-purple-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">
+                    Classificados
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {qualifiedAthletes.length}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Progresso Geral */}
+        <Card className="mb-8">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-semibold">
+                Progresso da Fase de Grupos
+              </h3>
+              <span className="text-sm text-gray-500">{stats.progress}%</span>
+            </div>
+            <Progress value={stats.progress} className="h-3" />
+            <p className="text-sm text-gray-500 mt-2">
+              {stats.completedMatches} de {stats.totalMatches} partidas
+              disputadas
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Tabs para Classificação e Resultados */}
+        <Tabs defaultValue="standings" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="standings">Classificação</TabsTrigger>
+            <TabsTrigger value="matches">Resultados</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="standings" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {currentChampionship.groups.map((group) => (
+                <div key={group.id}>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold">{group.name}</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadGroupReport(group.id)}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Relatório
+                    </Button>
+                  </div>
+                  <GroupStandingsTable group={group} />
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="matches" className="space-y-6">
+            {/* Seletor de Grupo */}
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold mb-4">Selecionar Grupo</h3>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant={selectedGroup === "" ? "default" : "outline"}
+                    onClick={() => setSelectedGroup("")}
+                  >
+                    Todos os Grupos
+                  </Button>
+                  {currentChampionship.groups.map((group) => (
+                    <Button
+                      key={group.id}
+                      variant={
+                        selectedGroup === group.id ? "default" : "outline"
+                      }
+                      onClick={() => setSelectedGroup(group.id)}
+                    >
+                      {group.name}
+                      {group.isCompleted && (
+                        <Trophy className="h-4 w-4 ml-2 text-yellow-500" />
+                      )}
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Lista de Partidas */}
+            {currentChampionship.groups
+              .filter(
+                (group) => selectedGroup === "" || group.id === selectedGroup
+              )
+              .map((group) => (
+                <Card key={group.id}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>{group.name}</span>
+                      <Badge
+                        variant={group.isCompleted ? "secondary" : "outline"}
+                        className={
+                          group.isCompleted ? "bg-green-100 text-green-800" : ""
+                        }
+                      >
+                        {group.matches.filter((m) => m.isCompleted).length}/
+                        {group.matches.length} partidas
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {group.matches.map((match) => (
+                        <MatchCard
+                          key={match.id}
+                          match={match}
+                          onUpdateResult={updateMatchResult}
+                          onSetWalkover={setWalkover}
+                          bestOf={currentChampionship.groupsBestOf}
+                        />
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+          </TabsContent>
+        </Tabs>
+
+        {/* Classificados para Mata-mata */}
+        {qualifiedAthletes.length > 0 && (
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-yellow-500" />
+                Classificados para a Fase Eliminatória
+              </CardTitle>
+            </CardHeader>
+
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {qualifiedAthletes.map((athlete, index) => (
+                  <Card key={athlete.id} className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-semibold text-blue-800">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <div className="font-medium">{athlete.name}</div>
+                      </div>
+                      {athlete.isSeeded && (
+                        <Badge variant="outline" className="ml-auto">
+                          #{athlete.seedNumber}
+                        </Badge>
+                      )}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              {allGroupsCompleted &&
+                currentChampionship.status === "groups" && (
+                  <div className="mt-6 text-center">
+                    <Button
+                      onClick={handleAdvanceToKnockout}
+                      size="lg"
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <ChevronRight className="h-5 w-5 mr-2" />
+                      Gerar Chave Eliminatória
+                    </Button>
+                  </div>
+                )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+};
