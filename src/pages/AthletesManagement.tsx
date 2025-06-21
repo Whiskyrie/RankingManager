@@ -32,7 +32,6 @@ export const AthletesManagement: React.FC = () => {
     removeAthlete,
     generateGroups,
     createManualGroups,
-    generateKnockoutBracket,
   } = useChampionshipStore();
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);

@@ -8,10 +8,12 @@ import {
   Match,
   GroupStanding,
   MatchResult,
+  isValidSet,
+  getMatchWinner as getMatchWinnerFromTypes,
 } from "../types";
 import {
   generateMainKnockoutMatches,
-  generateSecondDivisionMatches,
+  generateSecondDivisionMatches, // UTILIZADO AGORA
   generateNextRoundMatches,
   getMatchWinner,
 } from "../utils";
@@ -47,6 +49,7 @@ interface ChampionshipStore {
     manualGroups: { name: string; athleteIds: string[] }[]
   ) => Promise<void>;
   generateKnockoutBracket: () => Promise<void>;
+  generateSecondDivisionBracket: () => Promise<void>; // NOVA FUNÇÃO
 
   // Resultados
   updateMatchResult: (result: MatchResult) => Promise<void>;
@@ -109,8 +112,13 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
         currentChampionship: championship,
         isLoading: false,
       }));
-    } catch {
-      set({ error: "Erro ao criar campeonato", isLoading: false });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Erro inesperado ao criar campeonato";
+      set({ error: errorMessage, isLoading: false });
+      console.error("Erro na criação do campeonato:", error);
     }
   },
 
@@ -123,8 +131,13 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
         throw new Error("Campeonato não encontrado");
       }
       set({ currentChampionship: championship, isLoading: false });
-    } catch {
-      set({ error: "Erro ao carregar campeonato", isLoading: false });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Erro inesperado ao carregar campeonato";
+      set({ error: errorMessage, isLoading: false });
+      console.error("Erro ao carregar campeonato:", error);
     }
   },
 
@@ -223,7 +236,7 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
       isCompleted: false,
     }));
 
-    // Distribuir cabeças de chave (serpentina)
+    // Distribuir cabeças de chave primeiro
     seeded.forEach((athlete, index) => {
       const groupIndex = index % numGroups;
       groups[groupIndex].athletes.push(athlete);
@@ -236,33 +249,38 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     });
 
     // Gerar partidas para cada grupo (todos contra todos)
+    let totalMatches = 0;
     groups.forEach((group) => {
-      const matches: Match[] = [];
-      for (let i = 0; i < group.athletes.length; i++) {
-        for (let j = i + 1; j < group.athletes.length; j++) {
-          matches.push({
+      const groupMatches: Match[] = [];
+      const groupAthletes = group.athletes;
+
+      // Gerar todas as combinações de partidas
+      for (let i = 0; i < groupAthletes.length; i++) {
+        for (let j = i + 1; j < groupAthletes.length; j++) {
+          const match: Match = {
             id: uuidv4(),
-            player1Id: group.athletes[i].id,
-            player2Id: group.athletes[j].id,
-            player1: group.athletes[i],
-            player2: group.athletes[j],
+            player1Id: groupAthletes[i].id,
+            player2Id: groupAthletes[j].id,
+            player1: groupAthletes[i],
+            player2: groupAthletes[j],
             sets: [],
             isCompleted: false,
             phase: "groups",
             groupId: group.id,
-            timeoutsUsed: { player1: false, player2: false },
+            timeoutsUsed: {
+              player1: false,
+              player2: false,
+            },
             createdAt: new Date(),
-          });
+          };
+          groupMatches.push(match);
+          totalMatches++;
         }
       }
-      group.matches = matches;
+
+      group.matches = groupMatches;
       group.standings = get().calculateGroupStandings(group);
     });
-
-    const totalMatches = groups.reduce(
-      (sum, group) => sum + group.matches.length,
-      0
-    );
 
     const updatedChampionship = {
       ...state.currentChampionship,
@@ -278,53 +296,55 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     const state = get();
     if (!state.currentChampionship) return;
 
-    // Criar grupos manualmente
-    const groups: Group[] = manualGroups.map((groupData) => {
-      const athletes = groupData.athleteIds.map((athleteId) => {
-        const athlete = state.currentChampionship?.athletes.find(
-          (a) => a.id === athleteId
-        );
-        return athlete ? { ...athlete } : null;
-      });
+    const groups: Group[] = manualGroups.map((manualGroup, index) => {
+      const groupAthletes = manualGroup.athleteIds
+        .map((id) =>
+          state.currentChampionship!.athletes.find((a) => a.id === id)
+        )
+        .filter((athlete): athlete is Athlete => athlete !== undefined);
 
-      return {
+      const group: Group = {
         id: uuidv4(),
-        name: groupData.name,
-        athletes: athletes.filter((a) => a !== null) as Athlete[],
+        name: manualGroup.name || `Grupo ${String.fromCharCode(65 + index)}`,
+        athletes: groupAthletes,
         matches: [],
         standings: [],
         qualificationSpots:
           state.currentChampionship!.qualificationSpotsPerGroup,
         isCompleted: false,
       };
-    });
 
-    // Gerar partidas para cada grupo (todos contra todos)
-    groups.forEach((group) => {
-      const matches: Match[] = [];
-      for (let i = 0; i < group.athletes.length; i++) {
-        for (let j = i + 1; j < group.athletes.length; j++) {
-          matches.push({
+      // Gerar partidas (todos contra todos)
+      const groupMatches: Match[] = [];
+      for (let i = 0; i < groupAthletes.length; i++) {
+        for (let j = i + 1; j < groupAthletes.length; j++) {
+          const match: Match = {
             id: uuidv4(),
-            player1Id: group.athletes[i].id,
-            player2Id: group.athletes[j].id,
-            player1: group.athletes[i],
-            player2: group.athletes[j],
+            player1Id: groupAthletes[i].id,
+            player2Id: groupAthletes[j].id,
+            player1: groupAthletes[i],
+            player2: groupAthletes[j],
             sets: [],
             isCompleted: false,
             phase: "groups",
             groupId: group.id,
-            timeoutsUsed: { player1: false, player2: false },
+            timeoutsUsed: {
+              player1: false,
+              player2: false,
+            },
             createdAt: new Date(),
-          });
+          };
+          groupMatches.push(match);
         }
       }
-      group.matches = matches;
+
+      group.matches = groupMatches;
       group.standings = get().calculateGroupStandings(group);
+      return group;
     });
 
     const totalMatches = groups.reduce(
-      (sum, group) => sum + group.matches.length,
+      (total, group) => total + group.matches.length,
       0
     );
 
@@ -338,6 +358,7 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     await get().updateChampionship(updatedChampionship);
   },
 
+  // FUNÇÃO PRINCIPAL CORRIGIDA - Agora usa generateSecondDivisionMatches corretamente
   generateKnockoutBracket: async () => {
     const state = get();
     if (!state.currentChampionship) return;
@@ -345,6 +366,12 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     const qualifiedAthletes = get().getQualifiedAthletes();
     const eliminatedAthletes = get().getEliminatedAthletes();
     const numQualified = qualifiedAthletes.length;
+
+    console.log("Gerando mata-mata:", {
+      qualified: numQualified,
+      eliminated: eliminatedAthletes.length,
+      hasRepechage: state.currentChampionship.hasRepechage,
+    });
 
     // Verificar se já existe mata-mata gerado
     const existingKnockoutMatches = state.currentChampionship.groups
@@ -368,23 +395,97 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
       mainBracketSize
     );
 
-    // Gerar partidas da segunda divisão (eliminados)
+    let allKnockoutMatches = [...mainKnockoutMatches];
+
+    // IMPLEMENTAÇÃO CORRETA DA SEGUNDA DIVISÃO
+    if (
+      state.currentChampionship.hasRepechage &&
+      eliminatedAthletes.length >= 2
+    ) {
+      console.log(
+        "Gerando segunda divisão para",
+        eliminatedAthletes.length,
+        "atletas eliminados"
+      );
+
+      // AQUI ESTÁ A UTILIZAÇÃO DA FUNÇÃO generateSecondDivisionMatches
+      const secondDivisionMatches =
+        generateSecondDivisionMatches(eliminatedAthletes);
+
+      console.log(
+        "Partidas da segunda divisão geradas:",
+        secondDivisionMatches.length
+      );
+
+      // Adicionar partidas da segunda divisão
+      allKnockoutMatches = [...allKnockoutMatches, ...secondDivisionMatches];
+    }
+
+    // Gerar partida de 3º lugar se configurado
+    if (state.currentChampionship.hasThirdPlace) {
+      // A partida de 3º lugar será gerada automaticamente após as semifinais
+      console.log("Partida de 3º lugar será gerada após as semifinais");
+    }
+
+    // Adicionar todas as partidas do mata-mata ao primeiro grupo (temporário)
+    const updatedGroups = state.currentChampionship.groups.map((group, index) =>
+      index === 0
+        ? { ...group, matches: [...group.matches, ...allKnockoutMatches] }
+        : group
+    );
+
+    const updatedChampionship = {
+      ...state.currentChampionship,
+      groups: updatedGroups,
+      status: "knockout" as const,
+      totalMatches:
+        state.currentChampionship.totalMatches + allKnockoutMatches.length,
+    };
+
+    await get().updateChampionship(updatedChampionship);
+
+    console.log("Mata-mata gerado com sucesso:", {
+      mainMatches: mainKnockoutMatches.length,
+      secondDivMatches: allKnockoutMatches.length - mainKnockoutMatches.length,
+      totalKnockout: allKnockoutMatches.length,
+    });
+  },
+
+  // NOVA FUNÇÃO ESPECÍFICA PARA SEGUNDA DIVISÃO
+  generateSecondDivisionBracket: async () => {
+    const state = get();
+    if (!state.currentChampionship) return;
+
+    const eliminatedAthletes = get().getEliminatedAthletes();
+
+    if (eliminatedAthletes.length < 2) {
+      console.log("Não há atletas suficientes para segunda divisão");
+      return;
+    }
+
+    // Verificar se já existe segunda divisão gerada
+    const existingSecondDiv = state.currentChampionship.groups
+      .flatMap((g) => g.matches)
+      .filter((m) => m.phase === "knockout" && m.round?.includes("2ª Div"));
+
+    if (existingSecondDiv.length > 0) {
+      console.log("Segunda divisão já foi gerada");
+      return;
+    }
+
+    // UTILIZAR A FUNÇÃO generateSecondDivisionMatches
     const secondDivisionMatches =
       generateSecondDivisionMatches(eliminatedAthletes);
 
-    // Combinar todas as partidas
-    const allKnockoutMatches = [
-      ...mainKnockoutMatches,
-      ...secondDivisionMatches,
-    ];
+    if (secondDivisionMatches.length === 0) {
+      console.log("Nenhuma partida de segunda divisão foi gerada");
+      return;
+    }
 
-    // Adicionar todas as partidas do mata-mata ao primeiro grupo
+    // Adicionar partidas da segunda divisão
     const updatedGroups = state.currentChampionship.groups.map((group, index) =>
       index === 0
-        ? {
-            ...group,
-            matches: [...group.matches, ...allKnockoutMatches],
-          }
+        ? { ...group, matches: [...group.matches, ...secondDivisionMatches] }
         : group
     );
 
@@ -392,58 +493,66 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
       ...state.currentChampionship,
       groups: updatedGroups,
       totalMatches:
-        state.currentChampionship.totalMatches + allKnockoutMatches.length,
-      status: "knockout" as const,
+        state.currentChampionship.totalMatches + secondDivisionMatches.length,
     };
 
     await get().updateChampionship(updatedChampionship);
+
+    console.log("Segunda divisão gerada:", {
+      matches: secondDivisionMatches.length,
+      athletes: eliminatedAthletes.length,
+    });
   },
 
-  setWalkover: async (matchId, winnerId) => {
+  updateMatchResult: async (result) => {
     const state = get();
     if (!state.currentChampionship) return;
 
-    // Atualizar partida com walkover
+    // Encontrar e atualizar a partida
     const updatedGroups = state.currentChampionship.groups.map((group) => ({
       ...group,
-      matches: group.matches.map((match) =>
-        match.id === matchId
-          ? {
-              ...match,
-              isWalkover: true,
-              walkoverWinner: winnerId,
-              winner: winnerId,
-              isCompleted: true,
-              sets: [],
-              completedAt: new Date(),
-            }
-          : match
-      ),
+      matches: group.matches.map((match) => {
+        if (match.id === result.matchId) {
+          const updatedMatch = {
+            ...match,
+            sets: result.sets,
+            isWalkover: result.isWalkover || false,
+            walkoverWinner: result.walkoverWinner,
+            timeoutsUsed: result.timeoutsUsed,
+            isCompleted: true,
+            completedAt: new Date(),
+          };
+
+          // Determinar vencedor se não for walkover
+          if (!result.isWalkover) {
+            const winner = getMatchWinner(
+              result.sets,
+              state.currentChampionship!.groupsBestOf,
+              match.player1Id,
+              match.player2Id
+            );
+            updatedMatch.winner = winner;
+          } else {
+            updatedMatch.winner = result.walkoverWinner;
+          }
+
+          return updatedMatch;
+        }
+        return match;
+      }),
     }));
 
-    // Recalcular classificações dos grupos afetados (apenas para fase de grupos)
+    // Recalcular classificações para grupos afetados
     updatedGroups.forEach((group) => {
-      const affectedMatch = group.matches.find((m) => m.id === matchId);
-      if (affectedMatch && affectedMatch.phase === "groups") {
+      if (group.matches.some((m) => m.id === result.matchId)) {
         group.standings = get().calculateGroupStandings(group);
         group.isCompleted = group.matches.every((m) => m.isCompleted);
       }
     });
 
-    // Se foi uma partida de mata-mata, verificar se é necessário gerar próxima rodada
-    const updatedMatch = updatedGroups
-      .flatMap((g) => g.matches)
-      .find((m) => m.id === matchId);
-    if (
-      updatedMatch &&
-      updatedMatch.phase === "knockout" &&
-      updatedMatch.isCompleted
-    ) {
-      await get().checkAndGenerateNextKnockoutRound(updatedGroups);
-    }
-
     const completedMatches = updatedGroups.reduce(
-      (sum, group) => sum + group.matches.filter((m) => m.isCompleted).length,
+      (total, group) =>
+        total + group.matches.filter((m) => m.isCompleted).length,
       0
     );
 
@@ -454,152 +563,49 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     };
 
     await get().updateChampionship(updatedChampionship);
+
+    // Verificar se pode gerar próximas rodadas automaticamente
+    await get().checkAndGenerateNextKnockoutRound(updatedGroups);
   },
-  updateMatchResult: async (result: MatchResult) => {
-    const state = get();
-    if (!state.currentChampionship) return;
 
-    const { matchId, sets, timeoutsUsed } = result;
-
-    // Encontrar a partida para obter os IDs dos jogadores
-    const match = state.currentChampionship.groups
-      .flatMap((g) => g.matches)
-      .find((m) => m.id === matchId);
-
-    if (!match) {
-      console.error("Match not found:", matchId);
-      return;
-    }
-
-    console.log("Updating match result:", {
+  setWalkover: async (matchId, winnerId) => {
+    const result: MatchResult = {
       matchId,
-      phase: match.phase,
-      round: match.round,
-      setsCount: sets.length,
-      player1: match.player1?.name,
-      player2: match.player2?.name,
-    });
-
-    // Criar os sets com os IDs dos jogadores
-    const setsWithIds = sets.map((set) => ({
-      ...set,
-      player1Id: match.player1Id,
-      player2Id: match.player2Id,
-    }));
-
-    // Usar o bestOf correto baseado na fase da partida
-    const bestOf =
-      match.phase === "knockout"
-        ? state.currentChampionship.knockoutBestOf
-        : state.currentChampionship.groupsBestOf;
-
-    // Passar os IDs dos jogadores para a função getMatchWinner
-    const winner = getMatchWinner(
-      setsWithIds,
-      bestOf,
-      match.player1Id,
-      match.player2Id
-    );
-
-    console.log("Match result calculation:", {
-      bestOf,
-      winner,
-      player1Id: match.player1Id,
-      player2Id: match.player2Id,
-      validSetsCount: setsWithIds.filter((set) => {
-        const max = Math.max(set.player1Score, set.player2Score);
-        const diff = Math.abs(set.player1Score - set.player2Score);
-        return max >= 11 && diff >= 2;
-      }).length,
-    });
-
-    // Atualizar partida nos grupos
-    const updatedGroups = state.currentChampionship.groups.map((group) => ({
-      ...group,
-      matches: group.matches.map((m) =>
-        m.id === matchId
-          ? {
-              ...m,
-              sets: setsWithIds,
-              winner,
-              isCompleted: !!winner,
-              timeoutsUsed,
-            }
-          : m
-      ),
-    }));
-
-    // Recalcular standings para cada grupo
-    const updatedGroupsWithStandings = updatedGroups.map((group) => ({
-      ...group,
-      standings: get().calculateGroupStandings(group),
-    }));
-
-    // Atualizar o championship com os grupos atualizados
-    const updatedChampionship = {
-      ...state.currentChampionship,
-      groups: updatedGroupsWithStandings,
-      completedMatches: updatedGroupsWithStandings.reduce(
-        (sum, group) => sum + group.matches.filter((m) => m.isCompleted).length,
-        0
-      ),
+      sets: [],
+      isWalkover: true,
+      walkoverWinner: winnerId,
+      timeoutsUsed: {
+        player1: false,
+        player2: false,
+      },
     };
 
-    await get().updateChampionship(updatedChampionship);
+    await get().updateMatchResult(result);
   },
 
-  checkAndGenerateNextKnockoutRound: async (groups: Group[]) => {
+  // FUNÇÃO ATUALIZADA PARA SUPORTAR SEGUNDA DIVISÃO
+  checkAndGenerateNextKnockoutRound: async (groups) => {
     const state = get();
     if (!state.currentChampionship) return;
 
+    // Encontrar todas as partidas de mata-mata
     const allKnockoutMatches = groups
       .flatMap((g) => g.matches)
       .filter((m) => m.phase === "knockout");
 
-    // Verificar rodadas principais
-    const mainRounds = ["Oitavas", "Quartas", "Semifinal", "Final"];
-    const currentMainRounds = mainRounds.filter((roundName) =>
-      allKnockoutMatches.some((m) => m.round === roundName)
+    if (allKnockoutMatches.length === 0) return;
+
+    // Separar partidas principais das de segunda divisão
+    const mainMatches = allKnockoutMatches.filter(
+      (m) => !m.round?.includes("2ª Div")
+    );
+    const secondDivMatches = allKnockoutMatches.filter((m) =>
+      m.round?.includes("2ª Div")
     );
 
-    for (let i = 0; i < currentMainRounds.length - 1; i++) {
-      const currentRound = currentMainRounds[i];
-      const nextRound = currentMainRounds[i + 1];
-
-      const currentRoundMatches = allKnockoutMatches.filter(
-        (m) => m.round === currentRound
-      );
-      const nextRoundMatches = allKnockoutMatches.filter(
-        (m) => m.round === nextRound
-      );
-
-      // Se todas as partidas da rodada atual estão completas e a próxima rodada não existe
-      if (
-        currentRoundMatches.length > 0 &&
-        currentRoundMatches.every((m) => m.isCompleted) &&
-        nextRoundMatches.length === 0
-      ) {
-        const newMatches = generateNextRoundMatches(
-          currentRoundMatches,
-          nextRound,
-          state.currentChampionship
-        );
-
-        // Adicionar novas partidas ao primeiro grupo
-        if (newMatches.length > 0 && groups.length > 0) {
-          groups[0].matches.push(...newMatches);
-
-          // Atualizar o championship no estado
-          const updatedChampionship = {
-            ...state.currentChampionship,
-            groups: groups,
-            totalMatches:
-              state.currentChampionship.totalMatches + newMatches.length,
-          };
-          await get().updateChampionship(updatedChampionship);
-        }
-      }
-    }
+    // Verificar rodadas principais
+    const mainRounds = ["Oitavas", "Quartas", "Semifinal", "Final"];
+    await checkRoundsProgression(mainMatches, mainRounds, state, get);
 
     // Verificar rodadas da segunda divisão
     const secondDivRounds = [
@@ -608,56 +614,28 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
       "Semifinal 2ª Div",
       "Final 2ª Div",
     ];
-    const currentSecondDivRounds = secondDivRounds.filter((roundName) =>
-      allKnockoutMatches.some((m) => m.round === roundName)
-    );
-
-    for (let i = 0; i < currentSecondDivRounds.length - 1; i++) {
-      const currentRound = currentSecondDivRounds[i];
-      const nextRound = currentSecondDivRounds[i + 1];
-
-      const currentRoundMatches = allKnockoutMatches.filter(
-        (m) => m.round === currentRound
-      );
-      const nextRoundMatches = allKnockoutMatches.filter(
-        (m) => m.round === nextRound
-      );
-
-      if (
-        currentRoundMatches.length > 0 &&
-        currentRoundMatches.every((m) => m.isCompleted) &&
-        nextRoundMatches.length === 0
-      ) {
-        const newMatches = generateNextRoundMatches(
-          currentRoundMatches,
-          nextRound,
-          state.currentChampionship
-        );
-
-        if (newMatches.length > 0 && groups.length > 0) {
-          groups[0].matches.push(...newMatches);
-
-          // Atualizar o championship no estado
-          const updatedChampionship = {
-            ...state.currentChampionship,
-            groups: groups,
-            totalMatches:
-              state.currentChampionship.totalMatches + newMatches.length,
-          };
-          await get().updateChampionship(updatedChampionship);
-        }
-      }
-    }
+    await checkRoundsProgression(secondDivMatches, secondDivRounds, state, get);
 
     // Verificar se o campeonato foi finalizado
-    const finalMatch = allKnockoutMatches.find((m) => m.round === "Final");
-    if (finalMatch && finalMatch.isCompleted) {
+    const finalMatch = mainMatches.find((m) => m.round === "Final");
+    const finalSecondDiv = secondDivMatches.find(
+      (m) => m.round === "Final 2ª Div"
+    );
+
+    const mainCompleted = finalMatch?.isCompleted || mainMatches.length === 0;
+    const secondDivCompleted =
+      !state.currentChampionship.hasRepechage ||
+      finalSecondDiv?.isCompleted ||
+      secondDivMatches.length === 0;
+
+    if (mainCompleted && secondDivCompleted) {
       const updatedChampionship = {
         ...state.currentChampionship,
         groups: groups,
         status: "completed" as const,
       };
       await get().updateChampionship(updatedChampionship);
+      console.log("Campeonato finalizado - ambas as divisões completas");
     }
   },
 
@@ -671,6 +649,7 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     return group?.standings || [];
   },
 
+  // FUNÇÃO CORRIGIDA - Cálculo correto dos saldos
   calculateGroupStandings: (group) => {
     const standings: GroupStanding[] = group.athletes.map((athlete) => ({
       athleteId: athlete.id,
@@ -695,32 +674,41 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
       .forEach((match) => {
         const player1Standing = standings.find(
           (s) => s.athleteId === match.player1Id
-        )!;
+        );
         const player2Standing = standings.find(
           (s) => s.athleteId === match.player2Id
-        )!;
+        );
 
+        if (!player1Standing || !player2Standing) return;
+
+        // Incrementar número de partidas para ambos
         player1Standing.matches++;
         player2Standing.matches++;
 
+        // Se foi walkover, apenas definir vencedor
         if (match.isWalkover) {
           if (match.walkoverWinner === match.player1Id) {
             player1Standing.wins++;
             player1Standing.points += 3;
             player2Standing.losses++;
-          } else {
+          } else if (match.walkoverWinner === match.player2Id) {
             player2Standing.wins++;
             player2Standing.points += 3;
             player1Standing.losses++;
           }
-        } else {
-          // Contar sets e pontos
-          match.sets.forEach((set) => {
+          return;
+        }
+
+        // Calcular saldo de sets e pontos baseado nos sets válidos
+        match.sets.forEach((set) => {
+          if (isValidSet(set)) {
+            // Somar pontos de cada set
             player1Standing.pointsWon += set.player1Score;
             player1Standing.pointsLost += set.player2Score;
             player2Standing.pointsWon += set.player2Score;
             player2Standing.pointsLost += set.player1Score;
 
+            // Determinar vencedor do set
             if (set.player1Score > set.player2Score) {
               player1Standing.setsWon++;
               player2Standing.setsLost++;
@@ -728,22 +716,33 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
               player2Standing.setsWon++;
               player1Standing.setsLost++;
             }
-          });
-
-          // Determinar vencedor da partida
-          if (match.winner === match.player1Id) {
-            player1Standing.wins++;
-            player1Standing.points += 3;
-            player2Standing.losses++;
-          } else if (match.winner === match.player2Id) {
-            player2Standing.wins++;
-            player2Standing.points += 3;
-            player1Standing.losses++;
           }
+        });
+
+        // Determinar vencedor da partida
+        const state = get();
+        const championship = state.currentChampionship;
+        if (!championship) return;
+
+        const winner = getMatchWinnerFromTypes(
+          match.sets,
+          championship.groupsBestOf,
+          match.player1Id,
+          match.player2Id
+        );
+
+        if (winner === match.player1Id) {
+          player1Standing.wins++;
+          player1Standing.points += 3; // 3 pontos por vitória
+          player2Standing.losses++;
+        } else if (winner === match.player2Id) {
+          player2Standing.wins++;
+          player2Standing.points += 3; // 3 pontos por vitória
+          player1Standing.losses++;
         }
       });
 
-    // Calcular diferenças
+    // Calcular diferenças (saldos)
     standings.forEach((standing) => {
       standing.setsDiff = standing.setsWon - standing.setsLost;
       standing.pointsDiff = standing.pointsWon - standing.pointsLost;
@@ -796,3 +795,52 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
       .sort((a, b) => a.name.localeCompare(b.name)); // Ordenar alfabeticamente
   },
 }));
+
+// Função auxiliar para verificar progressão de rodadas
+async function checkRoundsProgression(
+  matches: Match[],
+  rounds: string[],
+  state: any,
+  get: any
+) {
+  for (let i = 0; i < rounds.length - 1; i++) {
+    const currentRound = rounds[i];
+    const nextRound = rounds[i + 1];
+
+    const currentRoundMatches = matches.filter((m) => m.round === currentRound);
+    const nextRoundMatches = matches.filter((m) => m.round === nextRound);
+
+    if (
+      currentRoundMatches.length > 0 &&
+      currentRoundMatches.every((m) => m.isCompleted) &&
+      nextRoundMatches.length === 0
+    ) {
+      const newMatches = generateNextRoundMatches(
+        currentRoundMatches,
+        nextRound
+      );
+
+      if (newMatches.length > 0) {
+        // Adicionar novas partidas ao primeiro grupo
+        const updatedGroups = state.currentChampionship.groups.map(
+          (group: Group, index: number) =>
+            index === 0
+              ? { ...group, matches: [...group.matches, ...newMatches] }
+              : group
+        );
+
+        const updatedChampionship = {
+          ...state.currentChampionship,
+          groups: updatedGroups,
+          totalMatches:
+            state.currentChampionship.totalMatches + newMatches.length,
+        };
+
+        await get().updateChampionship(updatedChampionship);
+        console.log(
+          `Gerada próxima rodada: ${nextRound} (${newMatches.length} partidas)`
+        );
+      }
+    }
+  }
+}
