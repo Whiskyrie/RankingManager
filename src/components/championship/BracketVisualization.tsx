@@ -269,6 +269,11 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
     }))
     .filter((round) => round.matches.length > 0);
 
+  console.log(
+    "🔍 Debug - Organized main rounds with Final:",
+    organizedMainRounds
+  );
+
   // ✅ ADICIONAR TERCEIRO LUGAR PARA AMBAS AS DIVISÕES
   const thirdPlaceMatch = mainMatches.find((m) => m.round === "3º Lugar");
   const thirdPlaceSecondDiv = secondDivisionMatches.find(
@@ -294,6 +299,35 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
     "🔍 Debug - Organized second div rounds:",
     organizedSecondDivRounds
   );
+
+  // ✅ DEBUG ADICIONAL PARA FINAL
+  const finalMatch = mainMatches.find((m) => m.round === "Final");
+  console.log(
+    "🔍 Debug - Final match found:",
+    finalMatch
+      ? {
+          id: finalMatch.id,
+          players: `${finalMatch.player1?.name} vs ${finalMatch.player2?.name}`,
+          completed: finalMatch.isCompleted,
+          winner: finalMatch.winner,
+        }
+      : "No final match found"
+  );
+
+  // ✅ DEBUG MAIS DETALHADO
+  console.log("🔍 Debug - ALL knockout matches by round:");
+  const allRounds = ["Oitavas", "Quartas", "Semifinal", "Final", "3º Lugar"];
+  allRounds.forEach((roundName) => {
+    const roundMatches = knockoutMatches.filter((m) => m.round === roundName);
+    console.log(`  ${roundName}: ${roundMatches.length} partidas`);
+    roundMatches.forEach((match) => {
+      console.log(
+        `    - ${match.player1?.name} vs ${match.player2?.name} (${
+          match.isCompleted ? "Completa" : "Pendente"
+        })`
+      );
+    });
+  });
 
   return (
     <div className="space-y-8">

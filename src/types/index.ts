@@ -232,20 +232,37 @@ export const getMatchWinner = (
   // Contar apenas sets válidos
   const validSets = sets.filter(isValidSet);
 
+  console.log(
+    `🎯 [WINNER] Calculando vencedor - BestOf: ${bestOf}, SetsToWin: ${setsToWin}, ValidSets: ${validSets.length}`
+  );
+
   for (const set of validSets) {
     const winner = getSetWinner(set);
     if (winner === "player1") player1Sets++;
     if (winner === "player2") player2Sets++;
+
+    console.log(
+      `  Set: ${set.player1Score}-${set.player2Score} → Winner: ${winner}`
+    );
   }
+
+  console.log(
+    `🎯 [WINNER] Resultado: P1=${player1Sets} sets, P2=${player2Sets} sets`
+  );
 
   // Verificar se algum jogador atingiu o número necessário de sets
   if (player1Sets >= setsToWin) {
-    return player1Id || "player1";
+    const winnerId = player1Id || "player1";
+    console.log(`✅ [WINNER] Player1 venceu! ID: ${winnerId}`);
+    return winnerId;
   }
   if (player2Sets >= setsToWin) {
-    return player2Id || "player2";
+    const winnerId = player2Id || "player2";
+    console.log(`✅ [WINNER] Player2 venceu! ID: ${winnerId}`);
+    return winnerId;
   }
 
+  console.log(`⏳ [WINNER] Nenhum vencedor ainda - partida em andamento`);
   return undefined;
 };
 
