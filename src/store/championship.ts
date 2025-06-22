@@ -434,8 +434,8 @@ async function handleSequentialRounds(
     const currentRound = rounds[i];
     const nextRound = rounds[i + 1];
 
-    // ✅ PULAR Final e Terceiro lugar (já tratados acima)
-    if (nextRound.includes("Final") || nextRound.includes("3º Lugar")) {
+    // ✅ PULAR apenas disputa de terceiro lugar (já tratado acima)
+    if (nextRound.includes("3º Lugar")) {
       continue;
     }
 
@@ -1429,7 +1429,13 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     );
 
     // ✅ GERAÇÃO SEQUENCIAL E ESPECÍFICA PARA FINAL
-    await generateNextMainRounds(mainMatches, state, get);
+    // ✅ GERAÇÃO DE PRÓXIMAS RODADAS (inclui Final e 3º Lugar)
+    await checkRoundsProgression(
+      mainMatches,
+      ["Oitavas", "Quartas", "Semifinal", "Final", "3º Lugar"],
+      state,
+      get
+    );
 
     if (state.currentChampionship.hasRepechage && secondDivMatches.length > 0) {
       await generateNextSecondDivRounds(secondDivMatches, state, get);
