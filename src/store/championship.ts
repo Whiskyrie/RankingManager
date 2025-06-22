@@ -253,6 +253,7 @@ async function handleFinalGeneration(
       );
     });
 
+    // ✅ PASSAR O BESTOF CORRETO
     const newMatches = generateNextRoundMatches(
       semifinalMatches,
       finalRound,
@@ -358,6 +359,7 @@ async function handleThirdPlaceGeneration(
       );
     });
 
+    // ✅ PASSAR O BESTOF CORRETO
     const newMatches = generateNextRoundMatches(
       semifinalMatches,
       thirdPlaceRound,
@@ -437,6 +439,7 @@ async function handleSequentialRounds(
     ) {
       console.log(`✅ [SEQ] Gerando ${nextRound} a partir de ${currentRound}`);
 
+      // ✅ PASSAR O BESTOF CORRETO
       const newMatches = generateNextRoundMatches(
         currentRoundMatches,
         nextRound,
@@ -1329,18 +1332,39 @@ function updateMatchWithResult(
   };
 
   if (!result.isWalkover) {
-    // CORREÇÃO: Usar a função correta
+    // ✅ CORREÇÃO: Usar bestOf correto baseado na fase da partida
+    const bestOf =
+      match.phase === "knockout"
+        ? championship.knockoutBestOf
+        : championship.groupsBestOf;
+
+    console.log(
+      `📊 Calculando vencedor - Fase: ${match.phase}, BestOf: ${bestOf}`
+    );
+
     const winner = getMatchWinner(
       result.sets,
-      championship.groupsBestOf,
+      bestOf,
       match.player1Id,
       match.player2Id
     );
+
     updatedMatch.winner = winner;
-    console.log("Vencedor determinado pelo updateMatchWithResult:", winner);
+
+    console.log("✅ Vencedor determinado:", {
+      winner,
+      phase: match.phase,
+      bestOf,
+      round: match.round,
+      sets: result.sets,
+      player1: match.player1?.name,
+      player2: match.player2?.name,
+      winnerName:
+        winner === match.player1Id ? match.player1?.name : match.player2?.name,
+    });
   } else {
     updatedMatch.winner = result.walkoverWinner;
-    console.log("Walkover definido para:", result.walkoverWinner);
+    console.log("✅ Walkover definido para:", result.walkoverWinner);
   }
 
   return updatedMatch;
