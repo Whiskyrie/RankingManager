@@ -330,7 +330,7 @@ export const generateSecondDivisionMatches = (athletes: Athlete[]): Match[] => {
   return matches;
 };
 
-// Geração da próxima rodada do mata-mata - CORRIGIDA
+// ✅ FUNÇÃO CORRIGIDA PARA GERAÇÃO DA PRÓXIMA RODADA DO MATA-MATA
 export const generateNextRoundMatches = (
   currentRoundMatches: Match[],
   round: string,
@@ -349,63 +349,134 @@ export const generateNextRoundMatches = (
     round,
   });
 
-  // Gerar próxima rodada
-  for (let i = 0; i < completedMatches.length; i += 2) {
-    const match1 = completedMatches[i];
-    const match2 = completedMatches[i + 1];
+  // ✅ LÓGICA ESPECIAL PARA DISPUTA DE TERCEIRO LUGAR
+  if (round.includes("3º Lugar")) {
+    console.log(
+      "🥉 Gerando disputa de terceiro lugar - usando PERDEDORES das semifinais"
+    );
 
-    if (match1 && match2) {
-      const winner1Id = getMatchWinner(
-        match1.sets,
-        5,
-        match1.player1Id,
-        match1.player2Id
-      );
-      const winner2Id = getMatchWinner(
-        match2.sets,
-        5,
-        match2.player1Id,
-        match2.player2Id
-      );
+    // Para terceiro lugar, usar os PERDEDORES das semifinais
+    for (let i = 0; i < completedMatches.length; i += 2) {
+      const match1 = completedMatches[i];
+      const match2 = completedMatches[i + 1];
 
-      console.log(`Vencedores: ${winner1Id} e ${winner2Id}`);
+      if (match1 && match2) {
+        const winner1Id = getMatchWinner(
+          match1.sets,
+          5,
+          match1.player1Id,
+          match1.player2Id
+        );
+        const winner2Id = getMatchWinner(
+          match2.sets,
+          5,
+          match2.player1Id,
+          match2.player2Id
+        );
 
-      if (winner1Id && winner2Id) {
-        // ✅ BUSCAR OBJETOS COMPLETOS DOS ATLETAS
-        const winner1 = allAthletes.find((a) => a.id === winner1Id);
-        const winner2 = allAthletes.find((a) => a.id === winner2Id);
+        // ✅ BUSCAR OS PERDEDORES (não os vencedores)
+        const loser1Id =
+          winner1Id === match1.player1Id ? match1.player2Id : match1.player1Id;
+        const loser2Id =
+          winner2Id === match2.player1Id ? match2.player2Id : match2.player1Id;
 
-        if (winner1 && winner2) {
-          const newMatch: Match = {
-            id: `${round.replace(/\s+/g, "-").toLowerCase()}-${Date.now()}-${
-              i / 2
-            }`,
-            player1Id: winner1.id,
-            player2Id: winner2.id,
-            player1: winner1, // ✅ OBJETO COMPLETO
-            player2: winner2, // ✅ OBJETO COMPLETO
-            sets: [],
-            isCompleted: false,
-            phase: "knockout",
-            round: round,
-            position: i / 2,
-            timeoutsUsed: {
-              player1: false,
-              player2: false,
-            },
-            createdAt: new Date(),
-          };
-          matches.push(newMatch);
+        console.log(`Perdedores das semifinais: ${loser1Id} e ${loser2Id}`);
 
-          console.log(`Partida criada: ${winner1.name} vs ${winner2.name}`);
-        } else {
-          console.error(`Atletas não encontrados: ${winner1Id}, ${winner2Id}`);
+        if (loser1Id && loser2Id) {
+          // Buscar objetos completos dos perdedores
+          const loser1 = allAthletes.find((a) => a.id === loser1Id);
+          const loser2 = allAthletes.find((a) => a.id === loser2Id);
+
+          if (loser1 && loser2) {
+            const newMatch: Match = {
+              id: `${round.replace(/\s+/g, "-").toLowerCase()}-${Date.now()}-${
+                i / 2
+              }`,
+              player1Id: loser1.id,
+              player2Id: loser2.id,
+              player1: loser1,
+              player2: loser2,
+              sets: [],
+              isCompleted: false,
+              phase: "knockout",
+              round: round,
+              position: i / 2,
+              timeoutsUsed: {
+                player1: false,
+                player2: false,
+              },
+              createdAt: new Date(),
+            };
+            matches.push(newMatch);
+
+            console.log(
+              `Partida de 3º lugar criada: ${loser1.name} vs ${loser2.name}`
+            );
+          }
+        }
+      }
+    }
+  } else {
+    // ✅ LÓGICA NORMAL PARA OUTRAS RODADAS (usar VENCEDORES)
+    console.log("🏆 Gerando rodada normal - usando VENCEDORES");
+
+    for (let i = 0; i < completedMatches.length; i += 2) {
+      const match1 = completedMatches[i];
+      const match2 = completedMatches[i + 1];
+
+      if (match1 && match2) {
+        const winner1Id = getMatchWinner(
+          match1.sets,
+          5,
+          match1.player1Id,
+          match1.player2Id
+        );
+        const winner2Id = getMatchWinner(
+          match2.sets,
+          5,
+          match2.player1Id,
+          match2.player2Id
+        );
+
+        console.log(`Vencedores: ${winner1Id} e ${winner2Id}`);
+
+        if (winner1Id && winner2Id) {
+          // Buscar objetos completos dos vencedores
+          const winner1 = allAthletes.find((a) => a.id === winner1Id);
+          const winner2 = allAthletes.find((a) => a.id === winner2Id);
+
+          if (winner1 && winner2) {
+            const newMatch: Match = {
+              id: `${round.replace(/\s+/g, "-").toLowerCase()}-${Date.now()}-${
+                i / 2
+              }`,
+              player1Id: winner1.id,
+              player2Id: winner2.id,
+              player1: winner1,
+              player2: winner2,
+              sets: [],
+              isCompleted: false,
+              phase: "knockout",
+              round: round,
+              position: i / 2,
+              timeoutsUsed: {
+                player1: false,
+                player2: false,
+              },
+              createdAt: new Date(),
+            };
+            matches.push(newMatch);
+
+            console.log(
+              `Partida criada: ${winner1.name} vs ${winner2.name} (${round})`
+            );
+          }
         }
       }
     }
   }
 
-  console.log(`Próxima rodada ${round} gerada com ${matches.length} partidas`);
+  console.log(`Total de partidas geradas para ${round}:`, matches.length);
   return matches;
 };
 
