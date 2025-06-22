@@ -805,12 +805,15 @@ export const generateTestMatchResult = (bestOf: 3 | 5 | 7 = 5) => {
     }
 
     const scores = selectedType.scores;
-    const [winScore, loseScore] =
-      scores[Math.floor(Math.random() * scores.length)];
+    const scoreIndex = Math.floor(Math.random() * scores.length);
+    const [score1, score2] = scores[scoreIndex];
 
-    return Math.random() > 0.5
-      ? { player1Score: winScore, player2Score: loseScore }
-      : { player1Score: loseScore, player2Score: winScore };
+    // 50% chance de inverter o resultado
+    if (Math.random() < 0.5) {
+      return { player1Score: score1, player2Score: score2 };
+    } else {
+      return { player1Score: score2, player2Score: score1 };
+    }
   };
 
   // Gerar sets até um jogador vencer
@@ -828,7 +831,7 @@ export const generateTestMatchResult = (bestOf: 3 | 5 | 7 = 5) => {
   return {
     sets,
     timeouts: {
-      player1: Math.random() < 0.2, // 20% chance de usar timeout
+      player1: Math.random() < 0.2,
       player2: Math.random() < 0.2,
     },
   };

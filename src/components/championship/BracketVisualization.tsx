@@ -2,7 +2,7 @@ import React from "react";
 import { useChampionshipStore } from "../../store/championship";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { Trophy, Crown, Users } from "lucide-react";
+import { Trophy, Crown, Users, Award } from "lucide-react";
 import { Match } from "../../types";
 
 interface BracketVisualizationProps {
@@ -63,7 +63,7 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
 
     return (
       <Card
-        className={`w-64 mb-2 cursor-pointer transition-all duration-300 hover:shadow-xl hover:z-10 relative ${
+        className={`w-64 mb-2 cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-[1.02] ${
           isSecondDivision
             ? "border-orange-300 hover:border-orange-500"
             : "border-blue-300 hover:border-blue-500"
@@ -72,6 +72,7 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
         style={{
           transform: "translateZ(0)", // Força camada de composição
           backfaceVisibility: "hidden", // Otimização de performance
+          margin: "8px", // ✅ Margem para evitar corte
         }}
       >
         <CardContent className="p-3">
@@ -198,11 +199,11 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
     const stats = getRoundStats();
 
     return (
-      <div className="flex flex-col items-center min-h-full mx-6">
+      <div className="flex flex-col items-center min-h-full mx-4">
         {" "}
-        {/* ✅ Maior espaçamento horizontal */}
+        {/* ✅ Espaçamento reduzido */}
         <div
-          className={`sticky top-0 z-10 mb-6 p-4 rounded-lg shadow-sm border-2 ${
+          className={`sticky top-0 z-10 mb-4 p-3 rounded-lg shadow-sm border-2 ${
             isSecondDivision
               ? "bg-orange-100 text-orange-800 border-orange-200"
               : "bg-blue-100 text-blue-800 border-blue-200"
@@ -235,13 +236,11 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
             </div>
           </div>
         </div>
-        <div className="flex flex-col justify-around flex-1 space-y-8 w-full">
+        <div className="flex flex-col justify-around flex-1 space-y-6 w-full">
           {" "}
-          {/* ✅ Maior espaçamento entre partidas */}
+          {/* ✅ Espaçamento reduzido */}
           {matches.map((match) => (
             <div key={match.id} className="relative">
-              {" "}
-              {/* ✅ Container para evitar overflow */}
               <BracketMatch match={match} isSecondDivision={isSecondDivision} />
             </div>
           ))}
@@ -251,16 +250,14 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
   };
 
   const BracketConnector: React.FC = () => (
-    <div className="flex items-center justify-center mx-8">
+    <div className="flex items-center justify-center mx-2">
       {" "}
-      {/* ✅ Mais espaço horizontal */}
+      {/* ✅ Espaçamento mais próximo */}
       <div className="flex flex-col items-center">
-        <div className="w-12 h-px bg-gray-300"></div>{" "}
-        {/* ✅ Conector mais largo */}
-        <div className="w-px h-8 bg-gray-300"></div>{" "}
-        {/* ✅ Conector vertical */}
-        <div className="w-12 h-px bg-gray-300"></div>{" "}
-        {/* ✅ Conector mais largo */}
+        <div className="w-8 h-px bg-gray-300"></div> {/* ✅ Conector menor */}
+        <div className="w-px h-6 bg-gray-300"></div>{" "}
+        {/* ✅ Conector vertical menor */}
+        <div className="w-8 h-px bg-gray-300"></div> {/* ✅ Conector menor */}
       </div>
     </div>
   );
@@ -273,6 +270,9 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
       matches: mainMatches.filter((m) => m.round === roundName),
     }))
     .filter((round) => round.matches.length > 0);
+
+  // ✅ ADICIONAR TERCEIRO LUGAR
+  const thirdPlaceMatch = mainMatches.find((m) => m.round === "3º Lugar");
 
   // Organizar rodadas da segunda divisão
   const secondDivRounds = [
@@ -290,6 +290,7 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
 
   return (
     <div className="space-y-8">
+      {" "}
       {/* Divisão Principal */}
       {organizedMainRounds.length > 0 && (
         <Card>
@@ -320,10 +321,27 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
                 ))}
               </div>
             </div>
+
+            {/* ✅ SEÇÃO PARA TERCEIRO LUGAR */}
+            {thirdPlaceMatch && (
+              <div className="mt-8 border-t pt-6">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-amber-600 mb-4 flex items-center justify-center gap-2">
+                    <Award className="h-5 w-5" />
+                    Disputa de 3º Lugar
+                  </h3>
+                  <div className="flex justify-center">
+                    <BracketMatch
+                      match={thirdPlaceMatch}
+                      isSecondDivision={false}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
-
       {/* Segunda Divisão */}
       {organizedSecondDivRounds.length > 0 && (
         <Card>
@@ -358,7 +376,6 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
           </CardContent>
         </Card>
       )}
-
       {/* Mensagem quando não há chaves */}
       {organizedMainRounds.length === 0 &&
         organizedSecondDivRounds.length === 0 && (

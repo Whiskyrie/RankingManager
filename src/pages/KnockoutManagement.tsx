@@ -1,6 +1,6 @@
 import React from "react";
 import { useChampionshipStore } from "../store/championship";
-import { KnockoutBracket } from "../components/championship/KnockoutBracket";
+import { BracketVisualization } from "../components/championship/BracketVisualization";
 import { Card, CardContent } from "../components/ui/card";
 import { Trophy } from "lucide-react";
 
@@ -49,8 +49,8 @@ export const KnockoutManagement: React.FC = () => {
           </div>
         </div>
 
-        {/* Componente da chave */}
-        <KnockoutBracket onGenerateBracket={handleGenerateBracket} />
+        {/* ✅ USAR APENAS BRACKET VISUALIZATION (MODO SIMPLES) */}
+        <BracketVisualization />
       </div>
     </div>
   );
