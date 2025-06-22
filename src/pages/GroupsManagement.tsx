@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useChampionshipStore } from "../store/championship";
 import { GroupStandingsTable } from "../components/championship/GroupStandingsTable";
 import { MatchCard } from "../components/championship/MatchCard";
@@ -39,6 +39,16 @@ export const GroupsManagement: React.FC = () => {
   } = useChampionshipStore();
 
   const [selectedGroup, setSelectedGroup] = useState<string>("");
+
+  // Memoização para filtrar grupos baseado na seleção
+  const filteredGroups = useMemo(() => {
+    if (!currentChampionship || selectedGroup === "") {
+      return currentChampionship?.groups || [];
+    }
+    return currentChampionship.groups.filter(
+      (group) => group.id === selectedGroup
+    );
+  }, [currentChampionship, selectedGroup]);
 
   if (!currentChampionship) {
     return (
@@ -210,7 +220,9 @@ export const GroupsManagement: React.FC = () => {
               <h3 className="text-lg font-semibold">
                 Progresso da Fase de Grupos
               </h3>
-              <span className="text-sm text-gray-500">{stats.progress}%</span>
+              <span className="text-sm text-gray-500">
+                {stats.progress.toFixed(1)}%
+              </span>
             </div>
             <Progress value={stats.progress} className="h-3" />
             <p className="text-sm text-gray-500 mt-2">
@@ -278,43 +290,60 @@ export const GroupsManagement: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Lista de Partidas */}
-            {currentChampionship.groups
-              .filter(
-                (group) => selectedGroup === "" || group.id === selectedGroup
-              )
-              .map((group) => (
-                <Card key={group.id}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span>{group.name}</span>
-                      <Badge
-                        variant={group.isCompleted ? "secondary" : "outline"}
-                        className={
-                          group.isCompleted ? "bg-green-100 text-green-800" : ""
-                        }
-                      >
-                        {group.matches.filter((m) => m.isCompleted).length}/
-                        {group.matches.length} partidas
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {group.matches.map((match) => (
-                        <MatchCard
-                          key={match.id}
-                          match={match}
-                          onUpdateResult={updateMatchResult}
-                          onSetWalkover={setWalkover}
-                          bestOf={currentChampionship.groupsBestOf}
-                        />
-                      ))}
+            {/* Lista de Partidas - CORRIGIDA */}
+            <div className="space-y-6">
+              {filteredGroups.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <div className="text-gray-500">
+                      <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Nenhum grupo encontrado</p>
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              ) : (
+                filteredGroups.map((group) => (
+                  <Card key={group.id}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <span>{group.name}</span>
+                        <Badge
+                          variant={group.isCompleted ? "secondary" : "outline"}
+                          className={
+                            group.isCompleted
+                              ? "bg-green-100 text-green-800 border-green-300"
+                              : "bg-blue-100 text-blue-800 border-blue-300"
+                          }
+                        >
+                          {group.matches.filter((m) => m.isCompleted).length}/
+                          {group.matches.length} partidas
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+
+                    <CardContent>
+                      {group.matches.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500">
+                          <p>Nenhuma partida neste grupo</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {group.matches.map((match) => (
+                            <MatchCard
+                              key={match.id}
+                              match={match}
+                              onUpdateResult={updateMatchResult}
+                              onSetWalkover={setWalkover}
+                              bestOf={currentChampionship.groupsBestOf}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
           </TabsContent>
         </Tabs>
 

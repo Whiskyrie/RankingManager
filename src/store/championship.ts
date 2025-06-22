@@ -9,13 +9,12 @@ import {
   GroupStanding,
   MatchResult,
   isValidSet,
-  getMatchWinner as getMatchWinnerFromTypes,
+  getMatchWinner, // CORREÇÃO: Importar a função correta do types
 } from "../types";
 import {
   generateMainKnockoutMatches,
   generateSecondDivisionMatches,
   generateNextRoundMatches,
-  getMatchWinner,
 } from "../utils";
 
 interface ChampionshipStore {
@@ -57,6 +56,127 @@ interface ChampionshipStore {
 
   fillGroupsWithRandomResults: () => Promise<void>;
   createTestChampionship: () => Promise<void>;
+}
+
+// CORREÇÃO: Função updateStandingsWithMatch corrigida
+function updateStandingsWithMatch(
+  standings: GroupStanding[],
+  match: Match,
+  bestOf: 3 | 5 | 7 = 5 // Parâmetro bestOf adicionado
+) {
+  const player1Standing = standings.find(
+    (s) => s.athleteId === match.player1Id
+  );
+  const player2Standing = standings.find(
+    (s) => s.athleteId === match.player2Id
+  );
+
+  if (!player1Standing || !player2Standing) {
+    console.warn("Standing não encontrado para algum jogador:", {
+      player1Id: match.player1Id,
+      player2Id: match.player2Id,
+      availableStandings: standings.map((s) => ({
+        id: s.athleteId,
+        name: s.athlete.name,
+      })),
+    });
+    return;
+  }
+
+  // Incrementar jogos para ambos os jogadores
+  player1Standing.matches++;
+  player2Standing.matches++;
+
+  console.log(
+    `Processando partida: ${match.player1?.name} vs ${match.player2?.name}`
+  );
+
+  // Tratamento especial para walkover
+  if (match.isWalkover) {
+    console.log("Processando walkover - vencedor:", match.walkoverWinner);
+    if (match.walkoverWinner === match.player1Id) {
+      player1Standing.wins++;
+      player1Standing.points += 3;
+      player2Standing.losses++;
+      console.log(`${match.player1?.name} venceu por W.O.`);
+    } else if (match.walkoverWinner === match.player2Id) {
+      player2Standing.wins++;
+      player2Standing.points += 3;
+      player1Standing.losses++;
+      console.log(`${match.player2?.name} venceu por W.O.`);
+    }
+    return;
+  }
+
+  // Contabilizar pontos e sets de cada set individual
+  match.sets.forEach((set, index) => {
+    if (isValidSet(set)) {
+      console.log(`Set ${index + 1}: ${set.player1Score}-${set.player2Score}`);
+
+      player1Standing.pointsWon += set.player1Score;
+      player1Standing.pointsLost += set.player2Score;
+      player2Standing.pointsWon += set.player2Score;
+      player2Standing.pointsLost += set.player1Score;
+
+      if (set.player1Score > set.player2Score) {
+        player1Standing.setsWon++;
+        player2Standing.setsLost++;
+      } else if (set.player2Score > set.player1Score) {
+        player2Standing.setsWon++;
+        player1Standing.setsLost++;
+      }
+    } else {
+      console.warn(`Set ${index + 1} inválido:`, set);
+    }
+  });
+
+  // CORREÇÃO PRINCIPAL: Usar a função correta com o bestOf apropriado
+  const winner = getMatchWinner(
+    match.sets,
+    bestOf, // Usar o bestOf correto ao invés de valor hardcoded
+    match.player1Id,
+    match.player2Id
+  );
+
+  console.log("Vencedor determinado pela função getMatchWinner:", winner);
+  console.log("Best of configurado:", bestOf);
+  console.log("Sets válidos:", match.sets.filter(isValidSet).length);
+
+  // Atualizar vitórias/derrotas baseado no vencedor da partida
+  if (winner === match.player1Id) {
+    player1Standing.wins++;
+    player1Standing.points += 3;
+    player2Standing.losses++;
+    console.log(`✅ ${match.player1?.name} venceu a partida`);
+  } else if (winner === match.player2Id) {
+    player2Standing.wins++;
+    player2Standing.points += 3;
+    player1Standing.losses++;
+    console.log(`✅ ${match.player2?.name} venceu a partida`);
+  } else {
+    console.warn("⚠️ Nenhum vencedor determinado para a partida", {
+      sets: match.sets,
+      bestOf,
+      validSets: match.sets.filter(isValidSet),
+    });
+  }
+
+  console.log("Standing atual:", {
+    player1: {
+      name: player1Standing.athlete.name,
+      matches: player1Standing.matches,
+      wins: player1Standing.wins,
+      losses: player1Standing.losses,
+      points: player1Standing.points,
+    },
+    player2: {
+      name: player2Standing.athlete.name,
+      matches: player2Standing.matches,
+      wins: player2Standing.wins,
+      losses: player2Standing.losses,
+      points: player2Standing.points,
+    },
+  });
 }
 
 export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
@@ -444,26 +564,35 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     });
   },
 
+  // CORREÇÃO: Função updateMatchResult também precisa usar a função correta
   updateMatchResult: async (result) => {
     const state = get();
     if (!state.currentChampionship) return;
 
-    console.log("Atualizando resultado da partida:", result.matchId);
+    console.log("\n🏓 Atualizando resultado da partida:", result.matchId);
 
     const updatedGroups = state.currentChampionship.groups.map((group) => ({
       ...group,
       matches: group.matches.map((match) => {
         if (match.id === result.matchId) {
-          return updateMatchWithResult(
+          console.log("Partida encontrada, atualizando...");
+          const updatedMatch = updateMatchWithResult(
             match,
             result,
             state.currentChampionship!
           );
+          console.log("Partida atualizada:", {
+            sets: updatedMatch.sets,
+            isCompleted: updatedMatch.isCompleted,
+            winner: updatedMatch.winner,
+          });
+          return updatedMatch;
         }
         return match;
       }),
     }));
 
+    // Recalcular standings para o grupo afetado
     updatedGroups.forEach((group) => {
       const affectedMatch = group.matches.find((m) => m.id === result.matchId);
       if (affectedMatch) {
@@ -517,7 +646,18 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     return group?.standings || [];
   },
 
+  // CORREÇÃO: Função calculateGroupStandings corrigida
   calculateGroupStandings: (group) => {
+    const state = get();
+    const bestOf = state.currentChampionship?.groupsBestOf || 5;
+
+    console.log(
+      `\n🏓 Calculando standings para ${group.name} (Melhor de ${bestOf})`
+    );
+    console.log(
+      `Atletas no grupo: ${group.athletes.map((a) => a.name).join(", ")}`
+    );
+
     const standings: GroupStanding[] = group.athletes.map((athlete) => ({
       athleteId: athlete.id,
       athlete,
@@ -535,31 +675,57 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
       qualified: false,
     }));
 
-    group.matches
-      .filter((m) => m.isCompleted)
-      .forEach((match) => {
-        updateStandingsWithMatch(standings, match);
-      });
+    const completedMatches = group.matches.filter((m) => m.isCompleted);
+    console.log(
+      `Partidas concluídas: ${completedMatches.length}/${group.matches.length}`
+    );
 
+    completedMatches.forEach((match, index) => {
+      console.log(`\nProcessando partida ${index + 1}:`);
+      console.log(`${match.player1?.name} vs ${match.player2?.name}`);
+      console.log(
+        `Completa: ${match.isCompleted}, Walkover: ${match.isWalkover}`
+      );
+      console.log(`Sets:`, match.sets);
+
+      // CORREÇÃO: Passar o bestOf correto para a função
+      updateStandingsWithMatch(standings, match, bestOf);
+    });
+
+    // Calcular diferenças
     standings.forEach((standing) => {
       standing.setsDiff = standing.setsWon - standing.setsLost;
       standing.pointsDiff = standing.pointsWon - standing.pointsLost;
     });
 
+    // Ordenar standings
     standings.sort(compareStandings);
 
+    // Definir posições e qualificação
     standings.forEach((standing, index) => {
       standing.position = index + 1;
       standing.qualified = index < group.qualificationSpots;
     });
 
     const totalMatches = group.matches.length;
-    const completedMatches = group.matches.filter((m) => m.isCompleted).length;
+    const completedMatchesCount = group.matches.filter(
+      (m) => m.isCompleted
+    ).length;
+
+    console.log(`\n📊 Resultado final das standings:`);
+    standings.forEach((s, i) => {
+      console.log(
+        `${i + 1}º ${s.athlete.name}: ${s.matches}J ${s.wins}V ${s.losses}D ${
+          s.points
+        }Pts`
+      );
+    });
 
     console.log(
-      `Grupo ${group.name}: ${completedMatches}/${totalMatches} partidas concluídas`
+      `Grupo ${group.name}: ${completedMatchesCount}/${totalMatches} partidas concluídas`
     );
-    group.isCompleted = totalMatches > 0 && completedMatches === totalMatches;
+    group.isCompleted =
+      totalMatches > 0 && completedMatchesCount === totalMatches;
 
     return standings;
   },
@@ -838,6 +1004,7 @@ function generateGroupMatches(group: Group): Match[] {
   return groupMatches;
 }
 
+// Função auxiliar para atualizar partida com resultado
 function updateMatchWithResult(
   match: Match,
   result: MatchResult,
@@ -854,6 +1021,7 @@ function updateMatchWithResult(
   };
 
   if (!result.isWalkover) {
+    // CORREÇÃO: Usar a função correta
     const winner = getMatchWinner(
       result.sets,
       championship.groupsBestOf,
@@ -861,7 +1029,7 @@ function updateMatchWithResult(
       match.player2Id
     );
     updatedMatch.winner = winner;
-    console.log("Vencedor determinado:", winner);
+    console.log("Vencedor determinado pelo updateMatchWithResult:", winner);
   } else {
     updatedMatch.winner = result.walkoverWinner;
     console.log("Walkover definido para:", result.walkoverWinner);
@@ -870,67 +1038,7 @@ function updateMatchWithResult(
   return updatedMatch;
 }
 
-function updateStandingsWithMatch(standings: GroupStanding[], match: Match) {
-  const player1Standing = standings.find(
-    (s) => s.athleteId === match.player1Id
-  );
-  const player2Standing = standings.find(
-    (s) => s.athleteId === match.player2Id
-  );
-
-  if (!player1Standing || !player2Standing) return;
-
-  player1Standing.matches++;
-  player2Standing.matches++;
-
-  if (match.isWalkover) {
-    if (match.walkoverWinner === match.player1Id) {
-      player1Standing.wins++;
-      player1Standing.points += 3;
-      player2Standing.losses++;
-    } else if (match.walkoverWinner === match.player2Id) {
-      player2Standing.wins++;
-      player2Standing.points += 3;
-      player1Standing.losses++;
-    }
-    return;
-  }
-
-  match.sets.forEach((set) => {
-    if (isValidSet(set)) {
-      player1Standing.pointsWon += set.player1Score;
-      player1Standing.pointsLost += set.player2Score;
-      player2Standing.pointsWon += set.player2Score;
-      player2Standing.pointsLost += set.player1Score;
-
-      if (set.player1Score > set.player2Score) {
-        player1Standing.setsWon++;
-        player2Standing.setsLost++;
-      } else if (set.player2Score > set.player1Score) {
-        player2Standing.setsWon++;
-        player1Standing.setsLost++;
-      }
-    }
-  });
-
-  const winner = getMatchWinnerFromTypes(
-    match.sets,
-    5, // Assumindo melhor de 5 para grupos
-    match.player1Id,
-    match.player2Id
-  );
-
-  if (winner === match.player1Id) {
-    player1Standing.wins++;
-    player1Standing.points += 3;
-    player2Standing.losses++;
-  } else if (winner === match.player2Id) {
-    player2Standing.wins++;
-    player2Standing.points += 3;
-    player1Standing.losses++;
-  }
-}
-
+// Função de comparação de standings (mantida igual)
 function compareStandings(a: GroupStanding, b: GroupStanding): number {
   if (a.points !== b.points) return b.points - a.points;
   if (a.setsDiff !== b.setsDiff) return b.setsDiff - a.setsDiff;

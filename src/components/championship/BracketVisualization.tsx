@@ -297,29 +297,6 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
 
   return (
     <div className="space-y-8">
-      {/* ✅ DEBUG INFO */}
-      {process.env.NODE_ENV === "development" && (
-        <Card className="bg-yellow-50 border-yellow-200">
-          <CardContent className="p-4">
-            <h4 className="font-semibold text-yellow-800 mb-2">Debug Info:</h4>
-            <div className="text-sm space-y-1">
-              <div>Total knockout matches: {knockoutMatches.length}</div>
-              <div>Main matches: {mainMatches.length}</div>
-              <div>Second division matches: {secondDivisionMatches.length}</div>
-              <div>Main rounds with matches: {organizedMainRounds.length}</div>
-              <div>
-                Second div rounds with matches:{" "}
-                {organizedSecondDivRounds.length}
-              </div>
-              <div>Third place main: {thirdPlaceMatch ? "✅" : "❌"}</div>
-              <div>
-                Third place 2nd div: {thirdPlaceSecondDiv ? "✅" : "❌"}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Divisão Principal */}
       {organizedMainRounds.length > 0 && (
         <Card>
