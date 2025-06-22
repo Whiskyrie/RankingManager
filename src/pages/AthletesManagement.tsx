@@ -22,7 +22,7 @@ import {
   DialogTrigger,
 } from "../components/ui/dialog";
 import { Alert, AlertDescription } from "../components/ui/alert";
-import { Plus, Search, Edit, Trash2, Users, Trophy } from "lucide-react";
+import { Users, Plus, Edit, Trash2, Search, Trophy } from "lucide-react";
 
 export const AthletesManagement: React.FC = () => {
   const {
@@ -32,6 +32,7 @@ export const AthletesManagement: React.FC = () => {
     removeAthlete,
     generateGroups,
     createManualGroups,
+    fillGroupsWithRandomResults,
   } = useChampionshipStore();
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -285,6 +286,16 @@ export const AthletesManagement: React.FC = () => {
       setIsManualGroupsDialogOpen(false);
       setManualGroups([]);
       setFormErrors([]);
+    }
+  };
+
+  const handleFillGroupsWithResults = async () => {
+    if (
+      confirm(
+        "Tem certeza que deseja preencher automaticamente todos os grupos com resultados aleatórios? Esta ação irá completar todas as partidas pendentes."
+      )
+    ) {
+      await fillGroupsWithRandomResults();
     }
   };
 
@@ -718,6 +729,29 @@ Pedro Henrique"
                     </div>
                   </div>
                 )}
+
+                {/* Botão para testes - preencher resultados automaticamente */}
+                {currentChampionship.groups.length > 0 &&
+                  !currentChampionship.groups.every((g) => g.isCompleted) && (
+                    <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200 mt-4">
+                      <div>
+                        <h4 className="font-medium text-orange-800">
+                          ⚡ Teste Rápido
+                        </h4>
+                        <p className="text-sm text-orange-700">
+                          Preenche automaticamente os grupos com resultados
+                          válidos para testar o mata-mata
+                        </p>
+                      </div>
+                      <Button
+                        onClick={handleFillGroupsWithResults}
+                        variant="outline"
+                        className="border-orange-300 text-orange-700 hover:bg-orange-100"
+                      >
+                        🎲 Completar Grupos
+                      </Button>
+                    </div>
+                  )}
               </div>
             </CardContent>
           </Card>

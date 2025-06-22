@@ -237,19 +237,27 @@ export const generateMainKnockoutMatches = (
   return matches;
 };
 
-// Geração de partidas da segunda divisão (repescagem) - REMOVIDO eliminatedAthletes não usado
-export const generateSecondDivisionMatches = (
-  athletes: Athlete[] // CORRIGIDO: renomeado para evitar erro de variável não usada
-): Match[] => {
+// Geração de partidas da segunda divisão (repescagem) - CORRIGIDA
+export const generateSecondDivisionMatches = (athletes: Athlete[]): Match[] => {
   const matches: Match[] = [];
 
-  if (athletes.length < 2) return matches;
+  console.log(
+    "generateSecondDivisionMatches called with athletes:",
+    athletes.map((a) => a.name)
+  );
+
+  if (athletes.length < 2) {
+    console.log("Insuficientes atletas para segunda divisão:", athletes.length);
+    return matches;
+  }
 
   // Determinar tamanho da chave da segunda divisão (potência de 2)
   let bracketSize = 4;
   while (bracketSize < athletes.length) {
     bracketSize *= 2;
   }
+
+  console.log("Tamanho da chave da segunda divisão:", bracketSize);
 
   // Embaralhar atletas para distribuição aleatória
   const shuffledAthletes = [...athletes].sort(() => Math.random() - 0.5);
@@ -263,6 +271,11 @@ export const generateSecondDivisionMatches = (
     orderedAthletes[i] = shuffledAthletes[i];
   }
 
+  console.log(
+    "Atletas organizados na chave:",
+    orderedAthletes.map((a) => a?.name || "null")
+  );
+
   // Gerar partidas da primeira rodada da segunda divisão
   const rounds = Math.log2(bracketSize);
   const roundNames = [
@@ -272,13 +285,22 @@ export const generateSecondDivisionMatches = (
     "Oitavas 2ª Div",
   ];
   const currentRoundName =
-    rounds <= 3 ? roundNames[rounds - 1] : "Oitavas 2ª Div";
+    rounds <= 4 ? roundNames[rounds - 1] : "Oitavas 2ª Div";
 
-  // Criar partidas em pares
+  console.log(
+    "Rodada da segunda divisão:",
+    currentRoundName,
+    "rounds:",
+    rounds
+  );
+
+  // ✅ Criar partidas em pares com IDs únicos
   for (let i = 0; i < orderedAthletes.length; i += 2) {
     if (orderedAthletes[i] && orderedAthletes[i + 1]) {
       const match: Match = {
-        id: `second-div-${i / 2}`,
+        id: `second-div-${Date.now()}-${Math.random()
+          .toString(36)
+          .substr(2, 9)}-${i / 2}`, // ✅ ID único
         player1Id: orderedAthletes[i]!.id,
         player2Id: orderedAthletes[i + 1]!.id,
         player1: orderedAthletes[i]!,
@@ -295,9 +317,16 @@ export const generateSecondDivisionMatches = (
         createdAt: new Date(),
       };
       matches.push(match);
+      console.log(
+        "Partida da segunda divisão criada:",
+        match.player1.name,
+        "vs",
+        match.player2.name
+      );
     }
   }
 
+  console.log("Total de partidas da segunda divisão criadas:", matches.length);
   return matches;
 };
 
@@ -643,6 +672,142 @@ export const calculateTournamentStats = (championship: Championship) => {
     totalGroups,
     groupsProgress:
       totalGroups > 0 ? Math.round((groupsCompleted / totalGroups) * 100) : 0,
+  };
+};
+
+// ✅ FUNÇÃO PARA CRIAR DADOS DE TESTE COMPLETOS
+export const createTestChampionshipData = () => {
+  // Lista de nomes realistas para teste
+  const testAthletes = [
+    "João Silva",
+    "Maria Santos",
+    "Pedro Oliveira",
+    "Ana Costa",
+    "Carlos Ferreira",
+    "Lucia Rodrigues",
+    "Bruno Almeida",
+    "Fernanda Lima",
+    "Rafael Santos",
+    "Julia Pereira",
+    "Diego Souza",
+    "Camila Barbosa",
+    "Lucas Martins",
+    "Beatriz Castro",
+    "Marcos Ribeiro",
+    "Amanda Rocha",
+    "Thiago Carvalho",
+    "Leticia Gomes",
+    "Rodrigo Dias",
+    "Gabriela Nunes",
+    "Anderson Moura",
+    "Carolina Lopes",
+    "Felipe Cardoso",
+    "Renata Freitas",
+  ];
+
+  const config = {
+    name: "Campeonato de Teste - TM Club",
+    date: new Date(),
+    groupSize: 4 as const,
+    qualificationSpotsPerGroup: 2,
+    groupsBestOf: 5 as const,
+    knockoutBestOf: 5 as const,
+    hasThirdPlace: true,
+    hasRepechage: true,
+  };
+
+  const athletes = testAthletes.slice(0, 18).map((name, index) => ({
+    id: `test-athlete-${index}`,
+    name,
+    isSeeded: index < 4, // Primeiros 4 são cabeças de chave
+    seedNumber: index < 4 ? index + 1 : undefined,
+  }));
+
+  return { config, athletes };
+};
+
+// ✅ FUNÇÃO PARA GERAR RESULTADOS DE TESTE REALISTAS
+export const generateTestMatchResult = (bestOf: 3 | 5 | 7 = 5) => {
+  const setsToWin = bestOf === 3 ? 2 : bestOf === 5 ? 3 : 4;
+  const sets: { player1Score: number; player2Score: number }[] = [];
+  let player1Sets = 0;
+  let player2Sets = 0;
+
+  // Tipos de sets realistas
+  const setTypes = [
+    {
+      type: "normal",
+      weight: 0.5,
+      scores: [
+        [11, 8],
+        [11, 6],
+        [11, 9],
+        [11, 7],
+        [11, 5],
+      ],
+    },
+    {
+      type: "close",
+      weight: 0.3,
+      scores: [
+        [11, 9],
+        [12, 10],
+        [13, 11],
+        [14, 12],
+      ],
+    },
+    {
+      type: "tight",
+      weight: 0.2,
+      scores: [
+        [15, 13],
+        [16, 14],
+        [17, 15],
+        [18, 16],
+      ],
+    },
+  ];
+
+  const generateSet = () => {
+    const random = Math.random();
+    let cumulativeWeight = 0;
+    let selectedType = setTypes[0];
+
+    for (const type of setTypes) {
+      cumulativeWeight += type.weight;
+      if (random <= cumulativeWeight) {
+        selectedType = type;
+        break;
+      }
+    }
+
+    const scores = selectedType.scores;
+    const [winScore, loseScore] =
+      scores[Math.floor(Math.random() * scores.length)];
+
+    return Math.random() > 0.5
+      ? { player1Score: winScore, player2Score: loseScore }
+      : { player1Score: loseScore, player2Score: winScore };
+  };
+
+  // Gerar sets até um jogador vencer
+  while (player1Sets < setsToWin && player2Sets < setsToWin) {
+    const set = generateSet();
+    sets.push(set);
+
+    if (set.player1Score > set.player2Score) {
+      player1Sets++;
+    } else {
+      player2Sets++;
+    }
+  }
+
+  return {
+    sets,
+    timeouts: {
+      player1: Math.random() < 0.2, // 20% chance de usar timeout
+      player2: Math.random() < 0.2,
+    },
   };
 };
 

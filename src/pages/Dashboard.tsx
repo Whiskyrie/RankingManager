@@ -37,6 +37,7 @@ export const Dashboard: React.FC = () => {
     loadChampionship,
     isLoading,
     error,
+    createTestChampionship,
   } = useChampionshipStore();
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);

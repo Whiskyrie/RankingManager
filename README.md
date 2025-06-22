@@ -63,6 +63,8 @@ Sistema web completo e profissional para gerenciamento de campeonatos de tênis 
 - ✅ Sistema de filtros e busca
 - ✅ Estatísticas em tempo real
 - ✅ Dados de demonstração integrados
+- ✅ **Função de teste rápido** - preenchimento automático de grupos
+- ✅ **Criação de campeonatos de teste** com dados realistas
 
 ### ✅ Validações Críticas
 - ✅ Validação de scores (máximo 11 pontos por set, exceto em empate 10-10)
@@ -102,7 +104,7 @@ Sistema web completo e profissional para gerenciamento de campeonatos de tênis 
 
 ### 1. Criando um Campeonato
 1. Acesse o sistema
-2. Clique em "Novo Campeonato"
+2. Clique em "Novo Campeonato" ou "🧪 Teste Rápido" para dados de exemplo
 3. Preencha as informações:
    - Nome do campeonato
    - Categoria
@@ -118,10 +120,11 @@ Sistema web completo e profissional para gerenciamento de campeonatos de tênis 
    - Insira os scores de cada set
    - Configure timeouts se necessário
    - Salve o resultado
+4. **Para testes:** Use o botão "🎲 Preencher Automaticamente" para completar todos os grupos com resultados válidos
 
 ### 3. Acompanhando o Mata-mata
 1. Após completar os grupos, clique em "Avançar para Mata-mata"
-2. Visualize a chave eliminatória
+2. Visualize a chave eliminatória (incluindo segunda divisão se habilitada)
 3. Lance resultados das partidas eliminatórias
 4. Acompanhe até a final e definição do campeão
 

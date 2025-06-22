@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useChampionshipStore } from "../store/championship";
-import { MatchCard } from "../components/championship/MatchCard";
 import { BracketVisualization } from "../components/championship/BracketVisualization";
+import { MatchCard } from "../components/championship/MatchCard";
 import {
   Card,
   CardContent,
@@ -10,12 +10,6 @@ import {
 } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "../components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -37,8 +31,6 @@ import { Match } from "../types";
 export const KnockoutBracket: React.FC = () => {
   const { currentChampionship, updateMatchResult, setWalkover } =
     useChampionshipStore();
-
-  const [selectedRound, setSelectedRound] = useState<string>("all");
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
 
   if (!currentChampionship) {
@@ -99,20 +91,6 @@ export const KnockoutBracket: React.FC = () => {
     }))
     .filter((round) => round.matches.length > 0);
 
-  // Rodadas da segunda divisão
-  const secondDivisionRoundNames = [
-    "Oitavas 2ª Div",
-    "Quartas 2ª Div",
-    "Semifinal 2ª Div",
-    "Final 2ª Div",
-  ];
-  const secondDivisionRounds = secondDivisionRoundNames
-    .map((name) => ({
-      name,
-      matches: secondDivisionMatches.filter((m) => m.round === name),
-    }))
-    .filter((round) => round.matches.length > 0);
-
   // Encontrar finalistas e campeão
   const finalMatch = knockoutMatches.find((m) => m.round === "Final");
   const champion = finalMatch?.isCompleted ? finalMatch.winner : null;
@@ -130,19 +108,6 @@ export const KnockoutBracket: React.FC = () => {
 
   const handleDownloadBracket = () => {
     generateKnockoutBracket(currentChampionship);
-  };
-
-  const getRoundIcon = (roundName: string) => {
-    switch (roundName) {
-      case "Final":
-        return <Trophy className="h-4 w-4 text-yellow-500" />;
-      case "Semifinal":
-        return <Medal className="h-4 w-4 text-gray-400" />;
-      case "Quartas":
-        return <Award className="h-4 w-4 text-amber-600" />;
-      default:
-        return <Target className="h-4 w-4 text-blue-500" />;
-    }
   };
 
   return (
@@ -330,212 +295,44 @@ export const KnockoutBracket: React.FC = () => {
         </div>
 
         {/* Visualização da Chave */}
-        <Tabs defaultValue="bracket" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="bracket">Chave Visual</TabsTrigger>
-            <TabsTrigger value="main">1ª Divisão</TabsTrigger>
-            <TabsTrigger value="second">2ª Divisão</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="bracket">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="h-5 w-5" />
+              Chave Eliminatória
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <BracketVisualization
               onMatchClick={(match) => setSelectedMatch(match)}
             />
+          </CardContent>
+        </Card>
 
-            {/* Modal para detalhes da partida */}
-            {selectedMatch && (
-              <Dialog
-                open={!!selectedMatch}
-                onOpenChange={() => setSelectedMatch(null)}
-              >
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Detalhes da Partida</DialogTitle>
-                  </DialogHeader>
-                  <div className="p-4">
-                    <MatchCard
-                      match={selectedMatch}
-                      onUpdateResult={updateMatchResult}
-                      onSetWalkover={setWalkover}
-                      bestOf={currentChampionship.knockoutBestOf}
-                      isEditable={currentChampionship.status !== "completed"}
-                    />
-                  </div>
-                </DialogContent>
-              </Dialog>
-            )}
-          </TabsContent>
-
-          <TabsContent value="main" className="space-y-6">
-            {/* Seletor de Rodada - 1ª Divisão */}
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4">
-                  Primeira Divisão - Selecionar Rodada
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant={selectedRound === "all" ? "default" : "outline"}
-                    onClick={() => setSelectedRound("all")}
-                  >
-                    Todas as Rodadas
-                  </Button>
-                  {rounds.map((round) => (
-                    <Button
-                      key={round.name}
-                      variant={
-                        selectedRound === round.name ? "default" : "outline"
-                      }
-                      onClick={() => setSelectedRound(round.name)}
-                      className="flex items-center gap-2"
-                    >
-                      {getRoundIcon(round.name)}
-                      {round.name}
-                    </Button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Partidas por Rodada - 1ª Divisão */}
-            {rounds
-              .filter(
-                (round) =>
-                  selectedRound === "all" || round.name === selectedRound
-              )
-              .map((round) => (
-                <Card key={round.name}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      {getRoundIcon(round.name)}
-                      {round.name} - 1ª Divisão
-                      <Badge variant="outline" className="ml-auto">
-                        {round.matches.filter((m) => m.isCompleted).length}/
-                        {round.matches.length}
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {round.matches.map((match) => (
-                        <MatchCard
-                          key={match.id}
-                          match={match}
-                          onUpdateResult={updateMatchResult}
-                          onSetWalkover={setWalkover}
-                          bestOf={currentChampionship.knockoutBestOf}
-                          isEditable={
-                            currentChampionship.status !== "completed"
-                          }
-                        />
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-
-            {rounds.length === 0 && (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <Target className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Chave não gerada
-                  </h3>
-                  <p className="text-gray-500">
-                    A chave eliminatória ainda não foi gerada. Complete a fase
-                    de grupos primeiro.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="second" className="space-y-6">
-            {/* Seletor de Rodada - 2ª Divisão */}
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4">
-                  Segunda Divisão - Selecionar Rodada
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant={selectedRound === "all" ? "default" : "outline"}
-                    onClick={() => setSelectedRound("all")}
-                  >
-                    Todas as Rodadas
-                  </Button>
-                  {secondDivisionRounds.map((round) => (
-                    <Button
-                      key={round.name}
-                      variant={
-                        selectedRound === round.name ? "default" : "outline"
-                      }
-                      onClick={() => setSelectedRound(round.name)}
-                      className="flex items-center gap-2"
-                    >
-                      {getRoundIcon(round.name)}
-                      {round.name}
-                    </Button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Partidas por Rodada - 2ª Divisão */}
-            {secondDivisionRounds
-              .filter(
-                (round) =>
-                  selectedRound === "all" || round.name === selectedRound
-              )
-              .map((round) => (
-                <Card key={round.name}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      {getRoundIcon(round.name)}
-                      {round.name}
-                      <Badge variant="outline" className="ml-auto">
-                        {round.matches.filter((m) => m.isCompleted).length}/
-                        {round.matches.length}
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {round.matches.map((match) => (
-                        <MatchCard
-                          key={match.id}
-                          match={match}
-                          onUpdateResult={updateMatchResult}
-                          onSetWalkover={setWalkover}
-                          bestOf={currentChampionship.knockoutBestOf}
-                          isEditable={
-                            currentChampionship.status !== "completed"
-                          }
-                        />
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-
-            {secondDivisionRounds.length === 0 && (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Segunda divisão vazia
-                  </h3>
-                  <p className="text-gray-500">
-                    Não há atletas eliminados suficientes para formar a segunda
-                    divisão.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        </Tabs>
+        {/* Modal para detalhes da partida */}
+        {selectedMatch && (
+          <Dialog
+            open={!!selectedMatch}
+            onOpenChange={() => setSelectedMatch(null)}
+          >
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>
+                  {selectedMatch.player1?.name} vs {selectedMatch.player2?.name}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="p-4">
+                <MatchCard
+                  match={selectedMatch}
+                  onUpdateResult={updateMatchResult}
+                  onSetWalkover={setWalkover}
+                  bestOf={currentChampionship.knockoutBestOf}
+                  isEditable={currentChampionship.status !== "completed"}
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </div>
   );

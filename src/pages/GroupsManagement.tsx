@@ -35,6 +35,7 @@ export const GroupsManagement: React.FC = () => {
     setWalkover,
     generateKnockoutBracket,
     getQualifiedAthletes,
+    fillGroupsWithRandomResults,
   } = useChampionshipStore();
 
   const [selectedGroup, setSelectedGroup] = useState<string>("");
@@ -76,6 +77,16 @@ export const GroupsManagement: React.FC = () => {
     }
   };
 
+  const handleFillGroupsWithResults = async () => {
+    if (
+      confirm(
+        "Tem certeza que deseja preencher automaticamente todos os grupos com resultados aleatórios? Esta ação irá completar todas as partidas pendentes."
+      )
+    ) {
+      await fillGroupsWithRandomResults();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -101,6 +112,17 @@ export const GroupsManagement: React.FC = () => {
               >
                 {allGroupsCompleted ? "Fase Concluída" : "Em Andamento"}
               </Badge>
+
+              {/* Botão para preencher grupos automaticamente */}
+              {!allGroupsCompleted && currentChampionship.groups.length > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={handleFillGroupsWithResults}
+                  className="bg-yellow-50 border-yellow-300 text-yellow-700 hover:bg-yellow-100"
+                >
+                  🎲 Preencher Automaticamente
+                </Button>
+              )}
 
               {allGroupsCompleted &&
                 currentChampionship.status === "groups" && (
