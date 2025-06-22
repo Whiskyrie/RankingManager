@@ -640,6 +640,7 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
       m.round?.includes("2ª Div")
     );
 
+    // ✅ RODADAS INCLUINDO DISPUTA DE 3º LUGAR
     const mainRounds = ["Oitavas", "Quartas", "Semifinal", "Final"];
     const secondDivRounds = [
       "Oitavas 2ª Div",
@@ -647,6 +648,12 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
       "Semifinal 2ª Div",
       "Final 2ª Div",
     ];
+
+    // ✅ ADICIONAR DISPUTAS DE 3º LUGAR SE HABILITADAS
+    if (state.currentChampionship.hasThirdPlace) {
+      mainRounds.splice(-1, 0, "3º Lugar"); // Inserir antes da Final
+      secondDivRounds.splice(-1, 0, "3º Lugar 2ª Div"); // Inserir antes da Final 2ª Div
+    }
 
     await checkRoundsProgression(mainMatches, mainRounds, state, get);
     await checkRoundsProgression(secondDivMatches, secondDivRounds, state, get);
@@ -689,9 +696,15 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
           state.currentChampionship!.groupsBestOf
         );
 
+        // Ensure sets have all required properties for Set type
+        const validSets = testResult.sets.map((set) => ({
+          player1Score: set.player1Score,
+          player2Score: set.player2Score,
+        }));
+
         return {
           ...match,
-          sets: testResult.sets,
+          sets: validSets,
           isCompleted: true,
           completedAt: new Date(),
           timeoutsUsed: {
@@ -699,7 +712,7 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
             player2: testResult.timeouts.player2,
           },
           winner: getMatchWinner(
-            testResult.sets,
+            validSets,
             state.currentChampionship!.groupsBestOf,
             match.player1Id,
             match.player2Id
@@ -951,6 +964,50 @@ async function checkRoundsProgression(
 
       if (newMatches.length > 0) {
         console.log(`Gerando ${newMatches.length} partidas para ${nextRound}`);
+
+        const updatedGroups = state.currentChampionship.groups.map(
+          (group, index) =>
+            index === 0
+              ? { ...group, matches: [...group.matches, ...newMatches] }
+              : group
+        );
+
+        const updatedChampionship = {
+          ...state.currentChampionship,
+          groups: updatedGroups,
+          totalMatches:
+            state.currentChampionship.totalMatches + newMatches.length,
+        };
+
+        await get().updateChampionship(updatedChampionship);
+      }
+    }
+  }
+
+  // ✅ VERIFICAR SE PRECISA GERAR DISPUTA DE 3º LUGAR
+  const semifinalRound = rounds.find((r) => r.includes("Semifinal"));
+  const thirdPlaceRound = rounds.find((r) => r.includes("3º Lugar"));
+
+  if (semifinalRound && thirdPlaceRound) {
+    const semifinalMatches = matches.filter((m) => m.round === semifinalRound);
+    const thirdPlaceMatches = matches.filter(
+      (m) => m.round === thirdPlaceRound
+    );
+
+    // Se tem 2 semifinais completadas e não tem disputa de 3º lugar
+    if (
+      semifinalMatches.length === 2 &&
+      semifinalMatches.every((m) => m.isCompleted) &&
+      thirdPlaceMatches.length === 0
+    ) {
+      const newMatches = generateNextRoundMatches(
+        semifinalMatches,
+        thirdPlaceRound,
+        state.currentChampionship.athletes
+      );
+
+      if (newMatches.length > 0) {
+        console.log(`Gerando disputa de 3º lugar para ${thirdPlaceRound}`);
 
         const updatedGroups = state.currentChampionship.groups.map(
           (group, index) =>

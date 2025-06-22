@@ -21,6 +21,8 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
     .flatMap((group) => group.matches)
     .filter((match) => match.phase === "knockout");
 
+  console.log("🔍 Debug - Knockout matches:", knockoutMatches);
+
   // Separar partidas principais das de segunda divisão
   const mainMatches = knockoutMatches.filter(
     (m) => !m.round?.includes("2ª Div")
@@ -28,6 +30,9 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
   const secondDivisionMatches = knockoutMatches.filter((m) =>
     m.round?.includes("2ª Div")
   );
+
+  console.log("🔍 Debug - Main matches:", mainMatches);
+  console.log("🔍 Debug - Second division matches:", secondDivisionMatches);
 
   const BracketMatch: React.FC<{
     match: Match;
@@ -70,9 +75,9 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
         } ${match.isCompleted ? "bg-green-50" : "bg-white"}`}
         onClick={() => onMatchClick?.(match)}
         style={{
-          transform: "translateZ(0)", // Força camada de composição
-          backfaceVisibility: "hidden", // Otimização de performance
-          margin: "8px", // ✅ Margem para evitar corte
+          transform: "translateZ(0)",
+          backfaceVisibility: "hidden",
+          margin: "8px",
         }}
       >
         <CardContent className="p-3">
@@ -200,8 +205,6 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
 
     return (
       <div className="flex flex-col items-center min-h-full mx-4">
-        {" "}
-        {/* ✅ Espaçamento reduzido */}
         <div
           className={`sticky top-0 z-10 mb-4 p-3 rounded-lg shadow-sm border-2 ${
             isSecondDivision
@@ -237,8 +240,6 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
           </div>
         </div>
         <div className="flex flex-col justify-around flex-1 space-y-6 w-full">
-          {" "}
-          {/* ✅ Espaçamento reduzido */}
           {matches.map((match) => (
             <div key={match.id} className="relative">
               <BracketMatch match={match} isSecondDivision={isSecondDivision} />
@@ -251,18 +252,15 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
 
   const BracketConnector: React.FC = () => (
     <div className="flex items-center justify-center mx-2">
-      {" "}
-      {/* ✅ Espaçamento mais próximo */}
       <div className="flex flex-col items-center">
-        <div className="w-8 h-px bg-gray-300"></div> {/* ✅ Conector menor */}
-        <div className="w-px h-6 bg-gray-300"></div>{" "}
-        {/* ✅ Conector vertical menor */}
-        <div className="w-8 h-px bg-gray-300"></div> {/* ✅ Conector menor */}
+        <div className="w-8 h-px bg-gray-300"></div>
+        <div className="w-px h-6 bg-gray-300"></div>
+        <div className="w-8 h-px bg-gray-300"></div>
       </div>
     </div>
   );
 
-  // Organizar rodadas principais
+  // ✅ CORRIGIR: Incluir todas as rodadas incluindo Final
   const mainRounds = ["Oitavas", "Quartas", "Semifinal", "Final"];
   const organizedMainRounds = mainRounds
     .map((roundName) => ({
@@ -271,10 +269,13 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
     }))
     .filter((round) => round.matches.length > 0);
 
-  // ✅ ADICIONAR TERCEIRO LUGAR
+  // ✅ ADICIONAR TERCEIRO LUGAR PARA AMBAS AS DIVISÕES
   const thirdPlaceMatch = mainMatches.find((m) => m.round === "3º Lugar");
+  const thirdPlaceSecondDiv = secondDivisionMatches.find(
+    (m) => m.round === "3º Lugar 2ª Div"
+  );
 
-  // Organizar rodadas da segunda divisão
+  // ✅ CORRIGIR: Incluir todas as rodadas da segunda divisão incluindo Final
   const secondDivRounds = [
     "Oitavas 2ª Div",
     "Quartas 2ª Div",
@@ -288,24 +289,50 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
     }))
     .filter((round) => round.matches.length > 0);
 
+  console.log("🔍 Debug - Organized main rounds:", organizedMainRounds);
+  console.log(
+    "🔍 Debug - Organized second div rounds:",
+    organizedSecondDivRounds
+  );
+
   return (
     <div className="space-y-8">
-      {" "}
+      {/* ✅ DEBUG INFO */}
+      {process.env.NODE_ENV === "development" && (
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardContent className="p-4">
+            <h4 className="font-semibold text-yellow-800 mb-2">Debug Info:</h4>
+            <div className="text-sm space-y-1">
+              <div>Total knockout matches: {knockoutMatches.length}</div>
+              <div>Main matches: {mainMatches.length}</div>
+              <div>Second division matches: {secondDivisionMatches.length}</div>
+              <div>Main rounds with matches: {organizedMainRounds.length}</div>
+              <div>
+                Second div rounds with matches:{" "}
+                {organizedSecondDivRounds.length}
+              </div>
+              <div>Third place main: {thirdPlaceMatch ? "✅" : "❌"}</div>
+              <div>
+                Third place 2nd div: {thirdPlaceSecondDiv ? "✅" : "❌"}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Divisão Principal */}
       {organizedMainRounds.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-blue-600">
               <Trophy className="h-5 w-5" />
-              Primeira Divisão
+              Primeira Divisão ({mainMatches.length} partidas)
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto pb-4 pt-4">
-              {" "}
-              {/* ✅ Padding para evitar corte */}
               <div
-                className="flex items-stretch min-h-96 px-4" // ✅ Padding horizontal
+                className="flex items-stretch min-h-96 px-4"
                 style={{ minWidth: "max-content" }}
               >
                 {organizedMainRounds.map((round, index) => (
@@ -322,13 +349,13 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
               </div>
             </div>
 
-            {/* ✅ SEÇÃO PARA TERCEIRO LUGAR */}
+            {/* ✅ SEÇÃO PARA TERCEIRO LUGAR PRIMEIRA DIVISÃO */}
             {thirdPlaceMatch && (
               <div className="mt-8 border-t pt-6">
                 <div className="text-center">
                   <h3 className="text-lg font-semibold text-amber-600 mb-4 flex items-center justify-center gap-2">
                     <Award className="h-5 w-5" />
-                    Disputa de 3º Lugar
+                    Disputa de 3º Lugar - Primeira Divisão
                   </h3>
                   <div className="flex justify-center">
                     <BracketMatch
@@ -342,21 +369,20 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
           </CardContent>
         </Card>
       )}
+
       {/* Segunda Divisão */}
       {organizedSecondDivRounds.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-orange-600">
               <Users className="h-5 w-5" />
-              Segunda Divisão
+              Segunda Divisão ({secondDivisionMatches.length} partidas)
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto pb-4 pt-4">
-              {" "}
-              {/* ✅ Padding para evitar corte */}
               <div
-                className="flex items-stretch min-h-96 px-4" // ✅ Padding horizontal
+                className="flex items-stretch min-h-96 px-4"
                 style={{ minWidth: "max-content" }}
               >
                 {organizedSecondDivRounds.map((round, index) => (
@@ -373,9 +399,28 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
                 ))}
               </div>
             </div>
+
+            {/* ✅ SEÇÃO PARA TERCEIRO LUGAR SEGUNDA DIVISÃO */}
+            {thirdPlaceSecondDiv && (
+              <div className="mt-8 border-t pt-6">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-orange-600 mb-4 flex items-center justify-center gap-2">
+                    <Award className="h-5 w-5" />
+                    Disputa de 3º Lugar - Segunda Divisão
+                  </h3>
+                  <div className="flex justify-center">
+                    <BracketMatch
+                      match={thirdPlaceSecondDiv}
+                      isSecondDivision={true}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
+
       {/* Mensagem quando não há chaves */}
       {organizedMainRounds.length === 0 &&
         organizedSecondDivRounds.length === 0 && (

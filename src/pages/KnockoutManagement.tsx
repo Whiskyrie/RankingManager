@@ -5,8 +5,7 @@ import { Card, CardContent } from "../components/ui/card";
 import { Trophy } from "lucide-react";
 
 export const KnockoutManagement: React.FC = () => {
-  const { currentChampionship, generateKnockoutBracket } =
-    useChampionshipStore();
+  const { currentChampionship } = useChampionshipStore();
 
   if (!currentChampionship) {
     return (
@@ -26,16 +25,6 @@ export const KnockoutManagement: React.FC = () => {
     );
   }
 
-  const handleGenerateBracket = async () => {
-    if (
-      confirm(
-        "Tem certeza que deseja gerar a chave mata-mata? Esta ação não pode ser desfeita."
-      )
-    ) {
-      await generateKnockoutBracket();
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -49,7 +38,7 @@ export const KnockoutManagement: React.FC = () => {
           </div>
         </div>
 
-        {/* ✅ USAR APENAS BRACKET VISUALIZATION (MODO SIMPLES) */}
+        {/* Bracket Visualization */}
         <BracketVisualization />
       </div>
     </div>

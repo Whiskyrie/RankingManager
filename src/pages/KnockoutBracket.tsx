@@ -106,6 +106,14 @@ export const KnockoutBracket: React.FC = () => {
     ? thirdPlaceMatch.winner
     : null;
 
+  // ✅ ADICIONAR TERCEIRO LUGAR DA SEGUNDA DIVISÃO
+  const thirdPlaceSecondDivMatch = knockoutMatches.find(
+    (m) => m.round === "3º Lugar 2ª Div"
+  );
+  const thirdPlaceSecondDiv = thirdPlaceSecondDivMatch?.isCompleted
+    ? thirdPlaceSecondDivMatch.winner
+    : null;
+
   const handleDownloadBracket = () => {
     generateKnockoutBracket(currentChampionship);
   };
@@ -150,7 +158,7 @@ export const KnockoutBracket: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Pódium - se o campeonato estiver finalizado */}
         {currentChampionship.status === "completed" &&
-          (champion || finalist || thirdPlace) && (
+          (champion || finalist || thirdPlace || thirdPlaceSecondDiv) && (
             <Card className="mb-8 bg-gradient-to-r from-yellow-50 to-orange-50">
               <CardHeader>
                 <CardTitle className="text-center flex items-center justify-center gap-2">
@@ -160,64 +168,96 @@ export const KnockoutBracket: React.FC = () => {
               </CardHeader>
 
               <CardContent>
-                <div className="flex justify-center items-end gap-8">
-                  {/* 2º Lugar */}
-                  {finalist && (
-                    <div className="text-center">
-                      <div className="w-20 h-16 bg-gray-200 rounded-lg flex items-center justify-center mb-2">
-                        <Medal className="h-8 w-8 text-gray-500" />
+                {/* ✅ PÓDIUM PRIMEIRA DIVISÃO */}
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold text-blue-600 mb-4 text-center">
+                    Primeira Divisão
+                  </h3>
+                  <div className="flex justify-center items-end gap-8">
+                    {/* 2º Lugar */}
+                    {finalist && (
+                      <div className="text-center">
+                        <div className="w-20 h-16 bg-gray-200 rounded-lg flex items-center justify-center mb-2">
+                          <Medal className="h-8 w-8 text-gray-500" />
+                        </div>
+                        <div className="font-semibold text-gray-700">
+                          2º Lugar
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {
+                            currentChampionship.athletes.find(
+                              (a) => a.id === finalist
+                            )?.name
+                          }
+                        </div>
                       </div>
-                      <div className="font-semibold text-gray-700">
-                        2º Lugar
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {
-                          currentChampionship.athletes.find(
-                            (a) => a.id === finalist
-                          )?.name
-                        }
-                      </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* 1º Lugar */}
-                  {champion && (
-                    <div className="text-center">
-                      <div className="w-24 h-20 bg-yellow-200 rounded-lg flex items-center justify-center mb-2">
-                        <Trophy className="h-10 w-10 text-yellow-600" />
+                    {/* 1º Lugar */}
+                    {champion && (
+                      <div className="text-center">
+                        <div className="w-24 h-20 bg-yellow-200 rounded-lg flex items-center justify-center mb-2">
+                          <Trophy className="h-10 w-10 text-yellow-600" />
+                        </div>
+                        <div className="font-bold text-yellow-700 text-lg">
+                          CAMPEÃO
+                        </div>
+                        <div className="text-sm text-gray-700">
+                          {
+                            currentChampionship.athletes.find(
+                              (a) => a.id === champion
+                            )?.name
+                          }
+                        </div>
                       </div>
-                      <div className="font-bold text-yellow-700 text-lg">
-                        CAMPEÃO
-                      </div>
-                      <div className="text-sm text-gray-700">
-                        {
-                          currentChampionship.athletes.find(
-                            (a) => a.id === champion
-                          )?.name
-                        }
-                      </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* 3º Lugar */}
-                  {thirdPlace && (
-                    <div className="text-center">
-                      <div className="w-20 h-16 bg-amber-200 rounded-lg flex items-center justify-center mb-2">
-                        <Award className="h-8 w-8 text-amber-600" />
+                    {/* 3º Lugar */}
+                    {thirdPlace && (
+                      <div className="text-center">
+                        <div className="w-20 h-16 bg-amber-200 rounded-lg flex items-center justify-center mb-2">
+                          <Award className="h-8 w-8 text-amber-600" />
+                        </div>
+                        <div className="font-semibold text-amber-700">
+                          3º Lugar
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {
+                            currentChampionship.athletes.find(
+                              (a) => a.id === thirdPlace
+                            )?.name
+                          }
+                        </div>
                       </div>
-                      <div className="font-semibold text-amber-700">
-                        3º Lugar
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {
-                          currentChampionship.athletes.find(
-                            (a) => a.id === thirdPlace
-                          )?.name
-                        }
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
+
+                {/* ✅ PÓDIUM SEGUNDA DIVISÃO */}
+                {thirdPlaceSecondDiv && (
+                  <div className="border-t pt-6">
+                    <h3 className="text-lg font-semibold text-orange-600 mb-4 text-center">
+                      Segunda Divisão
+                    </h3>
+                    <div className="flex justify-center">
+                      <div className="text-center">
+                        <div className="w-20 h-16 bg-orange-200 rounded-lg flex items-center justify-center mb-2">
+                          <Award className="h-8 w-8 text-orange-600" />
+                        </div>
+                        <div className="font-semibold text-orange-700">
+                          3º Lugar - 2ª Divisão
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {
+                            currentChampionship.athletes.find(
+                              (a) => a.id === thirdPlaceSecondDiv
+                            )?.name
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
