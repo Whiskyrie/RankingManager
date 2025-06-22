@@ -179,25 +179,251 @@ function updateStandingsWithMatch(
   });
 }
 
-// ✅ FUNÇÃO CORRIGIDA PARA VERIFICAÇÃO E PROGRESSÃO DAS RODADAS DO MATA-MATA
+// ✅ SOLUÇÃO ROBUSTA E SIMPLIFICADA PARA GERAÇÃO DE FINAL E TERCEIRO LUGAR
+
+// Função principal para verificar e gerar próximas rodadas
 async function checkRoundsProgression(
   matches: Match[],
   rounds: string[],
   state: any,
   get: any
 ) {
-  console.log("🔄 Verificando progressão das rodadas:", rounds);
+  console.log("🔄 [ROBUST] Verificando progressão das rodadas:", rounds);
 
-  // ✅ PRIMEIRA PARTE: Gerar rodadas sequenciais normais (exceto 3º lugar)
+  // ✅ ETAPA 1: GERAR FINAL PRIMEIRO (prioridade máxima)
+  await handleFinalGeneration(matches, rounds, state, get);
+
+  // ✅ ETAPA 2: GERAR TERCEIRO LUGAR (se habilitado)
+  await handleThirdPlaceGeneration(matches, rounds, state, get);
+
+  // ✅ ETAPA 3: GERAR OUTRAS RODADAS SEQUENCIAIS
+  await handleSequentialRounds(matches, rounds, state, get);
+
+  console.log("🔄 [ROBUST] Verificação de progressão concluída");
+}
+
+// ✅ FUNÇÃO DEDICADA PARA GERAÇÃO DA FINAL
+async function handleFinalGeneration(
+  matches: Match[],
+  rounds: string[],
+  state: any,
+  get: any
+) {
+  const finalRound = rounds.find((r) => r === "Final" || r === "Final 2ª Div");
+  if (!finalRound) return;
+
+  console.log(`🏆 [FINAL] Verificando geração da ${finalRound}`);
+
+  const semifinalRound = finalRound.includes("2ª Div")
+    ? "Semifinal 2ª Div"
+    : "Semifinal";
+  const semifinalMatches = matches.filter((m) => m.round === semifinalRound);
+  const finalMatches = matches.filter((m) => m.round === finalRound);
+
+  console.log(
+    `🏆 [FINAL] Semifinais (${semifinalRound}): ${semifinalMatches.length} encontradas`
+  );
+  console.log(
+    `🏆 [FINAL] Finals (${finalRound}): ${finalMatches.length} encontradas`
+  );
+
+  // ✅ CONDIÇÕES PARA GERAR FINAL:
+  // 1. Exatamente 2 semifinais
+  // 2. Ambas semifinais completadas
+  // 3. Nenhuma final existe ainda
+  if (
+    semifinalMatches.length === 2 &&
+    semifinalMatches.every((m) => m.isCompleted) &&
+    finalMatches.length === 0
+  ) {
+    console.log(
+      `✅ [FINAL] Gerando ${finalRound} com vencedores das semifinais`
+    );
+
+    // Log detalhado dos vencedores
+    semifinalMatches.forEach((match, index) => {
+      const winnerName =
+        match.winner === match.player1Id
+          ? match.player1?.name
+          : match.player2?.name;
+      console.log(
+        `  Semifinal ${index + 1}: ${match.player1?.name} vs ${
+          match.player2?.name
+        } → Vencedor: ${winnerName}`
+      );
+    });
+
+    const newMatches = generateNextRoundMatches(
+      semifinalMatches,
+      finalRound,
+      state.currentChampionship.athletes
+    );
+
+    if (newMatches.length > 0) {
+      console.log(
+        `🎯 [FINAL] Criando ${newMatches.length} partida(s) da final`
+      );
+
+      const updatedGroups = state.currentChampionship.groups.map(
+        (group, index) =>
+          index === 0
+            ? { ...group, matches: [...group.matches, ...newMatches] }
+            : group
+      );
+
+      const updatedChampionship = {
+        ...state.currentChampionship,
+        groups: updatedGroups,
+        totalMatches:
+          state.currentChampionship.totalMatches + newMatches.length,
+      };
+
+      await get().updateChampionship(updatedChampionship);
+      console.log(`✅ [FINAL] ${finalRound} gerada com sucesso!`);
+
+      // Log da partida criada
+      newMatches.forEach((match) => {
+        console.log(
+          `  Final criada: ${match.player1?.name} vs ${match.player2?.name}`
+        );
+      });
+    } else {
+      console.log(`❌ [FINAL] Falha na geração de partidas para ${finalRound}`);
+    }
+  } else {
+    console.log(`⏳ [FINAL] Condições não atendidas para ${finalRound}:`);
+    console.log(`  - Semifinais: ${semifinalMatches.length}/2`);
+    console.log(
+      `  - Completadas: ${
+        semifinalMatches.filter((m) => m.isCompleted).length
+      }/2`
+    );
+    console.log(`  - Final existente: ${finalMatches.length}/0`);
+  }
+}
+
+// ✅ FUNÇÃO DEDICADA PARA GERAÇÃO DO TERCEIRO LUGAR
+async function handleThirdPlaceGeneration(
+  matches: Match[],
+  rounds: string[],
+  state: any,
+  get: any
+) {
+  if (!state.currentChampionship.hasThirdPlace) {
+    console.log("🥉 [3RD] Terceiro lugar desabilitado");
+    return;
+  }
+
+  const thirdPlaceRound = rounds.find((r) => r.includes("3º Lugar"));
+  if (!thirdPlaceRound) return;
+
+  console.log(`🥉 [3RD] Verificando geração de ${thirdPlaceRound}`);
+
+  const semifinalRound = thirdPlaceRound.includes("2ª Div")
+    ? "Semifinal 2ª Div"
+    : "Semifinal";
+  const semifinalMatches = matches.filter((m) => m.round === semifinalRound);
+  const thirdPlaceMatches = matches.filter((m) => m.round === thirdPlaceRound);
+
+  console.log(
+    `🥉 [3RD] Semifinais (${semifinalRound}): ${semifinalMatches.length} encontradas`
+  );
+  console.log(
+    `🥉 [3RD] Terceiro lugar (${thirdPlaceRound}): ${thirdPlaceMatches.length} encontradas`
+  );
+
+  // ✅ CONDIÇÕES PARA GERAR TERCEIRO LUGAR:
+  // 1. Exatamente 2 semifinais
+  // 2. Ambas semifinais completadas
+  // 3. Nenhuma disputa de terceiro lugar existe ainda
+  if (
+    semifinalMatches.length === 2 &&
+    semifinalMatches.every((m) => m.isCompleted) &&
+    thirdPlaceMatches.length === 0
+  ) {
+    console.log(
+      `✅ [3RD] Gerando ${thirdPlaceRound} com perdedores das semifinais`
+    );
+
+    // Log detalhado dos perdedores
+    semifinalMatches.forEach((match, index) => {
+      const loserName =
+        match.winner === match.player1Id
+          ? match.player2?.name
+          : match.player1?.name;
+      console.log(
+        `  Semifinal ${index + 1}: ${match.player1?.name} vs ${
+          match.player2?.name
+        } → Perdedor: ${loserName}`
+      );
+    });
+
+    const newMatches = generateNextRoundMatches(
+      semifinalMatches,
+      thirdPlaceRound,
+      state.currentChampionship.athletes
+    );
+
+    if (newMatches.length > 0) {
+      console.log(
+        `🎯 [3RD] Criando ${newMatches.length} partida(s) de terceiro lugar`
+      );
+
+      const updatedGroups = state.currentChampionship.groups.map(
+        (group, index) =>
+          index === 0
+            ? { ...group, matches: [...group.matches, ...newMatches] }
+            : group
+      );
+
+      const updatedChampionship = {
+        ...state.currentChampionship,
+        groups: updatedGroups,
+        totalMatches:
+          state.currentChampionship.totalMatches + newMatches.length,
+      };
+
+      await get().updateChampionship(updatedChampionship);
+      console.log(`✅ [3RD] ${thirdPlaceRound} gerada com sucesso!`);
+
+      // Log da partida criada
+      newMatches.forEach((match) => {
+        console.log(
+          `  Terceiro lugar criado: ${match.player1?.name} vs ${match.player2?.name}`
+        );
+      });
+    } else {
+      console.log(
+        `❌ [3RD] Falha na geração de partidas para ${thirdPlaceRound}`
+      );
+    }
+  } else {
+    console.log(`⏳ [3RD] Condições não atendidas para ${thirdPlaceRound}:`);
+    console.log(`  - Semifinais: ${semifinalMatches.length}/2`);
+    console.log(
+      `  - Completadas: ${
+        semifinalMatches.filter((m) => m.isCompleted).length
+      }/2`
+    );
+    console.log(`  - Terceiro lugar existente: ${thirdPlaceMatches.length}/0`);
+  }
+}
+
+// ✅ FUNÇÃO PARA GERAR OUTRAS RODADAS SEQUENCIAIS
+async function handleSequentialRounds(
+  matches: Match[],
+  rounds: string[],
+  state: any,
+  get: any
+) {
+  console.log("🔄 [SEQ] Verificando rodadas sequenciais");
+
   for (let i = 0; i < rounds.length - 1; i++) {
     const currentRound = rounds[i];
     const nextRound = rounds[i + 1];
 
-    // ✅ PULAR GERAÇÃO AUTOMÁTICA DE 3º LUGAR NESTE LOOP
-    if (nextRound.includes("3º Lugar")) {
-      console.log(
-        `⏭️ Pulando geração automática de ${nextRound} - será tratado separadamente`
-      );
+    // ✅ PULAR Final e Terceiro lugar (já tratados acima)
+    if (nextRound.includes("Final") || nextRound.includes("3º Lugar")) {
       continue;
     }
 
@@ -209,7 +435,7 @@ async function checkRoundsProgression(
       currentRoundMatches.every((m) => m.isCompleted) &&
       nextRoundMatches.length === 0
     ) {
-      console.log(`✅ Gerando ${nextRound} a partir de ${currentRound}`);
+      console.log(`✅ [SEQ] Gerando ${nextRound} a partir de ${currentRound}`);
 
       const newMatches = generateNextRoundMatches(
         currentRoundMatches,
@@ -218,7 +444,9 @@ async function checkRoundsProgression(
       );
 
       if (newMatches.length > 0) {
-        console.log(`Gerando ${newMatches.length} partidas para ${nextRound}`);
+        console.log(
+          `🎯 [SEQ] Criando ${newMatches.length} partida(s) para ${nextRound}`
+        );
 
         const updatedGroups = state.currentChampionship.groups.map(
           (group, index) =>
@@ -235,85 +463,10 @@ async function checkRoundsProgression(
         };
 
         await get().updateChampionship(updatedChampionship);
+        console.log(`✅ [SEQ] ${nextRound} gerada com sucesso!`);
       }
     }
   }
-
-  // ✅ SEGUNDA PARTE: Tratar especificamente a disputa de 3º lugar
-  const semifinalRound = rounds.find((r) => r.includes("Semifinal"));
-  const thirdPlaceRound = rounds.find((r) => r.includes("3º Lugar"));
-
-  if (
-    semifinalRound &&
-    thirdPlaceRound &&
-    state.currentChampionship.hasThirdPlace
-  ) {
-    console.log(`🥉 Verificando geração de disputa de terceiro lugar`);
-
-    const semifinalMatches = matches.filter((m) => m.round === semifinalRound);
-    const thirdPlaceMatches = matches.filter(
-      (m) => m.round === thirdPlaceRound
-    );
-
-    console.log(
-      `Semifinais: ${semifinalMatches.length} (${
-        semifinalMatches.filter((m) => m.isCompleted).length
-      } completadas)`
-    );
-    console.log(`Disputas de 3º lugar existentes: ${thirdPlaceMatches.length}`);
-
-    // ✅ CONDIÇÕES PARA GERAR DISPUTA DE 3º LUGAR:
-    // 1. Exatamente 2 semifinais (não menos, não mais)
-    // 2. Ambas as semifinais completadas
-    // 3. Ainda não existe disputa de 3º lugar
-    if (
-      semifinalMatches.length === 2 &&
-      semifinalMatches.every((m) => m.isCompleted) &&
-      thirdPlaceMatches.length === 0
-    ) {
-      console.log(`✅ Condições atendidas - gerando disputa de 3º lugar`);
-
-      const newMatches = generateNextRoundMatches(
-        semifinalMatches,
-        thirdPlaceRound,
-        state.currentChampionship.athletes
-      );
-
-      if (newMatches.length > 0) {
-        console.log(`Gerando disputa de 3º lugar: ${thirdPlaceRound}`);
-
-        const updatedGroups = state.currentChampionship.groups.map(
-          (group, index) =>
-            index === 0
-              ? { ...group, matches: [...group.matches, ...newMatches] }
-              : group
-        );
-
-        const updatedChampionship = {
-          ...state.currentChampionship,
-          groups: updatedGroups,
-          totalMatches:
-            state.currentChampionship.totalMatches + newMatches.length,
-        };
-
-        await get().updateChampionship(updatedChampionship);
-        console.log(`✅ Disputa de 3º lugar gerada com sucesso`);
-      }
-    } else {
-      console.log(`❌ Condições não atendidas para gerar 3º lugar:`);
-      console.log(`  - Semifinais: ${semifinalMatches.length}/2`);
-      console.log(
-        `  - Completadas: ${
-          semifinalMatches.filter((m) => m.isCompleted).length
-        }/2`
-      );
-      console.log(`  - 3º lugar existente: ${thirdPlaceMatches.length}/0`);
-    }
-  } else if (!state.currentChampionship.hasThirdPlace && thirdPlaceRound) {
-    console.log(`ℹ️ Disputa de 3º lugar está desabilitada no campeonato`);
-  }
-
-  console.log("🔄 Verificação de progressão das rodadas concluída");
 }
 
 export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
@@ -926,7 +1079,7 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     return eliminated;
   },
 
-  // ✅ FUNÇÃO AUXILIAR PARA VERIFICAR E GERAR PRÓXIMA RODADA CORRIGIDA
+  // ✅ FUNÇÃO AUXILIAR SIMPLIFICADA PARA VERIFICAR E GERAR PRÓXIMA RODADA
   checkAndGenerateNextKnockoutRound: async (groups) => {
     const state = get();
     if (!state.currentChampionship) return;
@@ -952,7 +1105,7 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
       "Semifinal 2ª Div",
     ];
 
-    // ✅ ADICIONAR DISPUTAS DE 3º LUGAR SE HABILITADAS (antes da final)
+    // ✅ ADICIONAR DISPUTAS DE 3º LUGAR SE HABILITADAS
     if (state.currentChampionship.hasThirdPlace) {
       mainRounds.push("3º Lugar");
       secondDivRounds.push("3º Lugar 2ª Div");
@@ -962,11 +1115,19 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     mainRounds.push("Final");
     secondDivRounds.push("Final 2ª Div");
 
-    console.log("🏆 Rodadas principais:", mainRounds);
-    console.log("🥈 Rodadas segunda divisão:", secondDivRounds);
+    console.log("🏆 [MAIN] Rodadas principais:", mainRounds);
+    console.log("🥈 [2ND] Rodadas segunda divisão:", secondDivRounds);
 
     await checkRoundsProgression(mainMatches, mainRounds, state, get);
-    await checkRoundsProgression(secondDivMatches, secondDivRounds, state, get);
+
+    if (state.currentChampionship.hasRepechage && secondDivMatches.length > 0) {
+      await checkRoundsProgression(
+        secondDivMatches,
+        secondDivRounds,
+        state,
+        get
+      );
+    }
 
     // ✅ VERIFICAR SE CAMPEONATO ESTÁ COMPLETO
     const finalMatch = mainMatches.find((m) => m.round === "Final");
@@ -987,7 +1148,9 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
         status: "completed" as const,
       };
       await get().updateChampionship(updatedChampionship);
-      console.log("🏁 Campeonato finalizado - ambas as divisões completas");
+      console.log(
+        "🏁 [COMPLETE] Campeonato finalizado - ambas as divisões completas"
+      );
     }
   },
 
