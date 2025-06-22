@@ -370,8 +370,23 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     const state = get();
     if (!state.currentChampionship) return;
 
+    // ✅ FORÇAR RECÁLCULO DAS CLASSIFICAÇÕES ANTES DE VERIFICAR
+    console.log("Forçando recálculo das classificações...");
+    const updatedGroups = state.currentChampionship.groups.map((group) => {
+      const newStandings = get().calculateGroupStandings(group);
+      return { ...group, standings: newStandings };
+    });
+
+    // Atualizar o campeonato com as classificações recalculadas
+    const championshipWithUpdatedStandings = {
+      ...state.currentChampionship,
+      groups: updatedGroups,
+    };
+
+    await get().updateChampionship(championshipWithUpdatedStandings);
+
     // ✅ Verificação rigorosa de que todos os grupos estão concluídos
-    const incompleteGroups = state.currentChampionship.groups.filter(
+    const incompleteGroups = updatedGroups.filter(
       (group) =>
         !group.isCompleted ||
         group.standings.length === 0 ||
@@ -387,7 +402,7 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     }
 
     // ✅ Verificar se já existe mata-mata gerado
-    const existingKnockoutMatches = state.currentChampionship.groups
+    const existingKnockoutMatches = updatedGroups
       .flatMap((g) => g.matches)
       .filter((m) => m.phase === "knockout");
 
@@ -404,7 +419,7 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
       qualified: numQualified,
       eliminated: eliminatedAthletes.length,
       hasRepechage: state.currentChampionship.hasRepechage,
-      groups: state.currentChampionship.groups.map((g) => ({
+      groups: updatedGroups.map((g) => ({
         name: g.name,
         completed: g.isCompleted,
         standings: g.standings.length,
@@ -474,18 +489,19 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     }
 
     // Adicionar todas as partidas do mata-mata ao primeiro grupo (temporário)
-    const updatedGroups = state.currentChampionship.groups.map((group, index) =>
+    const finalUpdatedGroups = updatedGroups.map((group, index) =>
       index === 0
         ? { ...group, matches: [...group.matches, ...allKnockoutMatches] }
         : group
     );
 
     const updatedChampionship = {
-      ...state.currentChampionship,
-      groups: updatedGroups,
+      ...championshipWithUpdatedStandings,
+      groups: finalUpdatedGroups,
       status: "knockout" as const,
       totalMatches:
-        state.currentChampionship.totalMatches + allKnockoutMatches.length,
+        championshipWithUpdatedStandings.totalMatches +
+        allKnockoutMatches.length,
     };
 
     await get().updateChampionship(updatedChampionship);
@@ -862,28 +878,32 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     const state = get();
     if (!state.currentChampionship) return [];
 
-    // ✅ Verificar se grupos têm classificações calculadas
-    const groupsWithStandings = state.currentChampionship.groups.filter(
-      (group) => group.standings && group.standings.length > 0
-    );
-
-    if (groupsWithStandings.length === 0) {
-      console.log("Nenhum grupo tem classificações calculadas ainda");
-      return [];
-    }
-
-    // ✅ Verificar se todos os grupos estão completos
-    const allGroupsCompleted = groupsWithStandings.every(
-      (group) => group.isCompleted && group.matches.every((m) => m.isCompleted)
+    // ✅ Verificar se TODOS os grupos foram completamente finalizados
+    const allGroupsCompleted = state.currentChampionship.groups.every(
+      (group) =>
+        group.isCompleted &&
+        group.standings.length > 0 &&
+        group.matches.every((m) => m.isCompleted)
     );
 
     if (!allGroupsCompleted) {
       console.log("Nem todos os grupos foram concluídos ainda");
+      // Debug: verificar status de cada grupo
+      state.currentChampionship.groups.forEach((group) => {
+        const completedMatches = group.matches.filter(
+          (m) => m.isCompleted
+        ).length;
+        const totalMatches = group.matches.length;
+        console.log(
+          `Grupo ${group.name}: ${completedMatches}/${totalMatches} partidas, ${group.standings.length} classificações, isCompleted: ${group.isCompleted}`
+        );
+      });
       return [];
     }
 
-    // Obter eliminados apenas de grupos com classificações completas
-    const eliminated = groupsWithStandings
+    // Obter eliminados de TODOS os grupos
+    const eliminated = state.currentChampionship.groups
+      .filter((group) => group.standings.length > 0) // Apenas grupos com classificações
       .flatMap((group) =>
         group.standings.filter((s) => !s.qualified).map((s) => s.athlete)
       )
@@ -1214,15 +1234,19 @@ async function checkRoundsProgression(
       currentRoundMatches.every((m) => m.isCompleted) &&
       nextRoundMatches.length === 0
     ) {
+      // ✅ PASSAR TODOS OS ATLETAS DO CAMPEONATO
       const newMatches = generateNextRoundMatches(
         currentRoundMatches,
-        nextRound
+        nextRound,
+        state.currentChampionship.athletes // ✅ ADICIONAR ATLETAS
       );
 
       if (newMatches.length > 0) {
-        // Adicionar novas partidas ao primeiro grupo
+        console.log(`Gerando ${newMatches.length} partidas para ${nextRound}`);
+
+        // Adicionar as novas partidas ao primeiro grupo
         const updatedGroups = state.currentChampionship.groups.map(
-          (group: Group, index: number) =>
+          (group, index) =>
             index === 0
               ? { ...group, matches: [...group.matches, ...newMatches] }
               : group
@@ -1236,9 +1260,6 @@ async function checkRoundsProgression(
         };
 
         await get().updateChampionship(updatedChampionship);
-        console.log(
-          `Gerada próxima rodada: ${nextRound} (${newMatches.length} partidas)`
-        );
       }
     }
   }

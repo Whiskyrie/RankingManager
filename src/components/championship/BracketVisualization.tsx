@@ -63,18 +63,22 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
 
     return (
       <Card
-        className={`w-64 mb-2 cursor-pointer transition-all hover:shadow-lg hover:scale-105 ${
+        className={`w-64 mb-2 cursor-pointer transition-all duration-300 hover:shadow-xl hover:z-10 relative ${
           isSecondDivision
             ? "border-orange-300 hover:border-orange-500"
             : "border-blue-300 hover:border-blue-500"
         } ${match.isCompleted ? "bg-green-50" : "bg-white"}`}
         onClick={() => onMatchClick?.(match)}
+        style={{
+          transform: "translateZ(0)", // Força camada de composição
+          backfaceVisibility: "hidden", // Otimização de performance
+        }}
       >
         <CardContent className="p-3">
           <div className="space-y-2">
             {/* Player 1 */}
             <div
-              className={`flex items-center justify-between p-2 rounded transition-colors ${
+              className={`flex items-center justify-between p-2 rounded-md transition-colors duration-200 ${
                 isWinner(match.player1Id)
                   ? "bg-green-100 border border-green-300"
                   : "bg-gray-50 hover:bg-gray-100"
@@ -84,12 +88,13 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
                 className={`text-sm truncate flex-1 ${
                   isWinner(match.player1Id) ? "font-bold text-green-800" : ""
                 }`}
+                title={getPlayerName(match.player1Id)}
               >
                 {getPlayerName(match.player1Id)}
               </span>
               <div className="flex items-center gap-1 ml-2">
                 {getMatchScore() && (
-                  <span className="text-xs font-mono text-gray-600">
+                  <span className="text-xs font-mono text-gray-600 bg-white px-1 rounded">
                     {getMatchScore()?.split("-")[0]}
                   </span>
                 )}
@@ -101,14 +106,14 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
 
             {/* VS Divider */}
             <div className="text-center">
-              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+              <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full font-medium">
                 vs
               </span>
             </div>
 
             {/* Player 2 */}
             <div
-              className={`flex items-center justify-between p-2 rounded transition-colors ${
+              className={`flex items-center justify-between p-2 rounded-md transition-colors duration-200 ${
                 isWinner(match.player2Id)
                   ? "bg-green-100 border border-green-300"
                   : "bg-gray-50 hover:bg-gray-100"
@@ -118,12 +123,13 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
                 className={`text-sm truncate flex-1 ${
                   isWinner(match.player2Id) ? "font-bold text-green-800" : ""
                 }`}
+                title={getPlayerName(match.player2Id)}
               >
                 {getPlayerName(match.player2Id)}
               </span>
               <div className="flex items-center gap-1 ml-2">
                 {getMatchScore() && (
-                  <span className="text-xs font-mono text-gray-600">
+                  <span className="text-xs font-mono text-gray-600 bg-white px-1 rounded">
                     {getMatchScore()?.split("-")[1]}
                   </span>
                 )}
@@ -139,19 +145,22 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
                 {match.isCompleted ? (
                   <Badge
                     variant="outline"
-                    className="text-xs bg-green-50 text-green-700"
+                    className="text-xs bg-green-50 text-green-700 border-green-200"
                   >
                     {match.isWalkover ? "W.O." : "Finalizada"}
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-xs text-blue-600">
+                  <Badge
+                    variant="outline"
+                    className="text-xs text-blue-600 border-blue-200"
+                  >
                     Pendente
                   </Badge>
                 )}
               </div>
 
               {onMatchClick && (
-                <div className="text-xs text-gray-400">
+                <div className="text-xs text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
                   Clique para detalhes
                 </div>
               )}
@@ -189,12 +198,14 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
     const stats = getRoundStats();
 
     return (
-      <div className="flex flex-col items-center min-h-full">
+      <div className="flex flex-col items-center min-h-full mx-6">
+        {" "}
+        {/* ✅ Maior espaçamento horizontal */}
         <div
-          className={`sticky top-0 z-10 mb-4 p-3 rounded-lg shadow-sm ${
+          className={`sticky top-0 z-10 mb-6 p-4 rounded-lg shadow-sm border-2 ${
             isSecondDivision
-              ? "bg-orange-100 text-orange-800 border border-orange-200"
-              : "bg-blue-100 text-blue-800 border border-blue-200"
+              ? "bg-orange-100 text-orange-800 border-orange-200"
+              : "bg-blue-100 text-blue-800 border-blue-200"
           }`}
         >
           <div className="flex items-center gap-2 mb-2">
@@ -224,14 +235,15 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
             </div>
           </div>
         </div>
-
-        <div className="flex flex-col justify-around flex-1 space-y-8">
+        <div className="flex flex-col justify-around flex-1 space-y-8 w-full">
+          {" "}
+          {/* ✅ Maior espaçamento entre partidas */}
           {matches.map((match) => (
-            <BracketMatch
-              key={match.id}
-              match={match}
-              isSecondDivision={isSecondDivision}
-            />
+            <div key={match.id} className="relative">
+              {" "}
+              {/* ✅ Container para evitar overflow */}
+              <BracketMatch match={match} isSecondDivision={isSecondDivision} />
+            </div>
           ))}
         </div>
       </div>
@@ -239,8 +251,17 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
   };
 
   const BracketConnector: React.FC = () => (
-    <div className="flex items-center justify-center mx-4">
-      <div className="w-8 h-px bg-gray-300"></div>
+    <div className="flex items-center justify-center mx-8">
+      {" "}
+      {/* ✅ Mais espaço horizontal */}
+      <div className="flex flex-col items-center">
+        <div className="w-12 h-px bg-gray-300"></div>{" "}
+        {/* ✅ Conector mais largo */}
+        <div className="w-px h-8 bg-gray-300"></div>{" "}
+        {/* ✅ Conector vertical */}
+        <div className="w-12 h-px bg-gray-300"></div>{" "}
+        {/* ✅ Conector mais largo */}
+      </div>
     </div>
   );
 
@@ -279,9 +300,11 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto pb-4 pt-4">
+              {" "}
+              {/* ✅ Padding para evitar corte */}
               <div
-                className="flex items-stretch min-h-96"
+                className="flex items-stretch min-h-96 px-4" // ✅ Padding horizontal
                 style={{ minWidth: "max-content" }}
               >
                 {organizedMainRounds.map((round, index) => (
@@ -311,9 +334,11 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto pb-4 pt-4">
+              {" "}
+              {/* ✅ Padding para evitar corte */}
               <div
-                className="flex items-stretch min-h-96"
+                className="flex items-stretch min-h-96 px-4" // ✅ Padding horizontal
                 style={{ minWidth: "max-content" }}
               >
                 {organizedSecondDivRounds.map((round, index) => (

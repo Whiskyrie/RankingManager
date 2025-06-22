@@ -330,10 +330,11 @@ export const generateSecondDivisionMatches = (athletes: Athlete[]): Match[] => {
   return matches;
 };
 
-// Geração da próxima rodada do mata-mata
+// Geração da próxima rodada do mata-mata - CORRIGIDA
 export const generateNextRoundMatches = (
   currentRoundMatches: Match[],
-  round: string
+  round: string,
+  allAthletes: Athlete[]
 ): Match[] => {
   const matches: Match[] = [];
 
@@ -343,46 +344,68 @@ export const generateNextRoundMatches = (
     return matches; // Ainda há partidas pendentes
   }
 
+  console.log(`Gerando próxima rodada: ${round}`, {
+    completedMatches: completedMatches.length,
+    round,
+  });
+
   // Gerar próxima rodada
   for (let i = 0; i < completedMatches.length; i += 2) {
     const match1 = completedMatches[i];
     const match2 = completedMatches[i + 1];
 
     if (match1 && match2) {
-      const winner1 = getMatchWinner(
+      const winner1Id = getMatchWinner(
         match1.sets,
         5,
         match1.player1Id,
         match1.player2Id
       );
-      const winner2 = getMatchWinner(
+      const winner2Id = getMatchWinner(
         match2.sets,
         5,
         match2.player1Id,
         match2.player2Id
       );
 
-      if (winner1 && winner2) {
-        const newMatch: Match = {
-          id: `${round}-${i / 2}`,
-          player1Id: winner1,
-          player2Id: winner2,
-          sets: [],
-          isCompleted: false,
-          phase: "knockout",
-          round: round,
-          position: i / 2,
-          timeoutsUsed: {
-            player1: false,
-            player2: false,
-          },
-          createdAt: new Date(),
-        };
-        matches.push(newMatch);
+      console.log(`Vencedores: ${winner1Id} e ${winner2Id}`);
+
+      if (winner1Id && winner2Id) {
+        // ✅ BUSCAR OBJETOS COMPLETOS DOS ATLETAS
+        const winner1 = allAthletes.find((a) => a.id === winner1Id);
+        const winner2 = allAthletes.find((a) => a.id === winner2Id);
+
+        if (winner1 && winner2) {
+          const newMatch: Match = {
+            id: `${round.replace(/\s+/g, "-").toLowerCase()}-${Date.now()}-${
+              i / 2
+            }`,
+            player1Id: winner1.id,
+            player2Id: winner2.id,
+            player1: winner1, // ✅ OBJETO COMPLETO
+            player2: winner2, // ✅ OBJETO COMPLETO
+            sets: [],
+            isCompleted: false,
+            phase: "knockout",
+            round: round,
+            position: i / 2,
+            timeoutsUsed: {
+              player1: false,
+              player2: false,
+            },
+            createdAt: new Date(),
+          };
+          matches.push(newMatch);
+
+          console.log(`Partida criada: ${winner1.name} vs ${winner2.name}`);
+        } else {
+          console.error(`Atletas não encontrados: ${winner1Id}, ${winner2Id}`);
+        }
       }
     }
   }
 
+  console.log(`Próxima rodada ${round} gerada com ${matches.length} partidas`);
   return matches;
 };
 
