@@ -27,12 +27,19 @@ export const KnockoutBracket: React.FC<KnockoutBracketProps> = ({
     .filter((match) => match.phase === "knockout");
 
   // Organizar partidas por rodada
-  const mainKnockoutRounds = ["Oitavas", "Quartas", "Semifinal", "Final"];
+  const mainKnockoutRounds = [
+    "Oitavas",
+    "Quartas",
+    "Semifinal",
+    "Final",
+    "3º Lugar",
+  ];
   const secondDivRounds = [
     "Oitavas 2ª Div",
     "Quartas 2ª Div",
     "Semifinal 2ª Div",
     "Final 2ª Div",
+    "3º Lugar 2ª Div",
   ];
 
   const getMatchesForRound = (roundName: string): Match[] => {
