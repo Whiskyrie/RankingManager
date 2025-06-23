@@ -78,16 +78,13 @@
 .bracket-match {
   animation: fadeInUp 0.6s ease-out;
   animation-fill-mode: both;
+  /* Evitar re-animação desnecessária */
+  animation-play-state: running;
 }
 
-.bracket-match:nth-child(1) { animation-delay: 0.1s; }
-.bracket-match:nth-child(2) { animation-delay: 0.2s; }
-.bracket-match:nth-child(3) { animation-delay: 0.3s; }
-.bracket-match:nth-child(4) { animation-delay: 0.4s; }
-.bracket-match:nth-child(5) { animation-delay: 0.5s; }
-.bracket-match:nth-child(6) { animation-delay: 0.6s; }
-.bracket-match:nth-child(7) { animation-delay: 0.7s; }
-.bracket-match:nth-child(8) { animation-delay: 0.8s; }
+.bracket-match.no-animation {
+  animation: none !important;
+}
 
 /* Estilo para partidas concluídas */
 .match-completed {
@@ -256,6 +253,67 @@
 .podium-third {
   background: linear-gradient(135deg, #cd7c2f 0%, #b45309 50%, #92400e 100%);
   box-shadow: 0 6px 24px rgba(180, 83, 9, 0.4);
+}
+
+/* Estilos para pódium minimalista */
+.podium-minimal {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-radius: 16px;
+  padding: 2rem;
+}
+
+.podium-position-minimal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.podium-position-minimal:hover {
+  transform: translateY(-4px);
+}
+
+.podium-medal {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+}
+
+.podium-medal.first {
+  background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
+}
+
+.podium-medal.second {
+  background: linear-gradient(135deg, #c0c0c0 0%, #808080 100%);
+}
+
+.podium-medal.third {
+  background: linear-gradient(135deg, #cd7f32 0%, #8b4513 100%);
+}
+
+.podium-name {
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.podium-title {
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Scrollbar personalizada para a área do bracket */
