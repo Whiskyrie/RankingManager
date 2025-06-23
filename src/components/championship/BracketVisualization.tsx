@@ -47,7 +47,7 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
     };
 
     const isWinner = (playerId: string | undefined) => {
-      return match.isCompleted && match.winner === playerId;
+      return match.isCompleted && match.winnerId === playerId;
     };
 
     const getMatchScore = () => {
@@ -309,7 +309,7 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = ({
           id: finalMatch.id,
           players: `${finalMatch.player1?.name} vs ${finalMatch.player2?.name}`,
           completed: finalMatch.isCompleted,
-          winner: finalMatch.winner,
+          winner: finalMatch.winnerId,
         }
       : "No final match found"
   );

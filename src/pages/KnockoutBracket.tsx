@@ -26,7 +26,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { generateKnockoutBracket } from "../utils";
-import { Match } from "../types";
+import { Match, KnockoutNode } from "../types";
 
 export const KnockoutBracket: React.FC = () => {
   const { currentChampionship, updateMatchResult, setWalkover } =
@@ -70,48 +70,66 @@ export const KnockoutBracket: React.FC = () => {
     );
   }
 
-  // Organizar partidas por rodada
-  const knockoutMatches = currentChampionship.groups
-    .flatMap((g) => g.matches)
-    .filter((m) => m.phase === "knockout");
+  // CORREÇÃO: Extração correta das partidas de mata-mata do bracket
+  const allKnockoutNodes: KnockoutNode[] =
+    currentChampionship.knockoutBracket || [];
+  const knockoutMatches = allKnockoutNodes
+    .map((node) => node.match)
+    .filter((m): m is Match => !!m && m.phase === "knockout");
 
-  // Separar partidas principais das de segunda divisão
+  // CORREÇÃO: Partidas da primeira divisão (rodadas sem "2ª Div")
   const mainMatches = knockoutMatches.filter(
     (m) => !m.round?.includes("2ª Div")
   );
+
+  // CORREÇÃO: Partidas da segunda divisão (rodadas contendo "2ª Div")
   const secondDivisionMatches = knockoutMatches.filter((m) =>
     m.round?.includes("2ª Div")
   );
 
-  const roundNames = ["Oitavas", "Quartas", "Semifinal", "Final"];
-  const rounds = roundNames
+  // CORREÇÃO: Rodadas da primeira divisão organizadas
+  const mainRoundNames = ["Oitavas", "Quartas", "Semifinal", "Final"];
+  const mainRounds = mainRoundNames
     .map((name) => ({
       name,
       matches: mainMatches.filter((m) => m.round === name),
     }))
-    .filter((round) => round.matches.length > 0);
+    .filter((r) => r.matches.length > 0);
 
-  // Encontrar finalistas e campeão
-  const finalMatch = knockoutMatches.find((m) => m.round === "Final");
-  const champion = finalMatch?.isCompleted ? finalMatch.winner : null;
-  const finalist = finalMatch?.isCompleted
-    ? finalMatch.winner === finalMatch.player1Id
-      ? finalMatch.player2Id
-      : finalMatch.player1Id
-    : null;
+  // CORREÇÃO: Rodadas da segunda divisão - extrair nomes únicos
+  const secondRoundNames = Array.from(
+    new Set(secondDivisionMatches.map((m) => m.round || ""))
+  ).filter((r) => r);
 
-  // Encontrar terceiro colocado (se houver disputa)
-  const thirdPlaceMatch = knockoutMatches.find((m) => m.round === "3º Lugar");
+  const secondRounds = secondRoundNames.map((name) => ({
+    name,
+    matches: secondDivisionMatches.filter((m) => m.round === name),
+  }));
+
+  // CORREÇÃO: Campeão, vice-campeão e terceiro lugar (1ª divisão)
+  const finalMatch = mainMatches.find((m) => m.round === "Final");
+  const champion = finalMatch?.isCompleted ? finalMatch.winnerId : null;
+
+  // CORREÇÃO: Usar runnerUp ao invés de finalist para mais clareza
+  const runnerUp =
+    finalMatch?.isCompleted && finalMatch.winnerId
+      ? finalMatch.player1Id === finalMatch.winnerId
+        ? finalMatch.player2Id
+        : finalMatch.player1Id
+      : null;
+
+  // Terceiro lugar da primeira divisão
+  const thirdPlaceMatch = mainMatches.find((m) => m.round === "3º Lugar");
   const thirdPlace = thirdPlaceMatch?.isCompleted
-    ? thirdPlaceMatch.winner
+    ? thirdPlaceMatch.winnerId
     : null;
 
-  // ✅ ADICIONAR TERCEIRO LUGAR DA SEGUNDA DIVISÃO
-  const thirdPlaceSecondDivMatch = knockoutMatches.find(
+  // CORREÇÃO: Terceiro lugar da segunda divisão
+  const thirdPlace2Match = secondDivisionMatches.find(
     (m) => m.round === "3º Lugar 2ª Div"
   );
-  const thirdPlaceSecondDiv = thirdPlaceSecondDivMatch?.isCompleted
-    ? thirdPlaceSecondDivMatch.winner
+  const thirdPlace2 = thirdPlace2Match?.isCompleted
+    ? thirdPlace2Match.winnerId
     : null;
 
   const handleDownloadBracket = () => {
@@ -158,7 +176,7 @@ export const KnockoutBracket: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Pódium - se o campeonato estiver finalizado */}
         {currentChampionship.status === "completed" &&
-          (champion || finalist || thirdPlace || thirdPlaceSecondDiv) && (
+          (champion || runnerUp || thirdPlace || thirdPlace2) && (
             <Card className="mb-8 bg-gradient-to-r from-yellow-50 to-orange-50">
               <CardHeader>
                 <CardTitle className="text-center flex items-center justify-center gap-2">
@@ -168,25 +186,25 @@ export const KnockoutBracket: React.FC = () => {
               </CardHeader>
 
               <CardContent>
-                {/* ✅ PÓDIUM PRIMEIRA DIVISÃO */}
+                {/* PÓDIUM PRIMEIRA DIVISÃO */}
                 <div className="mb-8">
                   <h3 className="text-lg font-semibold text-blue-600 mb-4 text-center">
                     Primeira Divisão
                   </h3>
                   <div className="flex justify-center items-end gap-8">
-                    {/* 2º Lugar */}
-                    {finalist && (
+                    {/* 2º Lugar - CORREÇÃO: usar runnerUp */}
+                    {runnerUp && (
                       <div className="text-center">
                         <div className="w-20 h-16 bg-gray-200 rounded-lg flex items-center justify-center mb-2">
                           <Medal className="h-8 w-8 text-gray-500" />
                         </div>
                         <div className="font-semibold text-gray-700">
-                          2º Lugar
+                          Vice-Campeão
                         </div>
                         <div className="text-sm text-gray-600">
                           {
                             currentChampionship.athletes.find(
-                              (a) => a.id === finalist
+                              (a) => a.id === runnerUp
                             )?.name
                           }
                         </div>
@@ -233,8 +251,8 @@ export const KnockoutBracket: React.FC = () => {
                   </div>
                 </div>
 
-                {/* ✅ PÓDIUM SEGUNDA DIVISÃO */}
-                {thirdPlaceSecondDiv && (
+                {/* PÓDIUM SEGUNDA DIVISÃO - CORREÇÃO: usar thirdPlace2 */}
+                {thirdPlace2 && (
                   <div className="border-t pt-6">
                     <h3 className="text-lg font-semibold text-orange-600 mb-4 text-center">
                       Segunda Divisão
@@ -250,7 +268,7 @@ export const KnockoutBracket: React.FC = () => {
                         <div className="text-sm text-gray-600">
                           {
                             currentChampionship.athletes.find(
-                              (a) => a.id === thirdPlaceSecondDiv
+                              (a) => a.id === thirdPlace2
                             )?.name
                           }
                         </div>
@@ -262,16 +280,18 @@ export const KnockoutBracket: React.FC = () => {
             </Card>
           )}
 
-        {/* Estatísticas */}
+        {/* Estatísticas - CORREÇÃO: usar dados corretos */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
                 <Target className="h-8 w-8 text-blue-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Rodadas</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Rodadas (1ª Div)
+                  </p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {rounds.length}
+                    {mainRounds.length}
                   </p>
                 </div>
               </div>
@@ -334,12 +354,86 @@ export const KnockoutBracket: React.FC = () => {
           </Card>
         </div>
 
+        {/* CORREÇÃO: Seção de Rodadas organizadas por divisão */}
+        {mainRounds.length > 0 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-blue-600" />
+                Primeira Divisão - Rodadas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {mainRounds.map((round) => (
+                  <div key={round.name}>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                      {round.name}
+                    </h3>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {round.matches.map((match) => (
+                        <MatchCard
+                          key={match.id}
+                          match={match}
+                          onUpdateResult={updateMatchResult}
+                          onSetWalkover={setWalkover}
+                          bestOf={currentChampionship.knockoutBestOf}
+                          isEditable={
+                            currentChampionship.status !== "completed"
+                          }
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* CORREÇÃO: Seção de Segunda Divisão */}
+        {secondRounds.length > 0 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5 text-orange-600" />
+                Segunda Divisão - Rodadas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {secondRounds.map((round) => (
+                  <div key={round.name}>
+                    <h3 className="text-lg font-semibold text-orange-700 mb-3">
+                      {round.name}
+                    </h3>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {round.matches.map((match) => (
+                        <MatchCard
+                          key={match.id}
+                          match={match}
+                          onUpdateResult={updateMatchResult}
+                          onSetWalkover={setWalkover}
+                          bestOf={currentChampionship.knockoutBestOf}
+                          isEditable={
+                            currentChampionship.status !== "completed"
+                          }
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Visualização da Chave */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Trophy className="h-5 w-5" />
-              Chave Eliminatória
+              Chave Eliminatória Completa
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -359,6 +453,16 @@ export const KnockoutBracket: React.FC = () => {
               <DialogHeader>
                 <DialogTitle>
                   {selectedMatch.player1?.name} vs {selectedMatch.player2?.name}
+                  {/* CORREÇÃO: Indicar se é partida de 3º lugar */}
+                  {(selectedMatch.round === "3º Lugar" ||
+                    selectedMatch.round === "3º Lugar 2ª Div") && (
+                    <Badge
+                      variant="outline"
+                      className="ml-2 bg-yellow-100 text-yellow-800"
+                    >
+                      Disputa de 3º Lugar
+                    </Badge>
+                  )}
                 </DialogTitle>
               </DialogHeader>
               <div className="p-4">

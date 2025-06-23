@@ -1,33 +1,35 @@
 // Tipos principais do sistema CBTM
-
+export type AthleteID = string;
 export interface Athlete {
-  id: string;
+  id: AthleteID;
   name: string;
   isSeeded?: boolean;
   seedNumber?: number;
 }
 
-export interface Set {
+export interface SetResult {
   player1Score: number;
   player2Score: number;
-  winner?: "player1" | "player2";
+  winnerId?: AthleteID;
 }
+export type Phase = "groups" | "knockout";
 
 export interface Match {
   id: string;
-  player1Id: string;
-  player2Id: string;
+  player1Id: AthleteID;
+  player2Id: AthleteID;
   player1?: Athlete;
   player2?: Athlete;
-  sets: Set[];
-  winner?: string;
+  sets: SetResult[];
+  winnerId?: AthleteID;
   isWalkover?: boolean;
-  walkoverWinner?: string;
+  walkoverWinnerId?: AthleteID;
   isCompleted: boolean;
-  phase: "groups" | "knockout";
+  phase: Phase;
   groupId?: string;
   round?: string;
   position?: number;
+  isThirdPlace?: boolean;
   timeoutsUsed: {
     player1: boolean;
     player2: boolean;
@@ -37,12 +39,12 @@ export interface Match {
 }
 
 export interface GroupStanding {
-  athleteId: string;
+  athleteId: AthleteID;
   athlete: Athlete;
   matches: number;
   wins: number;
   losses: number;
-  points: number; // Pontos na classificação (3 por vitória, 1 por empate se existir)
+  points: number;
   setsWon: number;
   setsLost: number;
   setsDiff: number;
@@ -68,7 +70,7 @@ export interface KnockoutNode {
   round: string;
   position: number;
   match?: Match;
-  advancesTo?: string; // ID do próximo nó
+  advancesTo?: string;
   player1Source?: {
     type: "group" | "knockout";
     sourceId: string;
@@ -86,27 +88,18 @@ export interface Championship {
   name: string;
   date: Date;
   status: "created" | "groups" | "knockout" | "completed";
-
-  // Configurações
   groupSize: 3 | 4 | 5;
   qualificationSpotsPerGroup: number;
-  groupsBestOf: 3 | 5; // Melhor de 3 ou 5 sets para grupos
-  knockoutBestOf: 3 | 5 | 7; // Melhor de 3, 5 ou 7 sets para mata-mata
+  groupsBestOf: 3 | 5;
+  knockoutBestOf: 3 | 5 | 7;
   hasThirdPlace: boolean;
   hasRepechage: boolean;
-
-  // Participantes
   athletes: Athlete[];
   totalAthletes: number;
-
-  // Fases
   groups: Group[];
   knockoutBracket: KnockoutNode[];
-
-  // Estatísticas
   totalMatches: number;
   completedMatches: number;
-
   createdAt: Date;
   updatedAt: Date;
 }
@@ -121,58 +114,16 @@ export interface TournamentConfig {
   hasThirdPlace: boolean;
   hasRepechage: boolean;
 }
-
 export interface MatchResult {
   matchId: string;
-  sets: Set[];
+  sets: SetResult[];
   isWalkover?: boolean;
-  walkoverWinner?: string;
+  walkoverWinnerId?: AthleteID;
   timeoutsUsed: {
     player1: boolean;
     player2: boolean;
   };
 }
-
-// Categorias oficiais CBTM
-export const CATEGORIES = [
-  "Absoluto Masculino",
-  "Absoluto Feminino",
-  "Sub-9 Masculino",
-  "Sub-9 Feminino",
-  "Sub-11 Masculino",
-  "Sub-11 Feminino",
-  "Sub-13 Masculino",
-  "Sub-13 Feminino",
-  "Sub-15 Masculino",
-  "Sub-15 Feminino",
-  "Sub-17 Masculino",
-  "Sub-17 Feminino",
-  "Sub-21 Masculino",
-  "Sub-21 Feminino",
-  "Veteranos 40+ Masculino",
-  "Veteranos 40+ Feminino",
-  "Veteranos 50+ Masculino",
-  "Veteranos 50+ Feminino",
-  "Veteranos 60+ Masculino",
-  "Veteranos 60+ Feminino",
-] as const;
-
-export const PARALIMPIC_CLASSES = [
-  "C1",
-  "C2",
-  "C3",
-  "C4",
-  "C5",
-  "C6",
-  "C7",
-  "C8",
-  "C9",
-  "C10",
-  "C11",
-] as const;
-
-export type CategoryType = (typeof CATEGORIES)[number];
-export type ParalimpicClassType = (typeof PARALIMPIC_CLASSES)[number];
 
 // Estados da aplicação
 export interface AppState {
@@ -183,94 +134,50 @@ export interface AppState {
 }
 
 // Utilitários para validação de sets - CORRIGIDO
-export const isValidSet = (set: Set): boolean => {
+export const isValidSet = (set: SetResult): boolean => {
   const { player1Score, player2Score } = set;
-
-  // Verificar se ambos os scores são números válidos
-  if (isNaN(player1Score) || isNaN(player2Score)) return false;
   if (player1Score < 0 || player2Score < 0) return false;
-
-  // Se ambos os scores são 0, considerar inválido
   if (player1Score === 0 && player2Score === 0) return false;
-
-  // Mínimo de 11 pontos para vencer
-  if (Math.max(player1Score, player2Score) < 11) return false;
-
-  // Diferença mínima de 2 pontos
-  if (Math.abs(player1Score - player2Score) < 2) return false;
-
-  // Se empatado em 10-10 ou mais, deve ter diferença de exatamente 2
+  const maxScore = Math.max(player1Score, player2Score);
+  const diff = Math.abs(player1Score - player2Score);
+  if (maxScore < 11) return false;
   if (player1Score >= 10 && player2Score >= 10) {
-    return Math.abs(player1Score - player2Score) === 2;
+    return diff === 2;
   }
-
-  // Um dos jogadores deve ter pelo menos 11 e diferença de pelo menos 2
-  return (
-    (player1Score >= 11 && player1Score - player2Score >= 2) ||
-    (player2Score >= 11 && player2Score - player1Score >= 2)
-  );
+  return diff >= 2;
 };
 
-export const getSetWinner = (set: Set): "player1" | "player2" | undefined => {
+export const getSetWinner = (set: SetResult): AthleteID | undefined => {
   if (!isValidSet(set)) return undefined;
-  return set.player1Score > set.player2Score ? "player1" : "player2";
+  return set.player1Score > set.player2Score
+    ? set.winnerId || undefined
+    : set.winnerId || undefined;
 };
 
 // Função para determinar vencedor da partida - CORRIGIDA E UNIFICADA
 export const getMatchWinner = (
-  sets: Set[],
+  sets: SetResult[],
   bestOf: 3 | 5 | 7,
-  player1Id?: string,
-  player2Id?: string
-): string | undefined => {
-  if (sets.length === 0) return undefined;
-
+  player1Id: AthleteID,
+  player2Id: AthleteID
+): AthleteID | undefined => {
   const setsToWin = bestOf === 3 ? 2 : bestOf === 5 ? 3 : 4;
-  let player1Sets = 0;
-  let player2Sets = 0;
-
-  // Contar apenas sets válidos
-  const validSets = sets.filter(isValidSet);
-
-  console.log(
-    `🎯 [WINNER] Calculando vencedor - BestOf: ${bestOf}, SetsToWin: ${setsToWin}, ValidSets: ${validSets.length}`
-  );
-
-  for (const set of validSets) {
-    const winner = getSetWinner(set);
-    if (winner === "player1") player1Sets++;
-    if (winner === "player2") player2Sets++;
-
-    console.log(
-      `  Set: ${set.player1Score}-${set.player2Score} → Winner: ${winner}`
-    );
+  let p1 = 0;
+  let p2 = 0;
+  for (const set of sets) {
+    if (!isValidSet(set)) continue;
+    if (set.player1Score > set.player2Score) p1++;
+    else p2++;
+    if (p1 === setsToWin) return player1Id;
+    if (p2 === setsToWin) return player2Id;
   }
-
-  console.log(
-    `🎯 [WINNER] Resultado: P1=${player1Sets} sets, P2=${player2Sets} sets`
-  );
-
-  // Verificar se algum jogador atingiu o número necessário de sets
-  if (player1Sets >= setsToWin) {
-    const winnerId = player1Id || "player1";
-    console.log(`✅ [WINNER] Player1 venceu! ID: ${winnerId}`);
-    return winnerId;
-  }
-  if (player2Sets >= setsToWin) {
-    const winnerId = player2Id || "player2";
-    console.log(`✅ [WINNER] Player2 venceu! ID: ${winnerId}`);
-    return winnerId;
-  }
-
-  console.log(`⏳ [WINNER] Nenhum vencedor ainda - partida em andamento`);
   return undefined;
 };
-
 // Função auxiliar para verificar se uma partida está completa
-export const isMatchComplete = (sets: Set[], bestOf: 3 | 5 | 7): boolean => {
-  const winner = getMatchWinner(sets, bestOf);
-  return winner !== undefined;
-};
+export const isMatchComplete = (
+  sets: SetResult[],
+  bestOf: 3 | 5 | 7
+): boolean => getMatchWinner(sets, bestOf, "", "") !== undefined;
 
 // Função para calcular estatísticas de uma partida
 export interface MatchStats {
@@ -281,94 +188,50 @@ export interface MatchStats {
   player1Points: number;
   player2Points: number;
   isComplete: boolean;
-  winner?: "player1" | "player2";
+  winnerId?: AthleteID;
 }
 
 export const calculateMatchStats = (
-  sets: Set[],
-  bestOf: 3 | 5 | 7
+  sets: SetResult[],
+  bestOf: 3 | 5 | 7,
+  player1Id: AthleteID,
+  player2Id: AthleteID
 ): MatchStats => {
-  const validSets = sets.filter(isValidSet);
-  let player1Sets = 0;
-  let player2Sets = 0;
-  let player1Points = 0;
-  let player2Points = 0;
-
-  validSets.forEach((set) => {
-    const winner = getSetWinner(set);
-    if (winner === "player1") player1Sets++;
-    if (winner === "player2") player2Sets++;
-
-    player1Points += set.player1Score;
-    player2Points += set.player2Score;
-  });
-
-  const winner = getMatchWinner(sets, bestOf);
-
+  const valid = sets.filter(isValidSet);
+  let p1s = 0;
+  let p2s = 0;
+  let p1p = 0;
+  let p2p = 0;
+  for (const s of valid) {
+    if (s.player1Score > s.player2Score) p1s++;
+    else p2s++;
+    p1p += s.player1Score;
+    p2p += s.player2Score;
+  }
+  const winnerId = getMatchWinner(sets, bestOf, player1Id, player2Id);
   return {
     totalSets: sets.length,
-    validSets: validSets.length,
-    player1Sets,
-    player2Sets,
-    player1Points,
-    player2Points,
-    isComplete: winner !== undefined,
-    winner:
-      winner === "player1"
-        ? "player1"
-        : winner === "player2"
-        ? "player2"
-        : undefined,
+    validSets: valid.length,
+    player1Sets: p1s,
+    player2Sets: p2s,
+    player1Points: p1p,
+    player2Points: p2p,
+    isComplete: !!winnerId,
+    winnerId,
   };
 };
-
-// Função para validar configuração de campeonato
 export const validateTournamentConfig = (
   config: Partial<TournamentConfig>
 ): string[] => {
   const errors: string[] = [];
-
-  if (!config.name?.trim()) {
-    errors.push("Nome do campeonato é obrigatório");
-  }
-
-  if (!config.date) {
-    errors.push("Data do campeonato é obrigatória");
-  }
-
-  if (config.date && config.date < new Date()) {
-    errors.push("Data do campeonato não pode ser no passado");
-  }
-
-  if (!config.groupSize || ![3, 4, 5].includes(config.groupSize)) {
-    errors.push("Tamanho do grupo deve ser 3, 4 ou 5");
-  }
-
-  if (
-    !config.qualificationSpotsPerGroup ||
-    config.qualificationSpotsPerGroup < 1
-  ) {
-    errors.push("Número de classificados por grupo deve ser pelo menos 1");
-  }
-
-  if (
-    config.groupSize &&
-    config.qualificationSpotsPerGroup &&
-    config.qualificationSpotsPerGroup >= config.groupSize
-  ) {
-    errors.push(
-      "Número de classificados deve ser menor que o tamanho do grupo"
-    );
-  }
-
-  if (!config.groupsBestOf || ![3, 5].includes(config.groupsBestOf)) {
-    errors.push("Fase de grupos deve ser melhor de 3 ou 5 sets");
-  }
-
-  if (!config.knockoutBestOf || ![3, 5, 7].includes(config.knockoutBestOf)) {
-    errors.push("Mata-mata deve ser melhor de 3, 5 ou 7 sets");
-  }
-
+  if (!config.name?.trim()) errors.push("Nome é obrigatório.");
+  if (!config.date) errors.push("Data é obrigatória.");
+  if (config.date && config.date < new Date())
+    errors.push("Data no passado não permitted.");
+  if (![3, 4, 5].includes(config.groupSize!))
+    errors.push("Tamanho de grupo inválido.");
+  if (![3, 5, 7].includes(config.knockoutBestOf!))
+    errors.push("Formato de mata-mata inválido.");
   return errors;
 };
 
@@ -398,6 +261,5 @@ export const VALIDATION_CONSTANTS = {
   MAX_ATHLETES_PER_GROUP: 5,
   MIN_ATHLETES_PER_GROUP: 3,
   POINTS_PER_WIN: 3,
-  POINTS_PER_DRAW: 1, // Caso implementem empates no futuro
   POINTS_PER_LOSS: 0,
 } as const;

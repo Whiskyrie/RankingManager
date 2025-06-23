@@ -59,7 +59,7 @@ export const KnockoutBracket: React.FC<KnockoutBracketProps> = ({
             <span className="text-sm font-medium">
               {match.player1?.name || "TBD"}
             </span>
-            {match.isCompleted && match.winner === match.player1Id && (
+            {match.isCompleted && match.winnerId === match.player1Id && (
               <Crown className="h-4 w-4 text-yellow-500" />
             )}
           </div>
@@ -68,7 +68,7 @@ export const KnockoutBracket: React.FC<KnockoutBracketProps> = ({
             <span className="text-sm font-medium">
               {match.player2?.name || "TBD"}
             </span>
-            {match.isCompleted && match.winner === match.player2Id && (
+            {match.isCompleted && match.winnerId === match.player2Id && (
               <Crown className="h-4 w-4 text-yellow-500" />
             )}
           </div>

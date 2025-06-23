@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from "react";
-import { Match, Set, MatchResult, isValidSet } from "../../types";
+import { Match, SetResult, MatchResult, isValidSet } from "../../types";
 import {
   formatMatchScore,
   formatSetScore,
   formatDateTime,
   getMatchWinner,
-} from "../../utils"; // UTILIZANDO getMatchWinner dos utils
+} from "../../utils";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -23,7 +23,7 @@ import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import {
   Edit,
-  Clock, // AGORA UTILIZADO
+  Clock,
   Timer,
   AlertCircle,
   Trophy,
@@ -32,6 +32,7 @@ import {
   XCircle,
   PlayCircle,
   PauseCircle,
+  Medal,
 } from "lucide-react";
 
 interface MatchCardProps {
@@ -49,26 +50,22 @@ export const MatchCard: React.FC<MatchCardProps> = ({
   bestOf,
   isEditable = true,
 }) => {
+  // APLICANDO A LÓGICA DE DETECÇÃO DE 3º LUGAR
+  const isThirdPlace = match.isThirdPlace === true;
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [sets, setSets] = useState<Set[]>(
+  const [sets, setSets] = useState<SetResult[]>(
     match.sets.length > 0 ? [...match.sets] : []
   );
-  const [timeoutsUsed, setTimeoutsUsed] = useState(
-    match.timeoutsUsed || {
-      player1: false,
-      player2: false,
-    }
-  );
+  const [timeoutsUsed, setTimeoutsUsed] = useState(match.timeoutsUsed);
   const [isWalkover, setIsWalkover] = useState(match.isWalkover || false);
-  const [walkoverWinner, setWalkoverWinner] = useState(
-    match.walkoverWinner || ""
+  const [walkoverWinner, setWalkoverWinner] = useState<string>(
+    match.walkoverWinnerId || ""
   );
 
-  // UTILIZAÇÃO DA VARIÁVEL setsToWin - AGORA USADA EXPLICITAMENTE
   const setsToWin = bestOf === 3 ? 2 : bestOf === 5 ? 3 : 4;
   const maxSets = bestOf;
 
-  // Cálculos avançados para exibição (usando setsToWin)
   const matchStats = useMemo(() => {
     if (isWalkover) {
       return {
@@ -77,40 +74,27 @@ export const MatchCard: React.FC<MatchCardProps> = ({
         isFinished: true,
         winner: walkoverWinner,
         progress: 100,
-        nextSetNumber: 1,
-        canFinish: true,
       };
     }
 
     const validSets = sets.filter(isValidSet);
     let player1Sets = 0;
     let player2Sets = 0;
-
-    validSets.forEach((set) => {
-      if (set.player1Score > set.player2Score) player1Sets++;
-      else if (set.player2Score > set.player1Score) player2Sets++;
+    validSets.forEach((s) => {
+      if (s.player1Score > s.player2Score) player1Sets++;
+      else if (s.player2Score > s.player1Score) player2Sets++;
     });
-
     const isFinished = player1Sets >= setsToWin || player2Sets >= setsToWin;
-
-    // UTILIZANDO getMatchWinner dos utils para determinar vencedor
     const winner = getMatchWinner(
-      sets.map((set) => ({
-        ...set,
-        player1Id: match.player1Id,
-        player2Id: match.player2Id,
-      })),
+      sets,
       bestOf,
       match.player1Id,
       match.player2Id
     );
-
-    // Calcular progresso baseado em sets ganhos vs necessários
     const totalSetsPlayed = player1Sets + player2Sets;
-    const minSetsForMatch = setsToWin; // Mínimo para ganhar
     const progress = isFinished
       ? 100
-      : Math.min((totalSetsPlayed / minSetsForMatch) * 60, 95);
+      : Math.min((totalSetsPlayed / setsToWin) * 60, 95);
 
     return {
       player1Sets,
@@ -118,22 +102,19 @@ export const MatchCard: React.FC<MatchCardProps> = ({
       isFinished,
       winner,
       progress,
-      nextSetNumber: validSets.length + 1,
-      canFinish: !!winner && validSets.length > 0,
       totalValidSets: validSets.length,
-      setsNeeded: setsToWin, // UTILIZANDO A VARIÁVEL
+      setsNeeded: setsToWin,
     };
   }, [
     sets,
     isWalkover,
     walkoverWinner,
-    setsToWin,
+    bestOf,
     match.player1Id,
     match.player2Id,
-    bestOf,
+    setsToWin,
   ]);
 
-  // Função para adicionar set automaticamente se necessário
   const addSet = () => {
     if (sets.length < maxSets && !matchStats.isFinished) {
       setSets([...sets, { player1Score: 0, player2Score: 0 }]);
@@ -142,15 +123,15 @@ export const MatchCard: React.FC<MatchCardProps> = ({
 
   const updateSet = (
     index: number,
-    field: "player1Score" | "player2Score",
+    field: keyof Omit<SetResult, "winnerId">,
     value: number
   ) => {
-    const newSets = [...sets];
-    newSets[index] = {
-      ...newSets[index],
+    const updated = [...sets];
+    updated[index] = {
+      ...updated[index],
       [field]: Math.max(0, Math.min(99, value)),
     };
-    setSets(newSets);
+    setSets(updated);
   };
 
   const removeSet = (index: number) => {
@@ -159,66 +140,44 @@ export const MatchCard: React.FC<MatchCardProps> = ({
     }
   };
 
-  // UTILIZANDO getMatchWinner dos utils para validação de salvamento
   const canSaveMatch = (): boolean => {
     if (isWalkover) return !!walkoverWinner;
-
-    // Usar a função dos utils para determinar se a partida pode ser salva
-    const winner = getMatchWinner(
-      sets.map((set) => ({
-        ...set,
-        player1Id: match.player1Id,
-        player2Id: match.player2Id,
-      })),
-      bestOf,
-      match.player1Id,
-      match.player2Id
+    return (
+      !!getMatchWinner(sets, bestOf, match.player1Id, match.player2Id) &&
+      sets.some(isValidSet)
     );
-
-    const validSets = sets.filter(isValidSet);
-    return !!winner && validSets.length > 0;
   };
 
   const handleSave = () => {
     if (isWalkover && walkoverWinner) {
       onSetWalkover(match.id, walkoverWinner);
-      setIsDialogOpen(false);
     } else if (canSaveMatch()) {
-      // UTILIZANDO getMatchWinner dos utils para logging e validação
+      const validSets = sets.filter(isValidSet);
       const winner = getMatchWinner(
-        sets.map((set) => ({
-          ...set,
-          player1Id: match.player1Id,
-          player2Id: match.player2Id,
-        })),
+        validSets,
         bestOf,
         match.player1Id,
         match.player2Id
-      );
+      ) as string;
 
       console.log("Saving match result:", {
         matchId: match.id,
-        sets,
-        validSets: sets.filter(isValidSet),
+        sets: validSets,
         winner,
         timeoutsUsed,
+        isThirdPlace,
       });
 
-      const result: MatchResult = {
-        matchId: match.id,
-        sets: sets.filter(isValidSet),
-        timeoutsUsed,
-      };
-      onUpdateResult(result);
-      setIsDialogOpen(false);
+      onUpdateResult({ matchId: match.id, sets: validSets, timeoutsUsed });
     }
+    setIsDialogOpen(false);
   };
 
   const resetForm = () => {
-    setSets(match.sets.length > 0 ? [...match.sets] : []);
-    setTimeoutsUsed(match.timeoutsUsed || { player1: false, player2: false });
+    setSets([...match.sets]);
+    setTimeoutsUsed(match.timeoutsUsed);
     setIsWalkover(match.isWalkover || false);
-    setWalkoverWinner(match.walkoverWinner || "");
+    setWalkoverWinner(match.walkoverWinnerId || "");
   };
 
   const getStatusBadge = () => {
@@ -246,7 +205,21 @@ export const MatchCard: React.FC<MatchCardProps> = ({
     );
   };
 
-  const getSetValidationMessage = (set: Set): string | null => {
+  const getThirdPlaceBadge = () => {
+    if (!isThirdPlace) return null;
+
+    return (
+      <Badge
+        variant="outline"
+        className="bg-yellow-100 text-yellow-800 border-yellow-300"
+      >
+        <Medal className="h-3 w-3 mr-1" />
+        Disputa 3º Lugar
+      </Badge>
+    );
+  };
+
+  const getSetValidationMessage = (set: SetResult): string | null => {
     if (set.player1Score === 0 && set.player2Score === 0) {
       return null;
     }
@@ -270,35 +243,23 @@ export const MatchCard: React.FC<MatchCardProps> = ({
     return null;
   };
 
-  // UTILIZANDO getMatchWinner para análise de impacto de cada set
   const getSetImpactAnalysis = (setIndex: number): string | null => {
     if (setIndex >= sets.length) return null;
 
-    // Simular partida sem este set para ver o impacto
     const setsWithoutCurrent = sets.filter((_, i) => i !== setIndex);
     const currentWinner = getMatchWinner(
-      sets.map((set) => ({
-        ...set,
-        player1Id: match.player1Id,
-        player2Id: match.player2Id,
-      })),
+      sets,
       bestOf,
       match.player1Id,
       match.player2Id
     );
-
     const winnerWithoutSet = getMatchWinner(
-      setsWithoutCurrent.map((set) => ({
-        ...set,
-        player1Id: match.player1Id,
-        player2Id: match.player2Id,
-      })),
+      setsWithoutCurrent,
       bestOf,
       match.player1Id,
       match.player2Id
     );
 
-    // Se remover este set muda o vencedor, é um set decisivo
     if (currentWinner && !winnerWithoutSet) {
       return "Set decisivo para definir o vencedor";
     } else if (currentWinner !== winnerWithoutSet) {
@@ -308,22 +269,21 @@ export const MatchCard: React.FC<MatchCardProps> = ({
     return null;
   };
 
-  // UTILIZANDO Clock para mostrar tempos e durações
-  const getMatchDuration = () => {
-    if (!match.createdAt) return null;
-
-    const startTime = new Date(match.createdAt);
-    const endTime = match.completedAt
-      ? new Date(match.completedAt)
-      : new Date();
-    const durationMs = endTime.getTime() - startTime.getTime();
-    const durationMinutes = Math.floor(durationMs / (1000 * 60));
-
-    return durationMinutes;
+  const getMatchDuration = (): number | null => {
+    const start = match.createdAt;
+    if (!start) return null;
+    const end = match.completedAt || new Date();
+    return Math.floor((end.getTime() - start.getTime()) / 60000);
   };
 
   return (
-    <Card className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-transparent hover:border-l-blue-500">
+    <Card
+      className={`hover:shadow-lg transition-all duration-200 border-l-4 ${
+        isThirdPlace
+          ? "border-l-yellow-500 bg-yellow-50/30"
+          : "border-l-transparent hover:border-l-blue-500"
+      }`}
+    >
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <div className="flex-1">
@@ -337,22 +297,22 @@ export const MatchCard: React.FC<MatchCardProps> = ({
               </div>
             </div>
 
-            {/* Informações da partida com Clock */}
-            <div className="flex items-center gap-4 text-xs text-gray-500">
+            <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
+              {getThirdPlaceBadge()}
+
               {match.phase === "groups" && match.groupId && (
                 <span className="flex items-center gap-1">
                   <Target className="h-3 w-3" />
                   Fase de Grupos
                 </span>
               )}
-              {match.phase === "knockout" && match.round && (
+              {match.phase === "knockout" && match.round && !isThirdPlace && (
                 <span className="flex items-center gap-1">
                   <Trophy className="h-3 w-3" />
                   {match.round}
                 </span>
               )}
 
-              {/* UTILIZANDO Clock para mostrar tempo */}
               {match.createdAt && (
                 <span className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
@@ -360,7 +320,6 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                 </span>
               )}
 
-              {/* Duração da partida */}
               {getMatchDuration() !== null && getMatchDuration()! > 0 && (
                 <span className="flex items-center gap-1">
                   <Timer className="h-3 w-3" />
@@ -380,18 +339,25 @@ export const MatchCard: React.FC<MatchCardProps> = ({
           </div>
         </div>
 
-        {/* Progress bar usando setsToWin */}
         {(match.isCompleted || sets.length > 0) && (
           <div className="mt-3">
             <div className="flex justify-between items-center mb-1">
               <span className="text-xs text-gray-500">
                 Progresso da partida (Melhor de {bestOf})
+                {isThirdPlace && (
+                  <span className="text-yellow-600 font-medium ml-1">
+                    - Disputa 3º Lugar
+                  </span>
+                )}
               </span>
               <span className="text-xs text-gray-500">
                 {matchStats.player1Sets}-{matchStats.player2Sets} sets
               </span>
             </div>
-            <Progress value={matchStats.progress} className="h-2" />
+            <Progress
+              value={matchStats.progress}
+              className={`h-2 ${isThirdPlace ? "bg-yellow-100" : ""}`}
+            />
             <div className="flex justify-between text-xs text-gray-400 mt-1">
               <span>Sets para vencer: {setsToWin}</span>
               <span>{Math.round(matchStats.progress)}%</span>
@@ -404,11 +370,26 @@ export const MatchCard: React.FC<MatchCardProps> = ({
         {match.isCompleted ? (
           <div className="space-y-3">
             {match.isWalkover ? (
-              <div className="text-center py-4 bg-orange-50 rounded-lg border border-orange-200">
-                <XCircle className="h-8 w-8 text-orange-600 mx-auto mb-2" />
-                <p className="text-sm text-orange-800 font-medium">
+              <div
+                className={`text-center py-4 rounded-lg border ${
+                  isThirdPlace
+                    ? "bg-yellow-50 border-yellow-200"
+                    : "bg-orange-50 border-orange-200"
+                }`}
+              >
+                <XCircle
+                  className={`h-8 w-8 mx-auto mb-2 ${
+                    isThirdPlace ? "text-yellow-600" : "text-orange-600"
+                  }`}
+                />
+                <p
+                  className={`text-sm font-medium ${
+                    isThirdPlace ? "text-yellow-800" : "text-orange-800"
+                  }`}
+                >
+                  {isThirdPlace && "Disputa 3º Lugar - "}
                   Walkover - Vencedor:{" "}
-                  {match.walkoverWinner === match.player1Id
+                  {match.walkoverWinnerId === match.player1Id
                     ? match.player1?.name
                     : match.player2?.name}
                 </p>
@@ -416,13 +397,26 @@ export const MatchCard: React.FC<MatchCardProps> = ({
             ) : (
               <div className="space-y-2">
                 <div className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-1">
-                  <Trophy className="h-3 w-3" />
-                  Resultado dos sets:
+                  {isThirdPlace ? (
+                    <>
+                      <Medal className="h-3 w-3 text-yellow-600" />
+                      Resultado da Disputa de 3º Lugar:
+                    </>
+                  ) : (
+                    <>
+                      <Trophy className="h-3 w-3" />
+                      Resultado dos sets:
+                    </>
+                  )}
                 </div>
                 {match.sets.map((set, index) => (
                   <div
                     key={index}
-                    className="flex justify-between items-center text-sm bg-gray-50 px-3 py-2 rounded-md border"
+                    className={`flex justify-between items-center text-sm px-3 py-2 rounded-md border ${
+                      isThirdPlace
+                        ? "bg-yellow-50 border-yellow-200"
+                        : "bg-gray-50"
+                    }`}
                   >
                     <span className="font-medium">Set {index + 1}:</span>
                     <span className="font-mono text-lg">
@@ -431,18 +425,43 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                   </div>
                 ))}
 
-                {/* Estatísticas finais */}
-                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 mt-3">
+                <div
+                  className={`p-3 rounded-lg border mt-3 ${
+                    isThirdPlace
+                      ? "bg-yellow-50 border-yellow-200"
+                      : "bg-blue-50 border-blue-200"
+                  }`}
+                >
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-blue-700">Total de Sets:</span>
-                    <span className="font-bold text-blue-900">
+                    <span
+                      className={
+                        isThirdPlace ? "text-yellow-700" : "text-blue-700"
+                      }
+                    >
+                      Total de Sets:
+                    </span>
+                    <span
+                      className={`font-bold ${
+                        isThirdPlace ? "text-yellow-900" : "text-blue-900"
+                      }`}
+                    >
                       {matchStats.player1Sets}-{matchStats.player2Sets}
                     </span>
                   </div>
                   {matchStats.winner && (
                     <div className="flex justify-between items-center text-sm mt-1">
-                      <span className="text-blue-700">Vencedor:</span>
-                      <span className="font-bold text-green-700">
+                      <span
+                        className={
+                          isThirdPlace ? "text-yellow-700" : "text-blue-700"
+                        }
+                      >
+                        {isThirdPlace ? "3º Colocado:" : "Vencedor:"}
+                      </span>
+                      <span
+                        className={`font-bold ${
+                          isThirdPlace ? "text-yellow-700" : "text-green-700"
+                        }`}
+                      >
                         {matchStats.winner === match.player1Id
                           ? match.player1?.name
                           : match.player2?.name}
@@ -453,7 +472,6 @@ export const MatchCard: React.FC<MatchCardProps> = ({
               </div>
             )}
 
-            {/* Timeouts e tempo de partida */}
             <div className="space-y-2 pt-2 border-t">
               {(match.timeoutsUsed?.player1 || match.timeoutsUsed?.player2) && (
                 <div className="flex items-center gap-2 text-xs text-gray-600">
@@ -474,7 +492,6 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                 </div>
               )}
 
-              {/* UTILIZANDO Clock para tempo de conclusão */}
               {match.completedAt && (
                 <div className="flex items-center gap-2 text-xs text-gray-600">
                   <Clock className="h-3 w-3" />
@@ -493,7 +510,11 @@ export const MatchCard: React.FC<MatchCardProps> = ({
         ) : (
           <div className="text-center py-6 text-gray-500">
             <PauseCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-            <p className="text-sm">Partida aguardando resultado</p>
+            <p className="text-sm">
+              {isThirdPlace
+                ? "Disputa de 3º lugar aguardando resultado"
+                : "Partida aguardando resultado"}
+            </p>
             {match.createdAt && (
               <p className="text-xs text-gray-400 mt-1">
                 Criada em {formatDateTime(match.createdAt)}
@@ -502,7 +523,6 @@ export const MatchCard: React.FC<MatchCardProps> = ({
           </div>
         )}
 
-        {/* Botão de edição melhorado */}
         {isEditable && match.player1 && match.player2 && (
           <div className="mt-4 pt-3 border-t">
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -510,32 +530,63 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                 <Button
                   variant={match.isCompleted ? "outline" : "default"}
                   size="sm"
-                  className="w-full"
+                  className={`w-full ${
+                    isThirdPlace ? "border-yellow-300 hover:bg-yellow-50" : ""
+                  }`}
                   onClick={resetForm}
                 >
                   <Edit className="h-4 w-4 mr-2" />
-                  {match.isCompleted ? "Editar Resultado" : "Lançar Resultado"}
+                  {match.isCompleted
+                    ? isThirdPlace
+                      ? "Editar Resultado (3º Lugar)"
+                      : "Editar Resultado"
+                    : isThirdPlace
+                    ? "Lançar Resultado (3º Lugar)"
+                    : "Lançar Resultado"}
                 </Button>
               </DialogTrigger>
 
               <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
-                    <Trophy className="h-5 w-5" />
+                    {isThirdPlace ? (
+                      <Medal className="h-5 w-5 text-yellow-600" />
+                    ) : (
+                      <Trophy className="h-5 w-5" />
+                    )}
                     {match.player1.name} vs {match.player2.name}
                     <Badge variant="outline" className="ml-2">
                       Melhor de {bestOf}
                     </Badge>
+                    {isThirdPlace && (
+                      <Badge
+                        variant="outline"
+                        className="bg-yellow-100 text-yellow-800 border-yellow-300"
+                      >
+                        Disputa 3º Lugar
+                      </Badge>
+                    )}
                   </DialogTitle>
                 </DialogHeader>
 
                 <div className="space-y-6">
-                  {/* Status atual da partida */}
                   {!isWalkover && sets.length > 0 && (
-                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <div
+                      className={`p-4 rounded-lg border ${
+                        isThirdPlace
+                          ? "bg-yellow-50 border-yellow-200"
+                          : "bg-blue-50 border-blue-200"
+                      }`}
+                    >
                       <div className="flex justify-between items-center mb-2">
-                        <h4 className="font-medium text-blue-900">
-                          Status da Partida
+                        <h4
+                          className={`font-medium ${
+                            isThirdPlace ? "text-yellow-900" : "text-blue-900"
+                          }`}
+                        >
+                          {isThirdPlace
+                            ? "Status da Disputa de 3º Lugar"
+                            : "Status da Partida"}
                         </h4>
                         <Badge
                           variant={
@@ -550,37 +601,79 @@ export const MatchCard: React.FC<MatchCardProps> = ({
 
                       <div className="grid grid-cols-3 gap-4 text-sm">
                         <div className="text-center">
-                          <div className="text-blue-700 font-medium">
+                          <div
+                            className={`font-medium ${
+                              isThirdPlace ? "text-yellow-700" : "text-blue-700"
+                            }`}
+                          >
                             {match.player1.name}
                           </div>
-                          <div className="text-2xl font-bold text-blue-900">
+                          <div
+                            className={`text-2xl font-bold ${
+                              isThirdPlace ? "text-yellow-900" : "text-blue-900"
+                            }`}
+                          >
                             {matchStats.player1Sets}
                           </div>
-                          <div className="text-xs text-blue-600">
+                          <div
+                            className={`text-xs ${
+                              isThirdPlace ? "text-yellow-600" : "text-blue-600"
+                            }`}
+                          >
                             sets ganhos
                           </div>
                         </div>
 
-                        <div className="text-center border-x border-blue-200 px-4">
-                          <div className="text-blue-700 font-medium">
+                        <div
+                          className={`text-center border-x px-4 ${
+                            isThirdPlace
+                              ? "border-yellow-200"
+                              : "border-blue-200"
+                          }`}
+                        >
+                          <div
+                            className={`font-medium ${
+                              isThirdPlace ? "text-yellow-700" : "text-blue-700"
+                            }`}
+                          >
                             Para vencer
                           </div>
-                          <div className="text-2xl font-bold text-blue-900">
+                          <div
+                            className={`text-2xl font-bold ${
+                              isThirdPlace ? "text-yellow-900" : "text-blue-900"
+                            }`}
+                          >
                             {setsToWin}
                           </div>
-                          <div className="text-xs text-blue-600">
+                          <div
+                            className={`text-xs ${
+                              isThirdPlace ? "text-yellow-600" : "text-blue-600"
+                            }`}
+                          >
                             sets necessários
                           </div>
                         </div>
 
                         <div className="text-center">
-                          <div className="text-blue-700 font-medium">
+                          <div
+                            className={`font-medium ${
+                              isThirdPlace ? "text-yellow-700" : "text-blue-700"
+                            }`}
+                          >
                             {match.player2.name}
                           </div>
-                          <div className="text-2xl font-bold text-blue-900">
+                          <div
+                            className={`text-2xl font-bold ${
+                              isThirdPlace ? "text-yellow-900" : "text-blue-900"
+                            }`}
+                          >
                             {matchStats.player2Sets}
                           </div>
-                          <div className="text-xs text-blue-600">
+                          <div
+                            className={`text-xs ${
+                              isThirdPlace ? "text-yellow-600" : "text-blue-600"
+                            }`}
+                          >
                             sets ganhos
                           </div>
                         </div>
@@ -588,30 +681,32 @@ export const MatchCard: React.FC<MatchCardProps> = ({
 
                       <Progress value={matchStats.progress} className="mt-3" />
 
-                      {/* UTILIZANDO getMatchWinner para validação em tempo real */}
                       <div className="mt-3 text-center">
                         {(() => {
                           const winner = getMatchWinner(
-                            sets.map((set) => ({
-                              ...set,
-                              player1Id: match.player1Id,
-                              player2Id: match.player2Id,
-                            })),
+                            sets,
                             bestOf,
                             match.player1Id,
                             match.player2Id
                           );
-
                           const validSets = sets.filter(isValidSet);
 
                           if (winner) {
                             return (
-                              <div className="text-sm text-green-700 font-medium">
-                                🏆{" "}
+                              <div
+                                className={`text-sm font-medium ${
+                                  isThirdPlace
+                                    ? "text-yellow-700"
+                                    : "text-green-700"
+                                }`}
+                              >
+                                {isThirdPlace ? "🥉" : "🏆"}{" "}
                                 {winner === match.player1Id
                                   ? match.player1.name
                                   : match.player2.name}{" "}
-                                venceu!
+                                {isThirdPlace
+                                  ? "conquistou o 3º lugar!"
+                                  : "venceu!"}
                               </div>
                             );
                           } else if (validSets.length > 0) {
@@ -622,9 +717,15 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                                 matchStats.player2Sets
                               );
                             return (
-                              <div className="text-sm text-blue-700">
-                                Faltam {setsRemaining} set(s) para definir o
-                                vencedor
+                              <div
+                                className={`text-sm ${
+                                  isThirdPlace
+                                    ? "text-yellow-700"
+                                    : "text-blue-700"
+                                }`}
+                              >
+                                Faltam {setsRemaining} set(s) para definir{" "}
+                                {isThirdPlace ? "o 3º colocado" : "o vencedor"}
                               </div>
                             );
                           } else {
@@ -639,7 +740,6 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                     </div>
                   )}
 
-                  {/* Toggle Walkover */}
                   <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
                     <Switch
                       id="walkover"
@@ -647,16 +747,19 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                       onCheckedChange={setIsWalkover}
                     />
                     <Label htmlFor="walkover" className="font-medium">
-                      Partida por Walkover (W.O.)
+                      {isThirdPlace
+                        ? "Disputa por Walkover (W.O.)"
+                        : "Partida por Walkover (W.O.)"}
                     </Label>
                   </div>
 
                   {isWalkover ? (
-                    /* Configuração de Walkover */
                     <div className="space-y-4">
                       <div>
                         <Label className="text-base font-medium">
-                          Vencedor por Walkover:
+                          {isThirdPlace
+                            ? "3º Colocado por Walkover:"
+                            : "Vencedor por Walkover:"}
                         </Label>
                         <div className="grid grid-cols-2 gap-3 mt-3">
                           <Button
@@ -669,7 +772,11 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                             onClick={() => setWalkoverWinner(match.player1Id)}
                             className="h-12"
                           >
-                            <Trophy className="h-4 w-4 mr-2" />
+                            {isThirdPlace ? (
+                              <Medal className="h-4 w-4 mr-2" />
+                            ) : (
+                              <Trophy className="h-4 w-4 mr-2" />
+                            )}
                             {match.player1.name}
                           </Button>
                           <Button
@@ -682,22 +789,29 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                             onClick={() => setWalkoverWinner(match.player2Id)}
                             className="h-12"
                           >
-                            <Trophy className="h-4 w-4 mr-2" />
+                            {isThirdPlace ? (
+                              <Medal className="h-4 w-4 mr-2" />
+                            ) : (
+                              <Trophy className="h-4 w-4 mr-2" />
+                            )}
                             {match.player2.name}
                           </Button>
                         </div>
                       </div>
                     </div>
                   ) : (
-                    /* Configuração de Sets Melhorada */
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
                         <div>
                           <Label className="text-base font-medium">
-                            Sets da Partida (Melhor de {bestOf})
+                            Sets da {isThirdPlace ? "Disputa" : "Partida"}{" "}
+                            (Melhor de {bestOf})
                           </Label>
                           <p className="text-sm text-gray-500 mt-1">
-                            Primeiro a ganhar {setsToWin} sets vence a partida
+                            Primeiro a ganhar {setsToWin} sets{" "}
+                            {isThirdPlace
+                              ? "conquista o 3º lugar"
+                              : "vence a partida"}
                           </p>
                         </div>
                         <Button
@@ -718,7 +832,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                           const validationMessage =
                             getSetValidationMessage(set);
                           const isSetValid = !validationMessage;
-                          const impactAnalysis = getSetImpactAnalysis(index); // UTILIZANDO análise de impacto
+                          const impactAnalysis = getSetImpactAnalysis(index);
 
                           return (
                             <div key={index} className="space-y-2">
@@ -727,7 +841,6 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                                   Set {index + 1}:
                                 </Label>
 
-                                {/* Player 1 Score */}
                                 <div className="flex-1">
                                   <Label className="text-xs text-gray-500 block mb-1">
                                     {match.player1.name}
@@ -756,7 +869,6 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                                   ×
                                 </div>
 
-                                {/* Player 2 Score */}
                                 <div className="flex-1">
                                   <Label className="text-xs text-gray-500 block mb-1">
                                     {match.player2.name}
@@ -781,7 +893,6 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                                   />
                                 </div>
 
-                                {/* Indicador de vencedor do set */}
                                 {isSetValid &&
                                   (set.player1Score > 0 ||
                                     set.player2Score > 0) && (
@@ -809,7 +920,6 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                                 </Button>
                               </div>
 
-                              {/* Mensagem de validação */}
                               {validationMessage && (
                                 <div className="flex items-center gap-2 text-xs text-red-600 ml-20">
                                   <AlertCircle className="h-3 w-3" />
@@ -817,7 +927,6 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                                 </div>
                               )}
 
-                              {/* Análise de impacto usando getMatchWinner */}
                               {impactAnalysis && isSetValid && (
                                 <div className="flex items-center gap-2 text-xs text-blue-600 ml-20">
                                   <Trophy className="h-3 w-3" />
@@ -829,7 +938,6 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                         })}
                       </div>
 
-                      {/* Timeouts */}
                       <Separator />
 
                       <div>
@@ -843,7 +951,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                           <div className="flex items-center space-x-3 p-3 border rounded-lg">
                             <Switch
                               id="timeout-p1"
-                              checked={timeoutsUsed.player1}
+                              checked={timeoutsUsed?.player1 || false}
                               onCheckedChange={(checked) =>
                                 setTimeoutsUsed((prev) => ({
                                   ...prev,
@@ -863,7 +971,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                           <div className="flex items-center space-x-3 p-3 border rounded-lg">
                             <Switch
                               id="timeout-p2"
-                              checked={timeoutsUsed.player2}
+                              checked={timeoutsUsed?.player2 || false}
                               onCheckedChange={(checked) =>
                                 setTimeoutsUsed((prev) => ({
                                   ...prev,
@@ -884,7 +992,6 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                     </div>
                   )}
 
-                  {/* Botões de ação */}
                   <div className="flex justify-between items-center pt-4 border-t">
                     <Button
                       type="button"
@@ -914,13 +1021,8 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                         className="min-w-[120px]"
                       >
                         {(() => {
-                          // UTILIZANDO getMatchWinner para texto dinâmico do botão
                           const winner = getMatchWinner(
-                            sets.map((set) => ({
-                              ...set,
-                              player1Id: match.player1Id,
-                              player2Id: match.player2Id,
-                            })),
+                            sets,
                             bestOf,
                             match.player1Id,
                             match.player2Id
@@ -930,7 +1032,9 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                             return (
                               <>
                                 <CheckCircle className="h-4 w-4 mr-2" />
-                                Salvar Resultado Final
+                                {isThirdPlace
+                                  ? "Salvar 3º Lugar"
+                                  : "Salvar Resultado Final"}
                               </>
                             );
                           } else {
@@ -941,23 +1045,24 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                     </div>
                   </div>
 
-                  {/* Resumo da estratégia usando getMatchWinner */}
                   {!isWalkover && sets.length > 0 && (
-                    <div className="mt-4 p-3 bg-gray-50 rounded-lg border-t">
+                    <div
+                      className={`mt-4 p-3 rounded-lg border-t ${
+                        isThirdPlace ? "bg-yellow-50" : "bg-gray-50"
+                      }`}
+                    >
                       <div className="text-xs text-gray-600">
-                        💡 <strong>Resumo da partida:</strong>
+                        💡{" "}
+                        <strong>
+                          Resumo {isThirdPlace ? "da disputa" : "da partida"}:
+                        </strong>
                         {(() => {
                           const winner = getMatchWinner(
-                            sets.map((set) => ({
-                              ...set,
-                              player1Id: match.player1Id,
-                              player2Id: match.player2Id,
-                            })),
+                            sets,
                             bestOf,
                             match.player1Id,
                             match.player2Id
                           );
-
                           const validSets = sets.filter(isValidSet);
 
                           if (winner) {
@@ -965,7 +1070,11 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                               winner === match.player1Id
                                 ? match.player1.name
                                 : match.player2.name;
-                            return ` ${winnerName} venceu em ${validSets.length} sets (melhor de ${bestOf}).`;
+                            return ` ${winnerName} ${
+                              isThirdPlace ? "conquistou o 3º lugar" : "venceu"
+                            } em ${
+                              validSets.length
+                            } sets (melhor de ${bestOf}).`;
                           } else if (validSets.length > 0) {
                             const setsRemaining =
                               setsToWin -
@@ -982,7 +1091,11 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                                 : "Empate";
 
                             if (leader === "Empate") {
-                              return ` Partida empatada (${matchStats.player1Sets}-${matchStats.player2Sets}). Próximo set é decisivo.`;
+                              return ` ${
+                                isThirdPlace ? "Disputa" : "Partida"
+                              } empatada (${matchStats.player1Sets}-${
+                                matchStats.player2Sets
+                              }). Próximo set é decisivo.`;
                             } else {
                               return ` ${leader} está liderando ${Math.max(
                                 matchStats.player1Sets,
@@ -990,7 +1103,11 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                               )}-${Math.min(
                                 matchStats.player1Sets,
                                 matchStats.player2Sets
-                              )}. Faltam ${setsRemaining} set(s) para vencer.`;
+                              )}. Faltam ${setsRemaining} set(s) para ${
+                                isThirdPlace
+                                  ? "conquistar o 3º lugar"
+                                  : "vencer"
+                              }.`;
                             }
                           } else {
                             return " Insira os resultados dos sets para começar a análise.";
