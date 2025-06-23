@@ -29,8 +29,10 @@ Sistema web completo e profissional para gerenciamento de campeonatos de tênis 
 ### 🎯 Sistema de Mata-mata Eliminatório
 - ✅ Geração automática de chaves eliminatórias
 - ✅ Distribuição dos classificados evitando confrontos do mesmo grupo
-- ✅ Suporte para disputa de 3º lugar
+- ✅ Suporte para disputa de 3º lugar (primeira e segunda divisão)
 - ✅ Visualização das rodadas (Oitavas, Quartas, Semifinal, Final)
+- ✅ Estatísticas detalhadas de progresso em tempo real
+- ✅ Segunda divisão (repescagem) para atletas eliminados
 
 ### ⚽ Regras Específicas CBTM
 - ✅ Melhor de 5 sets (3 sets vencidos) ou melhor de 7 sets (4 sets vencidos)
@@ -40,6 +42,7 @@ Sistema web completo e profissional para gerenciamento de campeonatos de tênis 
 - ✅ Cabeças de chave distribuídos por ranking
 - ✅ Sistema de walkover (W.O.)
 - ✅ Controle de desqualificação
+- ✅ Geração automática de próximas rodadas após conclusão
 
 ### 📊 Gestão de Atletas
 - ✅ Cadastro simplificado de atletas (apenas nome)

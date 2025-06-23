@@ -1024,6 +1024,7 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     await get().updateChampionship(updatedChampionship);
   },
 
+  // ✅ CORREÇÃO: Garantir que partidas de mata-mata sejam salvas corretamente
   generateKnockoutBracket: async () => {
     const state = get();
     if (!state.currentChampionship) return;
@@ -1101,15 +1102,25 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
       allKnockoutMatches = [...allKnockoutMatches, ...secondDivisionMatches];
     }
 
+    // ✅ CORREÇÃO: Salvar partidas no primeiro grupo OU criar estrutura adequada
     const finalUpdatedGroups = updatedGroups.map((group, index) =>
       index === 0
         ? { ...group, matches: [...group.matches, ...allKnockoutMatches] }
         : group
     );
 
+    // ✅ ADICIONAR: Também salvar no knockoutBracket para acesso direto
+    const knockoutBracket = allKnockoutMatches.map((match, index) => ({
+      id: `node-${match.id}`,
+      round: match.round || "Unknown",
+      position: match.position || index,
+      match: match,
+    }));
+
     const updatedChampionship = {
       ...championshipWithUpdatedStandings,
       groups: finalUpdatedGroups,
+      knockoutBracket: knockoutBracket, // ✅ ADICIONAR knockoutBracket
       status: "knockout" as const,
       totalMatches:
         championshipWithUpdatedStandings.totalMatches +
@@ -1652,7 +1663,7 @@ function updateMatchWithResult(
     ...match,
     sets: result.sets,
     isWalkover: result.isWalkover || false,
-    walkoverWinner: result.walkoverWinnerId,
+    walkoverWinnerId: result.walkoverWinnerId, // ✅ CORREÇÃO: usar walkoverWinnerId
     timeoutsUsed: result.timeoutsUsed,
     isCompleted: true,
     completedAt: new Date(),
@@ -1676,7 +1687,7 @@ function updateMatchWithResult(
       match.player2Id
     );
 
-    // ✅ GARANTIR que o winner é sempre definido
+    // ✅ GARANTIR que o winnerId é sempre definido
     updatedMatch.winnerId = winner;
 
     console.log("✅ [UPDATE-MATCH] Vencedor determinado:", {
@@ -1707,7 +1718,7 @@ function updateMatchWithResult(
       );
     }
   } else {
-    // Para walkover, o vencedor é o walkoverWinner
+    // Para walkover, o vencedor é o walkoverWinnerId
     updatedMatch.winnerId = result.walkoverWinnerId;
     console.log(
       "✅ [UPDATE-MATCH] Walkover - Vencedor:",

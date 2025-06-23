@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import { Championship, Athlete, Group, Match, Set } from "../types";
+import { Championship, Athlete, Group, Match, SetResult } from "../types/index";
 
 // Utilitários de formatação
 export const formatDate = (date: Date): string => {
@@ -65,7 +65,7 @@ export const getStatusColor = (status: string): string => {
 };
 
 // Função para validar sets (consistente com types/index.ts)
-export const isValidSet = (set: Set): boolean => {
+export const isValidSet = (set: SetResult): boolean => {
   const { player1Score, player2Score } = set;
 
   // Verificar se ambos os scores são números válidos
@@ -345,6 +345,7 @@ export const generateSecondDivisionMatches = (athletes: Athlete[]): Match[] => {
   return matches;
 };
 
+// ✅ CORREÇÃO: Usar consistentemente winnerId ao invés de winner
 export const generateNextRoundMatches = (
   currentRoundMatches: Match[],
   round: string,
@@ -377,8 +378,8 @@ export const generateNextRoundMatches = (
     const loserIds: string[] = [];
 
     completedMatches.forEach((match) => {
-      // Garantir que o campo winner está preenchido
-      let winnerId = match.winner;
+      // ✅ CORREÇÃO: Usar winnerId consistentemente
+      let winnerId = match.winnerId;
       if (!winnerId && match.sets && match.sets.length > 0) {
         winnerId = getMatchWinner(
           match.sets,
@@ -424,6 +425,7 @@ export const generateNextRoundMatches = (
           isCompleted: false,
           phase: "knockout",
           round: round,
+          isThirdPlace: true, // ✅ MARCAR COMO TERCEIRO LUGAR
           position: 0,
           timeoutsUsed: {
             player1: false,
@@ -441,16 +443,16 @@ export const generateNextRoundMatches = (
     // ✅ LÓGICA PARA FINAL E OUTRAS RODADAS (usar VENCEDORES)
     console.log("🏆 [GENERATE] Gerando rodada normal - usando VENCEDORES");
 
-    // Coletar todos os vencedores - VERIFICAR CAMPO winner PRIMEIRO
+    // Coletar todos os vencedores - ✅ USAR winnerId CONSISTENTEMENTE
     const winnerIds: string[] = [];
 
     completedMatches.forEach((match, index) => {
-      let winnerId = match.winner;
+      let winnerId = match.winnerId;
 
-      // Se não houver winner definido, calcular usando getMatchWinner
+      // Se não houver winnerId definido, calcular usando getMatchWinner
       if (!winnerId && match.sets && match.sets.length > 0) {
         console.log(
-          `⚠️ [GENERATE] Campo winner não definido para partida ${match.id}, recalculando...`
+          `⚠️ [GENERATE] Campo winnerId não definido para partida ${match.id}, recalculando...`
         );
         winnerId = getMatchWinner(
           match.sets,
@@ -478,8 +480,6 @@ export const generateNextRoundMatches = (
             index + 1
           }: ${match.player1?.name} vs ${match.player2?.name}`
         );
-        console.log(`     Sets da partida:`, match.sets);
-        console.log(`     isCompleted: ${match.isCompleted}`);
       }
     });
 
@@ -520,34 +520,7 @@ export const generateNextRoundMatches = (
           console.log(
             `✅ [GENERATE] Partida ${round} criada: ${winner1.name} vs ${winner2.name} (ID: ${newMatch.id})`
           );
-        } else {
-          console.log(
-            `❌ [GENERATE] Erro ao buscar atletas: winner1=${
-              winnerIds[i]
-            }, winner2=${winnerIds[i + 1]}`
-          );
         }
-      }
-    }
-
-    // Verificação especial para a final
-    if (round.includes("Final") && !round.includes("Semi")) {
-      console.log(
-        `🏆 [GENERATE] Total de partidas da ${round} criadas: ${matches.length}`
-      );
-      if (matches.length === 0) {
-        console.log("❌ [GENERATE] ERRO: Nenhuma partida da final foi criada!");
-        console.log("  Vencedores disponíveis:", winnerIds.length);
-        console.log("  Partidas completadas:", completedMatches.length);
-        console.log(
-          "  Partidas completadas detalhes:",
-          completedMatches.map((m) => ({
-            id: m.id,
-            players: `${m.player1?.name} vs ${m.player2?.name}`,
-            winner: m.winner,
-            sets: m.sets,
-          }))
-        );
       }
     }
   }
