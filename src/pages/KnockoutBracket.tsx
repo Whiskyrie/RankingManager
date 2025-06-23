@@ -86,6 +86,14 @@ export const KnockoutBracket: React.FC = () => {
     const progressPercentage =
       totalMatches > 0 ? (completedMatches / totalMatches) * 100 : 0;
 
+    console.log("📊 [BRACKET-DATA] Estatísticas do mata-mata:", {
+      totalKnockoutMatches: totalMatches,
+      mainMatches: mainMatches.length,
+      secondDivMatches: secondDivisionMatches.length,
+      completedMatches,
+      progressPercentage,
+    });
+
     return {
       allKnockoutMatches,
       mainMatches,

@@ -393,12 +393,27 @@ export const useChampionshipStore = create<
               throw new Error("Partida não encontrada");
             }
 
-            // Recalcular estatísticas
-            updatedChampionship.completedMatches = updatedChampionship.groups
-              .flatMap((g) => g.matches)
-              .filter((m) => m.isCompleted).length;
+            // ✅ CORREÇÃO: Recalcular totalMatches e completedMatches incluindo TODAS as partidas
+            const allMatches = updatedChampionship.groups.flatMap(
+              (g) => g.matches
+            );
+            const validMatches = allMatches.filter(
+              (m) =>
+                m.player1?.id && m.player2?.id && m.player1.id !== m.player2.id
+            );
 
+            updatedChampionship.totalMatches = validMatches.length;
+            updatedChampionship.completedMatches = validMatches.filter(
+              (m) => m.isCompleted
+            ).length;
             updatedChampionship.updatedAt = new Date();
+
+            console.log("📊 [STORE] Estatísticas atualizadas:", {
+              totalMatches: updatedChampionship.totalMatches,
+              completedMatches: updatedChampionship.completedMatches,
+              allMatches: allMatches.length,
+              validMatches: validMatches.length,
+            });
 
             // Atualizar standings se for fase de grupos
             if (updatedChampionship.status === "groups") {
@@ -554,15 +569,32 @@ export const useChampionshipStore = create<
             match: match,
           }));
 
+          // ✅ CORREÇÃO: Recalcular totalMatches incluindo todas as partidas de mata-mata
+          const allUpdatedMatches = finalUpdatedGroups.flatMap(
+            (g) => g.matches
+          );
+          const validUpdatedMatches = allUpdatedMatches.filter(
+            (m) =>
+              m.player1?.id && m.player2?.id && m.player1.id !== m.player2.id
+          );
+
           const updatedChampionship = {
             ...championshipWithUpdatedStandings,
             groups: finalUpdatedGroups,
             knockoutBracket: knockoutBracket,
             status: "knockout" as const,
-            totalMatches:
-              championshipWithUpdatedStandings.totalMatches +
-              allKnockoutMatches.length,
+            totalMatches: validUpdatedMatches.length,
+            completedMatches: validUpdatedMatches.filter((m) => m.isCompleted)
+              .length,
           };
+
+          console.log("📊 [KNOCKOUT] Estatísticas finais:", {
+            totalMatches: updatedChampionship.totalMatches,
+            mainKnockoutMatches: mainKnockoutMatches.length,
+            secondDivisionMatches:
+              allKnockoutMatches.length - mainKnockoutMatches.length,
+            allKnockoutMatches: allKnockoutMatches.length,
+          });
 
           await get().updateChampionship(updatedChampionship);
           console.log("🎉 [KNOCKOUT] MATA-MATA GERADO COM SUCESSO!");

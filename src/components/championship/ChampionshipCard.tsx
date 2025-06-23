@@ -105,6 +105,12 @@ export const ChampionshipCard: React.FC<ChampionshipCardProps> = ({
               style={{ width: `${stats.progress}%` }}
             />
           </div>
+          {stats.knockoutMatches > 0 && (
+            <div className="text-xs text-gray-500 mt-1">
+              Principal: {stats.mainKnockoutMatches} | 2ª Div:{" "}
+              {stats.secondDivMatches}
+            </div>
+          )}
         </div>
 
         {championship.status === "groups" && (

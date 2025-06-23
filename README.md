@@ -33,6 +33,7 @@ Sistema web completo e profissional para gerenciamento de campeonatos de tênis 
 - ✅ Visualização das rodadas (Oitavas, Quartas, Semifinal, Final)
 - ✅ Estatísticas detalhadas de progresso em tempo real
 - ✅ Segunda divisão (repescagem) para atletas eliminados
+- ✅ **Contabilização correta de todas as partidas** (grupos + mata-mata principal + segunda divisão)
 
 ### ⚽ Regras Específicas CBTM
 - ✅ Melhor de 5 sets (3 sets vencidos) ou melhor de 7 sets (4 sets vencidos)
@@ -43,7 +44,7 @@ Sistema web completo e profissional para gerenciamento de campeonatos de tênis 
 - ✅ Sistema de walkover (W.O.)
 - ✅ Controle de desqualificação
 - ✅ Geração automática de próximas rodadas após conclusão
-- ✅ **Estatísticas precisas** com validação de dados
+- ✅ **Estatísticas precisas** com validação de dados e contabilização completa
 - ✅ **Exclusão segura de campeonatos** com confirmação dupla
 
 ### 📊 Gestão de Atletas

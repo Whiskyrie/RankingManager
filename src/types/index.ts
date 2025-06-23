@@ -98,7 +98,7 @@ export interface Championship {
   totalAthletes: number;
   groups: Group[];
   knockoutBracket: KnockoutNode[];
-  totalMatches: number;
+  totalMatches: number; // ✅ CORREÇÃO: Agora inclui TODAS as partidas (grupos + mata-mata principal + segunda divisão)
   completedMatches: number;
   createdAt: Date | string; // ✅ CORREÇÃO: Permitir string também
   updatedAt: Date | string; // ✅ CORREÇÃO: Permitir string também

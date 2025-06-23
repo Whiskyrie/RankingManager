@@ -972,15 +972,16 @@ export const exportToJSON = <T>(data: T, filename: string): void => {
 
 // Utilitários para cálculos estatísticos - ✅ CORRIGIDO
 export const calculateTournamentStats = (championship: Championship) => {
-  // ✅ CORREÇÃO: Filtrar apenas partidas válidas (com jogadores definidos)
-  const validMatches = championship.groups
-    .flatMap((group) => group.matches)
-    .filter(
-      (match) =>
-        match.player1?.id &&
-        match.player2?.id &&
-        match.player1.id !== match.player2.id
-    );
+  // ✅ CORREÇÃO: Incluir TODAS as partidas, incluindo mata-mata da segunda divisão
+  const allMatches = championship.groups.flatMap((group) => group.matches);
+
+  // Filtrar apenas partidas válidas (com jogadores definidos)
+  const validMatches = allMatches.filter(
+    (match) =>
+      match.player1?.id &&
+      match.player2?.id &&
+      match.player1.id !== match.player2.id
+  );
 
   const totalMatches = validMatches.length;
   const completedMatches = validMatches.filter(
@@ -993,13 +994,26 @@ export const calculateTournamentStats = (championship: Championship) => {
       ? Math.min(100, Math.round((completedMatches / totalMatches) * 100))
       : 0;
 
+  // ✅ SEPARAR estatísticas por fase
+  const groupMatches = validMatches.filter((match) => match.phase === "groups");
+  const knockoutMatches = validMatches.filter(
+    (match) => match.phase === "knockout"
+  );
+  const mainKnockoutMatches = knockoutMatches.filter(
+    (m) => !m.round?.includes("2ª Div")
+  );
+  const secondDivMatches = knockoutMatches.filter((m) =>
+    m.round?.includes("2ª Div")
+  );
+
   // ✅ CORREÇÃO: Contar apenas grupos com partidas válidas
   const validGroups = championship.groups.filter((group) =>
     group.matches.some(
       (match) =>
         match.player1?.id &&
         match.player2?.id &&
-        match.player1.id !== match.player2.id
+        match.player1.id !== match.player2.id &&
+        match.phase === "groups"
     )
   );
 
@@ -1008,7 +1022,8 @@ export const calculateTournamentStats = (championship: Championship) => {
       (match) =>
         match.player1?.id &&
         match.player2?.id &&
-        match.player1.id !== match.player2.id
+        match.player1.id !== match.player2.id &&
+        match.phase === "groups"
     );
     return (
       groupValidMatches.length > 0 &&
@@ -1023,7 +1038,11 @@ export const calculateTournamentStats = (championship: Championship) => {
       : 0;
 
   console.log("📊 [STATS] Estatísticas recalculadas:", {
-    validMatches: totalMatches,
+    totalMatches,
+    groupMatches: groupMatches.length,
+    knockoutMatches: knockoutMatches.length,
+    mainKnockoutMatches: mainKnockoutMatches.length,
+    secondDivMatches: secondDivMatches.length,
     completedMatches,
     progress,
     validGroups: totalGroups,
@@ -1039,6 +1058,14 @@ export const calculateTournamentStats = (championship: Championship) => {
     groupsCompleted,
     totalGroups,
     groupsProgress,
+    // ✅ NOVO: Estatísticas detalhadas
+    groupMatches: groupMatches.length,
+    knockoutMatches: knockoutMatches.length,
+    mainKnockoutMatches: mainKnockoutMatches.length,
+    secondDivMatches: secondDivMatches.length,
+    groupMatchesCompleted: groupMatches.filter((m) => m.isCompleted).length,
+    knockoutMatchesCompleted: knockoutMatches.filter((m) => m.isCompleted)
+      .length,
   };
 };
 

@@ -12,6 +12,7 @@ import {
   X,
   Award,
 } from "lucide-react";
+import { calculateTournamentStats } from "../utils";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -245,6 +246,34 @@ export const Layout: React.FC<LayoutProps> = ({
                       {currentChampionship.totalMatches}
                     </span>
                   </div>
+                  {(() => {
+                    const stats = calculateTournamentStats(currentChampionship);
+                    if (stats.knockoutMatches > 0) {
+                      return (
+                        <div className="pt-1 border-t border-gray-200">
+                          <div className="flex justify-between">
+                            <span className="text-xs text-gray-600">
+                              Principal:
+                            </span>
+                            <span className="text-xs font-medium">
+                              {stats.mainKnockoutMatches}
+                            </span>
+                          </div>
+                          {stats.secondDivMatches > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-xs text-gray-600">
+                                2ª Div:
+                              </span>
+                              <span className="text-xs font-medium">
+                                {stats.secondDivMatches}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               </div>
             )}

@@ -175,6 +175,16 @@ export const GroupsManagement: React.FC = () => {
                   <p className="text-2xl font-bold text-gray-900">
                     {stats.completedMatches}/{stats.totalMatches}
                   </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Grupos: {stats.groupMatchesCompleted}/{stats.groupMatches}
+                    {stats.knockoutMatches > 0 && (
+                      <span>
+                        {" "}
+                        | Mata-mata: {stats.knockoutMatchesCompleted}/
+                        {stats.knockoutMatches}
+                      </span>
+                    )}
+                  </p>
                 </div>
               </div>
             </CardContent>

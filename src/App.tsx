@@ -18,7 +18,7 @@ import {
   Clock,
   CheckCircle,
 } from "lucide-react";
-import { formatDate, getStatusColor } from "./utils";
+import { calculateTournamentStats, formatDate, getStatusColor } from "./utils";
 import "./App.css";
 
 type PageType = "dashboard" | "groups" | "knockout" | "athletes" | "settings";
@@ -336,6 +336,22 @@ const SettingsPage: React.FC = () => {
                   <p className="text-2xl font-bold text-gray-900 mt-1">
                     {currentChampionship.totalMatches}
                   </p>
+                  {(() => {
+                    const stats = calculateTournamentStats(currentChampionship);
+                    return (
+                      <div className="text-xs text-gray-500 mt-1">
+                        Grupos: {stats.groupMatches} | Mata-mata:{" "}
+                        {stats.knockoutMatches}
+                        {stats.secondDivMatches > 0 && (
+                          <span>
+                            {" "}
+                            (Principal: {stats.mainKnockoutMatches} + 2ª Div:{" "}
+                            {stats.secondDivMatches})
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div>
