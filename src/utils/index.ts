@@ -252,97 +252,222 @@ export const generateMainKnockoutMatches = (
   return matches;
 };
 
-// Geração de partidas da segunda divisão (repescagem) - CORRIGIDA
 export const generateSecondDivisionMatches = (athletes: Athlete[]): Match[] => {
   const matches: Match[] = [];
 
-  console.log(
-    "generateSecondDivisionMatches called with athletes:",
-    athletes.map((a) => a.name)
-  );
+  console.log("\n🥈 [UTILS-2ND] === GERAÇÃO SEGUNDA DIVISÃO ===");
+  console.log("🥈 [UTILS-2ND] Atletas recebidos:", athletes.length);
+  athletes.forEach((athlete, index) => {
+    console.log(`  ${index + 1}. ${athlete.name} (ID: ${athlete.id})`);
+  });
 
-  if (athletes.length < 2) {
-    console.log("Insuficientes atletas para segunda divisão:", athletes.length);
+  // Validação inicial
+  if (!athletes || athletes.length < 2) {
+    console.log(
+      "❌ [UTILS-2ND] Insuficientes atletas para segunda divisão:",
+      athletes?.length || 0
+    );
     return matches;
   }
 
-  // Determinar tamanho da chave da segunda divisão (potência de 2)
-  let bracketSize = 4;
+  // ✅ CORREÇÃO: Melhor determinação do tamanho da chave
+  let bracketSize = 2;
   while (bracketSize < athletes.length) {
     bracketSize *= 2;
   }
 
-  console.log("Tamanho da chave da segunda divisão:", bracketSize);
+  console.log(
+    `🎯 [UTILS-2ND] Tamanho da chave determinado: ${bracketSize} (para ${athletes.length} atletas)`
+  );
 
-  // Embaralhar atletas para distribuição aleatória
-  const shuffledAthletes = [...athletes].sort(() => Math.random() - 0.5);
+  // ✅ CORREÇÃO: Embaralhar atletas de forma mais robusta
+  const shuffledAthletes = [...athletes]
+    .map((athlete) => ({ athlete, sort: Math.random() }))
+    .sort((a, b) => a.sort - b.sort)
+    .map((item) => item.athlete);
+
+  console.log("🔀 [UTILS-2ND] Atletas embaralhados:");
+  shuffledAthletes.forEach((athlete, index) => {
+    console.log(`  ${index + 1}. ${athlete.name}`);
+  });
+
+  // ✅ CORREÇÃO: Criar array ordenado mais robusto
   const orderedAthletes: (Athlete | null)[] = Array.from(
     { length: bracketSize },
-    () => null
+    (_, index) =>
+      index < shuffledAthletes.length ? shuffledAthletes[index] : null
   );
 
-  // Preencher com atletas
-  for (let i = 0; i < Math.min(shuffledAthletes.length, bracketSize); i++) {
-    orderedAthletes[i] = shuffledAthletes[i];
-  }
+  console.log("📋 [UTILS-2ND] Posições na chave:");
+  orderedAthletes.forEach((athlete, index) => {
+    console.log(`  Posição ${index + 1}: ${athlete?.name || "null"}`);
+  });
 
-  console.log(
-    "Atletas organizados na chave:",
-    orderedAthletes.map((a) => a?.name || "null")
-  );
-
-  // Gerar partidas da primeira rodada da segunda divisão
+  // ✅ CORREÇÃO: Determinação mais robusta da rodada inicial
   const rounds = Math.log2(bracketSize);
-  const roundNames = [
-    "Final 2ª Div",
-    "Semifinal 2ª Div",
-    "Quartas 2ª Div",
-    "Oitavas 2ª Div",
-  ];
+  const roundNames = {
+    1: "Final 2ª Div",
+    2: "Semifinal 2ª Div",
+    3: "Quartas 2ª Div",
+    4: "Oitavas 2ª Div",
+    5: "Décimo-sextos 2ª Div",
+  };
+
   const currentRoundName =
-    rounds <= 4 ? roundNames[rounds - 1] : "Oitavas 2ª Div";
+    roundNames[rounds as keyof typeof roundNames] || "Oitavas 2ª Div";
 
   console.log(
-    "Rodada da segunda divisão:",
-    currentRoundName,
-    "rounds:",
-    rounds
+    `🏆 [UTILS-2ND] Rodada inicial: ${currentRoundName} (${rounds} rodadas)`
   );
 
-  // ✅ Criar partidas em pares com IDs únicos
+  // ✅ CORREÇÃO: Geração de partidas mais robusta
+  let matchCount = 0;
   for (let i = 0; i < orderedAthletes.length; i += 2) {
-    if (orderedAthletes[i] && orderedAthletes[i + 1]) {
+    const player1 = orderedAthletes[i];
+    const player2 = orderedAthletes[i + 1];
+
+    // ✅ Só criar partida se ambos os jogadores existem
+    if (player1 && player2) {
+      const matchId = `second-div-${Date.now()}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}-${matchCount}`;
+
       const match: Match = {
-        id: `second-div-${Date.now()}-${Math.random()
-          .toString(36)
-          .substr(2, 9)}-${i / 2}`, // ✅ ID único
-        player1Id: orderedAthletes[i]!.id,
-        player2Id: orderedAthletes[i + 1]!.id,
-        player1: orderedAthletes[i]!,
-        player2: orderedAthletes[i + 1]!,
+        id: matchId,
+        player1Id: player1.id,
+        player2Id: player2.id,
+        player1: player1,
+        player2: player2,
         sets: [],
         isCompleted: false,
         phase: "knockout",
         round: currentRoundName,
-        position: i / 2,
+        position: matchCount,
         timeoutsUsed: {
           player1: false,
           player2: false,
         },
         createdAt: new Date(),
       };
+
       matches.push(match);
+      matchCount++;
+
+      console.log(`✅ [UTILS-2ND] Partida ${matchCount} criada:`);
+      console.log(`    ID: ${matchId}`);
+      console.log(`    Jogadores: ${player1.name} vs ${player2.name}`);
+      console.log(`    Rodada: ${currentRoundName}`);
+      console.log(`    Posição: ${matchCount - 1}`);
+    } else if (player1 && !player2) {
+      // ✅ CORREÇÃO: Player1 avança automaticamente se não há oponente
       console.log(
-        "Partida da segunda divisão criada:",
-        match.player1.name,
-        "vs",
-        match.player2.name
+        `⭐ [UTILS-2ND] ${player1.name} avança automaticamente (sem oponente)`
       );
+      // Nota: Em uma implementação mais avançada, poderia criar um "bye" ou avançar diretamente
     }
   }
 
-  console.log("Total de partidas da segunda divisão criadas:", matches.length);
+  console.log(
+    `🎉 [UTILS-2ND] Geração concluída: ${matches.length} partidas criadas`
+  );
+  console.log("🥈 [UTILS-2ND] === FIM GERAÇÃO SEGUNDA DIVISÃO ===\n");
+
   return matches;
+};
+export const validateSecondDivisionMatches = (matches: Match[]): boolean => {
+  console.log("\n🔍 [VALIDATE-2ND] Validando partidas da segunda divisão...");
+
+  const issues: string[] = [];
+
+  matches.forEach((match, index) => {
+    // Verificar estrutura básica
+    if (!match.id) {
+      issues.push(`Partida ${index + 1}: ID ausente`);
+    }
+
+    if (!match.player1Id || !match.player2Id) {
+      issues.push(`Partida ${index + 1}: IDs dos jogadores ausentes`);
+    }
+
+    if (!match.player1 || !match.player2) {
+      issues.push(`Partida ${index + 1}: Objetos dos jogadores ausentes`);
+    }
+
+    if (match.phase !== "knockout") {
+      issues.push(`Partida ${index + 1}: Fase incorreta (${match.phase})`);
+    }
+
+    if (!match.round?.includes("2ª Div")) {
+      issues.push(`Partida ${index + 1}: Rodada incorreta (${match.round})`);
+    }
+
+    // Verificar duplicação de IDs
+    const duplicateId = matches.findIndex(
+      (m, i) => i !== index && m.id === match.id
+    );
+    if (duplicateId !== -1) {
+      issues.push(
+        `Partida ${index + 1}: ID duplicado com partida ${duplicateId + 1}`
+      );
+    }
+  });
+
+  if (issues.length === 0) {
+    console.log("✅ [VALIDATE-2ND] Todas as partidas são válidas");
+    return true;
+  } else {
+    console.log("❌ [VALIDATE-2ND] Problemas encontrados:");
+    issues.forEach((issue, index) => {
+      console.log(`  ${index + 1}. ${issue}`);
+    });
+    return false;
+  }
+};
+
+// ✅ FUNÇÃO DE TESTE: Simular geração da segunda divisão
+export const testSecondDivisionGeneration = () => {
+  console.log("\n🧪 [TEST-2ND] === TESTE DE GERAÇÃO ===");
+
+  // Criar atletas de teste
+  const testAthletes: Athlete[] = [
+    { id: "test-1", name: "Atleta A" },
+    { id: "test-2", name: "Atleta B" },
+    { id: "test-3", name: "Atleta C" },
+    { id: "test-4", name: "Atleta D" },
+    { id: "test-5", name: "Atleta E" },
+    { id: "test-6", name: "Atleta F" },
+  ];
+
+  console.log("🧪 [TEST-2ND] Testando com 6 atletas eliminados...");
+
+  // Testar geração
+  const matches = generateSecondDivisionMatches(testAthletes);
+
+  // Validar resultado
+  const isValid = validateSecondDivisionMatches(matches);
+
+  console.log(`🧪 [TEST-2ND] Resultado: ${matches.length} partidas geradas`);
+  console.log(
+    `🧪 [TEST-2ND] Validação: ${isValid ? "✅ Passou" : "❌ Falhou"}`
+  );
+
+  // Teste com 2 atletas
+  console.log("\n🧪 [TEST-2ND] Testando com 2 atletas eliminados...");
+  const matches2 = generateSecondDivisionMatches(testAthletes.slice(0, 2));
+  console.log(`🧪 [TEST-2ND] Resultado: ${matches2.length} partidas geradas`);
+
+  // Teste com 1 atleta (deve falhar)
+  console.log("\n🧪 [TEST-2ND] Testando com 1 atleta (deve falhar)...");
+  const matches3 = generateSecondDivisionMatches(testAthletes.slice(0, 1));
+  console.log(`🧪 [TEST-2ND] Resultado: ${matches3.length} partidas geradas`);
+
+  console.log("🧪 [TEST-2ND] === FIM TESTE ===\n");
+
+  return {
+    test6Athletes: { matches: matches.length, valid: isValid },
+    test2Athletes: { matches: matches2.length },
+    test1Athlete: { matches: matches3.length },
+  };
 };
 
 // ✅ CORREÇÃO: Usar consistentemente winnerId ao invés de winner

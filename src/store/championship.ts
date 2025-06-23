@@ -44,6 +44,7 @@ interface ChampionshipStore {
   ) => Promise<void>;
   generateKnockoutBracket: () => Promise<void>;
   generateSecondDivisionBracket: () => Promise<void>;
+  generateSecondDivisionMatches: (eliminatedAthletes: Athlete[]) => Match[];
 
   updateMatchResult: (result: MatchResult) => Promise<void>;
   setWalkover: (matchId: string, winnerId: string) => Promise<void>;
@@ -1024,12 +1025,14 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     await get().updateChampionship(updatedChampionship);
   },
 
-  // ✅ CORREÇÃO: Garantir que partidas de mata-mata sejam salvas corretamente
   generateKnockoutBracket: async () => {
     const state = get();
     if (!state.currentChampionship) return;
 
-    console.log("Forçando recálculo das classificações...");
+    console.log("\n🏆 [KNOCKOUT-V2] === GERAÇÃO MATA-MATA ===");
+
+    // 1. Forçar recálculo das classificações
+    console.log("🔄 [KNOCKOUT-V2] Recalculando standings...");
     const updatedGroups = state.currentChampionship.groups.map((group) => {
       const newStandings = get().calculateGroupStandings(group);
       return { ...group, standings: newStandings };
@@ -1042,6 +1045,7 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
 
     await get().updateChampionship(championshipWithUpdatedStandings);
 
+    // 2. Verificar se TODOS os grupos estão completos (para mata-mata principal)
     const incompleteGroups = updatedGroups.filter(
       (group) =>
         !group.isCompleted ||
@@ -1049,67 +1053,124 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
         group.matches.some((m) => !m.isCompleted)
     );
 
+    console.log(`📊 [KNOCKOUT-V2] Status dos grupos:`, {
+      total: updatedGroups.length,
+      incompletos: incompleteGroups.length,
+      nomes: incompleteGroups.map((g) => g.name),
+    });
+
     if (incompleteGroups.length > 0) {
       console.log(
-        "Grupos ainda não concluídos:",
-        incompleteGroups.map((g) => g.name)
+        "❌ [KNOCKOUT-V2] Nem todos os grupos estão completos - abortando"
       );
       return;
     }
 
+    // 3. Verificar se mata-mata já foi gerado
     const existingKnockoutMatches = updatedGroups
       .flatMap((g) => g.matches)
       .filter((m) => m.phase === "knockout");
 
     if (existingKnockoutMatches.length > 0) {
-      console.log("Mata-mata já foi gerado");
+      console.log("⚠️ [KNOCKOUT-V2] Mata-mata já foi gerado");
       return;
     }
 
+    // 4. Obter atletas qualificados e eliminados
     const qualifiedAthletes = get().getQualifiedAthletes();
     const eliminatedAthletes = get().getEliminatedAthletes();
 
+    console.log(`📊 [KNOCKOUT-V2] Atletas:`, {
+      qualificados: qualifiedAthletes.length,
+      eliminados: eliminatedAthletes.length,
+      hasRepechage: state.currentChampionship.hasRepechage,
+    });
+
     if (qualifiedAthletes.length < 4) {
-      console.log(
-        "Número insuficiente de classificados para mata-mata:",
-        qualifiedAthletes.length
-      );
+      console.log("❌ [KNOCKOUT-V2] Insuficientes qualificados para mata-mata");
       return;
     }
 
+    // 5. Gerar mata-mata principal
     let mainBracketSize = 4;
     while (mainBracketSize < qualifiedAthletes.length) {
       mainBracketSize *= 2;
     }
 
+    console.log(
+      `🎯 [KNOCKOUT-V2] Gerando mata-mata principal (${mainBracketSize} vagas)`
+    );
     const mainKnockoutMatches = generateMainKnockoutMatches(
       qualifiedAthletes,
       mainBracketSize
     );
+
     let allKnockoutMatches = [...mainKnockoutMatches];
+    console.log(
+      `✅ [KNOCKOUT-V2] Mata-mata principal: ${mainKnockoutMatches.length} partidas`
+    );
+
+    // 6. ✅ GERAÇÃO DA SEGUNDA DIVISÃO - NOVA LÓGICA
+    console.log(`\n🥈 [SEGUNDA-DIV-V2] === VERIFICAÇÃO SEGUNDA DIVISÃO ===`);
+    console.log(
+      `🥈 [SEGUNDA-DIV-V2] hasRepechage: ${state.currentChampionship.hasRepechage}`
+    );
+    console.log(`🥈 [SEGUNDA-DIV-V2] eliminados: ${eliminatedAthletes.length}`);
+    console.log(
+      `🥈 [SEGUNDA-DIV-V2] nomes:`,
+      eliminatedAthletes.map((a) => a.name)
+    );
 
     if (
       state.currentChampionship.hasRepechage &&
       eliminatedAthletes.length >= 2
     ) {
       console.log(
-        "Gerando segunda divisão para",
-        eliminatedAthletes.length,
-        "atletas eliminados"
+        "✅ [SEGUNDA-DIV-V2] Condições atendidas - gerando segunda divisão"
       );
+
+      // ✅ USAR FUNÇÃO CORRIGIDA
       const secondDivisionMatches =
-        generateSecondDivisionMatches(eliminatedAthletes);
-      allKnockoutMatches = [...allKnockoutMatches, ...secondDivisionMatches];
+        get().generateSecondDivisionMatches(eliminatedAthletes);
+
+      console.log(
+        `🎯 [SEGUNDA-DIV-V2] Partidas geradas: ${secondDivisionMatches.length}`
+      );
+
+      if (secondDivisionMatches.length > 0) {
+        allKnockoutMatches = [...allKnockoutMatches, ...secondDivisionMatches];
+
+        secondDivisionMatches.forEach((match, index) => {
+          console.log(
+            `  ${index + 1}. ${match.player1?.name} vs ${
+              match.player2?.name
+            } (${match.round})`
+          );
+        });
+      } else {
+        console.log("❌ [SEGUNDA-DIV-V2] Nenhuma partida foi gerada");
+      }
+    } else {
+      console.log("❌ [SEGUNDA-DIV-V2] Condições não atendidas:");
+      console.log(
+        `    hasRepechage: ${state.currentChampionship.hasRepechage}`
+      );
+      console.log(
+        `    eliminados >= 2: ${eliminatedAthletes.length >= 2} (${
+          eliminatedAthletes.length
+        })`
+      );
     }
 
-    // ✅ CORREÇÃO: Salvar partidas no primeiro grupo OU criar estrutura adequada
+    console.log("🥈 [SEGUNDA-DIV-V2] === FIM VERIFICAÇÃO ===\n");
+
+    // 7. Salvar todas as partidas
     const finalUpdatedGroups = updatedGroups.map((group, index) =>
       index === 0
         ? { ...group, matches: [...group.matches, ...allKnockoutMatches] }
         : group
     );
 
-    // ✅ ADICIONAR: Também salvar no knockoutBracket para acesso direto
     const knockoutBracket = allKnockoutMatches.map((match, index) => ({
       id: `node-${match.id}`,
       round: match.round || "Unknown",
@@ -1120,7 +1181,7 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     const updatedChampionship = {
       ...championshipWithUpdatedStandings,
       groups: finalUpdatedGroups,
-      knockoutBracket: knockoutBracket, // ✅ ADICIONAR knockoutBracket
+      knockoutBracket: knockoutBracket,
       status: "knockout" as const,
       totalMatches:
         championshipWithUpdatedStandings.totalMatches +
@@ -1128,37 +1189,79 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     };
 
     await get().updateChampionship(updatedChampionship);
-    console.log("Mata-mata gerado com sucesso");
+
+    console.log(`🎉 [KNOCKOUT-V2] MATA-MATA GERADO COM SUCESSO!`);
+    console.log(`📊 [KNOCKOUT-V2] Resumo:`, {
+      totalPartidas: allKnockoutMatches.length,
+      principal: mainKnockoutMatches.length,
+      segundaDivisao: allKnockoutMatches.length - mainKnockoutMatches.length,
+    });
+    console.log("🏆 [KNOCKOUT-V2] === FIM GERAÇÃO ===\n");
   },
 
   generateSecondDivisionBracket: async () => {
     const state = get();
     if (!state.currentChampionship) return;
 
+    console.log(
+      "\n🥈 [SEGUNDA-DIV-MANUAL] Geração manual da segunda divisão..."
+    );
+
     const eliminatedAthletes = get().getEliminatedAthletes();
 
+    console.log(
+      `📊 [SEGUNDA-DIV-MANUAL] Atletas eliminados: ${eliminatedAthletes.length}`
+    );
+    eliminatedAthletes.forEach((athlete, index) => {
+      console.log(`  ${index + 1}. ${athlete.name}`);
+    });
+
     if (eliminatedAthletes.length < 2) {
-      console.log("Não há atletas suficientes para segunda divisão");
+      console.log(
+        "❌ [SEGUNDA-DIV-MANUAL] Não há atletas suficientes para segunda divisão"
+      );
       return;
     }
 
+    // Verificar se segunda divisão já foi gerada
     const existingSecondDiv = state.currentChampionship.groups
       .flatMap((g) => g.matches)
       .filter((m) => m.phase === "knockout" && m.round?.includes("2ª Div"));
 
+    console.log(
+      `📊 [SEGUNDA-DIV-MANUAL] Partidas existentes da 2ª Div: ${existingSecondDiv.length}`
+    );
+
     if (existingSecondDiv.length > 0) {
-      console.log("Segunda divisão já foi gerada");
+      console.log("⚠️ [SEGUNDA-DIV-MANUAL] Segunda divisão já foi gerada");
       return;
     }
 
+    console.log(
+      "🎯 [SEGUNDA-DIV-MANUAL] Gerando partidas da segunda divisão..."
+    );
     const secondDivisionMatches =
       generateSecondDivisionMatches(eliminatedAthletes);
 
+    console.log(
+      `✅ [SEGUNDA-DIV-MANUAL] Partidas geradas: ${secondDivisionMatches.length}`
+    );
+    secondDivisionMatches.forEach((match, index) => {
+      console.log(
+        `  ${index + 1}. ${match.player1?.name} vs ${match.player2?.name} (${
+          match.round
+        })`
+      );
+    });
+
     if (secondDivisionMatches.length === 0) {
-      console.log("Nenhuma partida de segunda divisão foi gerada");
+      console.log(
+        "❌ [SEGUNDA-DIV-MANUAL] Nenhuma partida de segunda divisão foi gerada"
+      );
       return;
     }
 
+    // Salvar partidas
     const updatedGroups = state.currentChampionship.groups.map((group, index) =>
       index === 0
         ? { ...group, matches: [...group.matches, ...secondDivisionMatches] }
@@ -1173,9 +1276,86 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     };
 
     await get().updateChampionship(updatedChampionship);
-    console.log("Segunda divisão gerada:", {
-      matches: secondDivisionMatches.length,
+    console.log("🎉 [SEGUNDA-DIV-MANUAL] Segunda divisão gerada com sucesso!");
+  },
+  generateSecondDivisionMatches: (eliminatedAthletes: Athlete[]) => {
+    console.log("\n🥈 [GEN-2ND-V2] === GERAÇÃO PARTIDAS 2ª DIVISÃO ===");
+
+    if (!eliminatedAthletes || eliminatedAthletes.length < 2) {
+      console.log(
+        "❌ [GEN-2ND-V2] Insuficientes atletas:",
+        eliminatedAthletes?.length || 0
+      );
+      return [];
+    }
+
+    const matches: Match[] = [];
+
+    console.log(
+      `🥈 [GEN-2ND-V2] Atletas recebidos: ${eliminatedAthletes.length}`
+    );
+    eliminatedAthletes.forEach((athlete, index) => {
+      console.log(`  ${index + 1}. ${athlete.name} (ID: ${athlete.id})`);
     });
+
+    // ✅ LÓGICA BASEADA NA SUA SUGESTÃO: Emparelhar em sequência
+    const pairs: { player1: Athlete; player2: Athlete }[] = [];
+
+    for (let i = 0; i < eliminatedAthletes.length; i += 2) {
+      if (eliminatedAthletes[i + 1]) {
+        pairs.push({
+          player1: eliminatedAthletes[i],
+          player2: eliminatedAthletes[i + 1],
+        });
+      }
+    }
+
+    console.log(`🎯 [GEN-2ND-V2] Pares formados: ${pairs.length}`);
+
+    // ✅ Determinar rodada inicial baseada no número de pares
+    let roundName = "Final 2ª Div";
+    if (pairs.length >= 4) roundName = "Oitavas 2ª Div";
+    else if (pairs.length >= 2) roundName = "Quartas 2ª Div";
+    else if (pairs.length === 1) roundName = "Final 2ª Div";
+
+    console.log(`🏆 [GEN-2ND-V2] Rodada inicial: ${roundName}`);
+
+    // ✅ Criar partidas
+    pairs.forEach((pair, index) => {
+      const matchId = `second-div-${Date.now()}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}-${index}`;
+
+      const match: Match = {
+        id: matchId,
+        player1Id: pair.player1.id,
+        player2Id: pair.player2.id,
+        player1: pair.player1,
+        player2: pair.player2,
+        sets: [],
+        isCompleted: false,
+        phase: "knockout",
+        round: roundName,
+        position: index,
+        timeoutsUsed: {
+          player1: false,
+          player2: false,
+        },
+        createdAt: new Date(),
+      };
+
+      matches.push(match);
+
+      console.log(`✅ [GEN-2ND-V2] Partida ${index + 1} criada:`);
+      console.log(`    ${pair.player1.name} vs ${pair.player2.name}`);
+      console.log(`    ID: ${matchId}`);
+      console.log(`    Rodada: ${roundName}`);
+    });
+
+    console.log(`🎉 [GEN-2ND-V2] Total de partidas criadas: ${matches.length}`);
+    console.log("🥈 [GEN-2ND-V2] === FIM GERAÇÃO ===\n");
+
+    return matches;
   },
 
   // CORREÇÃO: Função updateMatchResult também precisa usar a função correta
@@ -1369,47 +1549,56 @@ export const useChampionshipStore = create<ChampionshipStore>((set, get) => ({
     const state = get();
     if (!state.currentChampionship) return [];
 
-    console.log(
-      "Forçando recálculo das classificações para obter eliminados..."
-    );
+    console.log("\n🔍 [ELIMINATED-V2] === BUSCA ATLETAS ELIMINADOS ===");
 
-    const updatedGroups = state.currentChampionship.groups.map((group) => {
-      const newStandings = get().calculateGroupStandings(group);
-      return { ...group, standings: newStandings };
+    const eliminated: Athlete[] = [];
+
+    // ✅ NOVA LÓGICA: Analisar grupos individualmente, não exigir que TODOS estejam completos
+    state.currentChampionship.groups.forEach((group, _groupIndex) => {
+      console.log(`\n📋 [ELIMINATED-V2] Analisando ${group.name}:`);
+      console.log(`  Completo: ${group.isCompleted}`);
+      console.log(`  Atletas: ${group.athletes.length}`);
+      console.log(`  Standings: ${group.standings.length}`);
+
+      // Se o grupo está completo, podemos identificar eliminados
+      if (group.isCompleted && group.standings.length > 0) {
+        const sortedStandings = [...group.standings].sort((a, b) => {
+          // Ordenar por posição (já calculada no standing)
+          return a.position - b.position;
+        });
+
+        console.log(`  📊 [ELIMINATED-V2] Rankings em ${group.name}:`);
+        sortedStandings.forEach((standing, idx) => {
+          console.log(
+            `    ${idx + 1}º ${standing.athlete.name} - ${
+              standing.qualified ? "✅ Qualificado" : "❌ Eliminado"
+            }`
+          );
+        });
+
+        // Pegar atletas não qualificados (eliminados)
+        const groupEliminated = sortedStandings
+          .filter((standing) => !standing.qualified)
+          .map((standing) => standing.athlete);
+
+        eliminated.push(...groupEliminated);
+
+        console.log(
+          `  📤 [ELIMINATED-V2] ${groupEliminated.length} eliminados em ${group.name}`
+        );
+      } else {
+        console.log(
+          `  ⏳ [ELIMINATED-V2] ${group.name} ainda não está completo - pulando`
+        );
+      }
     });
 
-    const groupsWithStandings = updatedGroups.filter(
-      (group) => group.standings && group.standings.length > 0
-    );
+    console.log(`\n✅ [ELIMINATED-V2] TOTAL ELIMINADOS: ${eliminated.length}`);
+    eliminated.forEach((athlete, index) => {
+      console.log(`  ${index + 1}. ${athlete.name} (ID: ${athlete.id})`);
+    });
 
-    if (groupsWithStandings.length === 0) {
-      console.log("Nenhum grupo tem classificações calculadas ainda");
-      return [];
-    }
-
-    const incompleteGroups = groupsWithStandings.filter(
-      (group) => !group.isCompleted || group.matches.some((m) => !m.isCompleted)
-    );
-
-    if (incompleteGroups.length > 0) {
-      console.log(
-        "Grupos ainda incompletos:",
-        incompleteGroups.map((g) => g.name)
-      );
-      return [];
-    }
-
-    const eliminated = groupsWithStandings
-      .flatMap((group) =>
-        group.standings.filter((s) => !s.qualified).map((s) => s.athlete)
-      )
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    console.log(
-      "Atletas eliminados encontrados:",
-      eliminated.length,
-      eliminated.map((a) => a.name)
-    );
+    console.log("🔍 [ELIMINATED-V2] === FIM BUSCA ===\n");
     return eliminated;
   },
 
