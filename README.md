@@ -43,6 +43,8 @@ Sistema web completo e profissional para gerenciamento de campeonatos de tênis 
 - ✅ Sistema de walkover (W.O.)
 - ✅ Controle de desqualificação
 - ✅ Geração automática de próximas rodadas após conclusão
+- ✅ **Estatísticas precisas** com validação de dados
+- ✅ **Exclusão segura de campeonatos** com confirmação dupla
 
 ### 📊 Gestão de Atletas
 - ✅ Cadastro simplificado de atletas (apenas nome)
@@ -59,6 +61,7 @@ Sistema web completo e profissional para gerenciamento de campeonatos de tênis 
 - ✅ Visualização das chaves e resultados
 - ✅ Dashboard com visão geral do campeonato
 - ✅ Sistema de navegação intuitivo
+- ✅ **Exclusão segura de campeonatos** com dupla confirmação
 
 ### 📄 Funcionalidades Extras
 - ✅ Exportação de resultados em PDF (súmulas oficiais)

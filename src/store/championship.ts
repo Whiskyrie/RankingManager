@@ -36,6 +36,8 @@ interface ChampionshipActions {
   ) => Promise<void>;
   loadChampionship: (id: string) => void;
   updateChampionship: (championship: Championship) => Promise<void>;
+  // ✅ NOVA FUNÇÃO: Excluir campeonato
+  deleteChampionship: (id: string) => Promise<void>;
   addAthlete: (athlete: Omit<Athlete, "id">) => Promise<void>;
   updateAthlete: (athlete: Athlete) => Promise<void>;
   removeAthlete: (athleteId: string) => Promise<void>;
@@ -712,6 +714,52 @@ export const useChampionshipStore = create<
           };
 
           await get().updateChampionship(updatedChampionship);
+        },
+
+        // ✅ IMPLEMENTAÇÃO: Função para excluir campeonato
+        deleteChampionship: async (id: string) => {
+          set({ isLoading: true, error: null });
+
+          try {
+            console.log("🗑️ [DELETE] Excluindo campeonato:", id);
+
+            set((state) => {
+              const updatedChampionships = state.championships.filter(
+                (c) => c.id !== id
+              );
+              const updatedCurrentChampionship =
+                state.currentChampionship?.id === id
+                  ? null
+                  : state.currentChampionship;
+
+              console.log("✅ [DELETE] Campeonato excluído com sucesso");
+
+              return {
+                championships: updatedChampionships,
+                currentChampionship: updatedCurrentChampionship,
+                isLoading: false,
+              };
+            });
+
+            // ✅ Invalidar cache após exclusão
+            get().invalidateCache();
+
+            // ✅ Limpar cache específico do campeonato excluído
+            if (typeof window !== "undefined") {
+              try {
+                localStorage.removeItem(`bracket-tab-${id}`);
+              } catch (error) {
+                console.warn("Erro ao limpar cache do campeonato:", error);
+              }
+            }
+          } catch (error) {
+            console.error("❌ [DELETE] Erro ao excluir campeonato:", error);
+            const errorMessage =
+              error instanceof Error
+                ? error.message
+                : "Erro inesperado ao excluir campeonato";
+            set({ error: errorMessage, isLoading: false });
+          }
         },
       }),
       {

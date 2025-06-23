@@ -161,18 +161,28 @@ export const getMatchWinner = (
   player1Id: AthleteID,
   player2Id: AthleteID
 ): AthleteID | undefined => {
+  // ✅ Validações básicas
+  if (!sets || sets.length === 0) return undefined;
+  if (!player1Id || !player2Id || player1Id === player2Id) return undefined;
+
   const setsToWin = bestOf === 3 ? 2 : bestOf === 5 ? 3 : 4;
   let p1 = 0;
   let p2 = 0;
+
+  // ✅ Contar apenas sets válidos
   for (const set of sets) {
     if (!isValidSet(set)) continue;
     if (set.player1Score > set.player2Score) p1++;
     else p2++;
+
+    // ✅ Retornar imediatamente quando um jogador atingir o número necessário
     if (p1 === setsToWin) return player1Id;
     if (p2 === setsToWin) return player2Id;
   }
+
   return undefined;
 };
+
 // Função auxiliar para verificar se uma partida está completa
 export const isMatchComplete = (
   sets: SetResult[],

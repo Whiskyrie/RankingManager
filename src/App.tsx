@@ -68,7 +68,9 @@ function App() {
 
 // Página de configurações completa - CORRIGIDA
 const SettingsPage: React.FC = () => {
-  const { currentChampionship, updateChampionship } = useChampionshipStore();
+  const { currentChampionship, updateChampionship, deleteChampionship } =
+    useChampionshipStore();
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   if (!currentChampionship) {
     return (
@@ -112,6 +114,24 @@ const SettingsPage: React.FC = () => {
 
       await updateChampionship(resetChampionship);
     }
+  };
+
+  // ✅ NOVA FUNÇÃO: Confirmar e excluir campeonato
+  const handleDeleteChampionship = async () => {
+    if (!currentChampionship) return;
+
+    try {
+      await deleteChampionship(currentChampionship.id);
+      console.log("✅ Campeonato excluído com sucesso");
+      // A navegação será automática pelo useEffect no App.tsx
+    } catch (error) {
+      console.error("❌ Erro ao excluir campeonato:", error);
+      alert("Erro ao excluir campeonato. Tente novamente.");
+    }
+  };
+
+  const confirmDeleteChampionship = () => {
+    setShowDeleteConfirmation(true);
   };
 
   const getStatusInfo = (status: string) => {
@@ -387,14 +407,15 @@ const SettingsPage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Ações de Administração */}
-          {currentChampionship.status !== "completed" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-red-600">Zona de Perigo</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+          {/* Ações de Administração - ✅ ATUALIZADO */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-red-600">Zona de Perigo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Reiniciar Campeonato */}
+                {currentChampionship.status !== "completed" && (
                   <div>
                     <h4 className="text-sm font-medium text-gray-900">
                       Reiniciar Campeonato
@@ -411,10 +432,60 @@ const SettingsPage: React.FC = () => {
                       Reiniciar Campeonato
                     </Button>
                   </div>
+                )}
+
+                {/* ✅ NOVO: Excluir Campeonato */}
+                <div className="pt-4 border-t border-red-200">
+                  <h4 className="text-sm font-medium text-red-900">
+                    Excluir Campeonato Permanentemente
+                  </h4>
+                  <p className="text-sm text-red-600 mt-1">
+                    Esta ação é <strong>irreversível</strong>. O campeonato e
+                    todos os seus dados serão perdidos para sempre.
+                  </p>
+
+                  {!showDeleteConfirmation ? (
+                    <Button
+                      variant="destructive"
+                      className="mt-3 bg-red-600 hover:bg-red-700"
+                      onClick={confirmDeleteChampionship}
+                    >
+                      🗑️ Excluir Campeonato
+                    </Button>
+                  ) : (
+                    <div className="mt-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-sm text-red-800 font-medium mb-3">
+                        ⚠️ Tem certeza absoluta que deseja excluir o campeonato
+                        "{currentChampionship.name}"?
+                      </p>
+                      <p className="text-xs text-red-600 mb-4">
+                        Esta ação não pode ser desfeita. Todos os atletas,
+                        grupos, partidas e resultados serão perdidos.
+                      </p>
+                      <div className="flex gap-3">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={handleDeleteChampionship}
+                          className="bg-red-700 hover:bg-red-800"
+                        >
+                          ✅ Sim, Excluir Definitivamente
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowDeleteConfirmation(false)}
+                          className="border-gray-300"
+                        >
+                          ❌ Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

@@ -970,27 +970,75 @@ export const exportToJSON = <T>(data: T, filename: string): void => {
   URL.revokeObjectURL(url);
 };
 
-// Utilitários para cálculos estatísticos
+// Utilitários para cálculos estatísticos - ✅ CORRIGIDO
 export const calculateTournamentStats = (championship: Championship) => {
-  const totalMatches = championship.totalMatches;
-  const completedMatches = championship.completedMatches;
-  const progress =
-    totalMatches > 0 ? (completedMatches / totalMatches) * 100 : 0;
+  // ✅ CORREÇÃO: Filtrar apenas partidas válidas (com jogadores definidos)
+  const validMatches = championship.groups
+    .flatMap((group) => group.matches)
+    .filter(
+      (match) =>
+        match.player1?.id &&
+        match.player2?.id &&
+        match.player1.id !== match.player2.id
+    );
 
-  const groupsCompleted = championship.groups.filter(
-    (g) => g.isCompleted
+  const totalMatches = validMatches.length;
+  const completedMatches = validMatches.filter(
+    (match) => match.isCompleted
   ).length;
-  const totalGroups = championship.groups.length;
+
+  // ✅ CORREÇÃO: Garantir que o progresso nunca ultrapasse 100%
+  const progress =
+    totalMatches > 0
+      ? Math.min(100, Math.round((completedMatches / totalMatches) * 100))
+      : 0;
+
+  // ✅ CORREÇÃO: Contar apenas grupos com partidas válidas
+  const validGroups = championship.groups.filter((group) =>
+    group.matches.some(
+      (match) =>
+        match.player1?.id &&
+        match.player2?.id &&
+        match.player1.id !== match.player2.id
+    )
+  );
+
+  const groupsCompleted = validGroups.filter((group) => {
+    const groupValidMatches = group.matches.filter(
+      (match) =>
+        match.player1?.id &&
+        match.player2?.id &&
+        match.player1.id !== match.player2.id
+    );
+    return (
+      groupValidMatches.length > 0 &&
+      groupValidMatches.every((match) => match.isCompleted)
+    );
+  }).length;
+
+  const totalGroups = validGroups.length;
+  const groupsProgress =
+    totalGroups > 0
+      ? Math.min(100, Math.round((groupsCompleted / totalGroups) * 100))
+      : 0;
+
+  console.log("📊 [STATS] Estatísticas recalculadas:", {
+    validMatches: totalMatches,
+    completedMatches,
+    progress,
+    validGroups: totalGroups,
+    groupsCompleted,
+    groupsProgress,
+  });
 
   return {
     totalMatches,
     completedMatches,
-    pendingMatches: totalMatches - completedMatches,
-    progress: Math.round(progress),
+    pendingMatches: Math.max(0, totalMatches - completedMatches),
+    progress,
     groupsCompleted,
     totalGroups,
-    groupsProgress:
-      totalGroups > 0 ? Math.round((groupsCompleted / totalGroups) * 100) : 0,
+    groupsProgress,
   };
 };
 
