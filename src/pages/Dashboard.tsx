@@ -50,7 +50,7 @@ export const Dashboard: React.FC = () => {
     groupsBestOf: 3,
     knockoutBestOf: 5,
     hasThirdPlace: true,
-    hasRepechage: false,
+    hasRepechage: true,
   });
 
   // Estatísticas gerais
@@ -94,7 +94,7 @@ export const Dashboard: React.FC = () => {
       groupsBestOf: 3,
       knockoutBestOf: 5,
       hasThirdPlace: true,
-      hasRepechage: false,
+      hasRepechage: true,
     });
   };
 

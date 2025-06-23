@@ -93,49 +93,19 @@ export const KnockoutBracket: React.FC = () => {
     fromGroups: allKnockoutMatches.length,
     fromBracket: bracketMatches.length,
     total: knockoutMatches.length,
-    matches: knockoutMatches.map((m) => ({
-      id: m.id,
-      round: m.round,
-      players: `${m.player1?.name} vs ${m.player2?.name}`,
-      completed: m.isCompleted,
-      winnerId: m.winnerId,
-    })),
   });
 
-  // ✅ CORREÇÃO: Partidas da primeira divisão (rodadas sem "2ª Div")
+  // ✅ SEPARAR POR DIVISÃO PARA ESTATÍSTICAS
   const mainMatches = knockoutMatches.filter(
     (m) => !m.round?.includes("2ª Div")
   );
-
-  // ✅ CORREÇÃO: Partidas da segunda divisão (rodadas contendo "2ª Div")
   const secondDivisionMatches = knockoutMatches.filter((m) =>
     m.round?.includes("2ª Div")
   );
 
-  // ✅ CORREÇÃO: Rodadas da primeira divisão organizadas
-  const mainRoundNames = ["Oitavas", "Quartas", "Semifinal", "Final"];
-  const mainRounds = mainRoundNames
-    .map((name) => ({
-      name,
-      matches: mainMatches.filter((m) => m.round === name),
-    }))
-    .filter((r) => r.matches.length > 0);
-
-  // ✅ CORREÇÃO: Rodadas da segunda divisão - extrair nomes únicos
-  const secondRoundNames = Array.from(
-    new Set(secondDivisionMatches.map((m) => m.round || ""))
-  ).filter((r) => r);
-
-  const secondRounds = secondRoundNames.map((name) => ({
-    name,
-    matches: secondDivisionMatches.filter((m) => m.round === name),
-  }));
-
-  // ✅ CORREÇÃO: Campeão, vice-campeão e terceiro lugar (1ª divisão)
+  // ✅ CAMPEÕES E MEDALHISTAS
   const finalMatch = mainMatches.find((m) => m.round === "Final");
   const champion = finalMatch?.isCompleted ? finalMatch.winnerId : null;
-
-  // ✅ CORREÇÃO: Usar runnerUp ao invés de finalist para mais clareza
   const runnerUp =
     finalMatch?.isCompleted && finalMatch.winnerId
       ? finalMatch.player1Id === finalMatch.winnerId
@@ -143,13 +113,11 @@ export const KnockoutBracket: React.FC = () => {
         : finalMatch.player1Id
       : null;
 
-  // Terceiro lugar da primeira divisão
   const thirdPlaceMatch = mainMatches.find((m) => m.round === "3º Lugar");
   const thirdPlace = thirdPlaceMatch?.isCompleted
     ? thirdPlaceMatch.winnerId
     : null;
 
-  // ✅ CORREÇÃO: Terceiro lugar da segunda divisão
   const thirdPlace2Match = secondDivisionMatches.find(
     (m) => m.round === "3º Lugar 2ª Div"
   );
@@ -305,7 +273,7 @@ export const KnockoutBracket: React.FC = () => {
             </Card>
           )}
 
-        {/* Estatísticas - ✅ CORREÇÃO: usar dados corretos */}
+        {/* Estatísticas Atualizadas */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
@@ -313,10 +281,28 @@ export const KnockoutBracket: React.FC = () => {
                 <Target className="h-8 w-8 text-blue-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">
-                    Rodadas (1ª Div)
+                    Primeira Divisão
                   </p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {mainRounds.length}
+                    {mainMatches.filter((m) => m.isCompleted).length}/
+                    {mainMatches.length}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <Award className="h-8 w-8 text-orange-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">
+                    Segunda Divisão
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {secondDivisionMatches.filter((m) => m.isCompleted).length}/
+                    {secondDivisionMatches.length}
                   </p>
                 </div>
               </div>
@@ -329,33 +315,11 @@ export const KnockoutBracket: React.FC = () => {
                 <BarChart3 className="h-8 w-8 text-green-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">
-                    Partidas Mata-mata
+                    Total Mata-mata
                   </p>
                   <p className="text-2xl font-bold text-gray-900">
                     {knockoutMatches.filter((m) => m.isCompleted).length}/
                     {knockoutMatches.length}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Users className="h-8 w-8 text-purple-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">
-                    Classificados
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {
-                      currentChampionship.athletes.filter((a) =>
-                        knockoutMatches.some(
-                          (m) => m.player1Id === a.id || m.player2Id === a.id
-                        )
-                      ).length
-                    }
                   </p>
                 </div>
               </div>
@@ -379,20 +343,10 @@ export const KnockoutBracket: React.FC = () => {
           </Card>
         </div>
 
-        {/* Visualização da Chave */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5" />
-              Chave Eliminatória Completa
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BracketVisualization
-              onMatchClick={(match) => setSelectedMatch(match)}
-            />
-          </CardContent>
-        </Card>
+        {/* Visualização da Chave com Abas */}
+        <BracketVisualization
+          onMatchClick={(match) => setSelectedMatch(match)}
+        />
 
         {/* Modal para detalhes da partida */}
         {selectedMatch && (
