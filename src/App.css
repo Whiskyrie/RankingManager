@@ -40,3 +40,331 @@
 .read-the-docs {
   color: #888;
 }
+/* Estilos CSS adicionais para o chaveamento melhorado */
+
+/* Animações para transições suaves */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes progressBar {
+  from {
+    width: 0%;
+  }
+  to {
+    width: var(--progress-width);
+  }
+}
+
+/* Classe para animação das partidas */
+.bracket-match {
+  animation: fadeInUp 0.6s ease-out;
+  animation-fill-mode: both;
+}
+
+.bracket-match:nth-child(1) { animation-delay: 0.1s; }
+.bracket-match:nth-child(2) { animation-delay: 0.2s; }
+.bracket-match:nth-child(3) { animation-delay: 0.3s; }
+.bracket-match:nth-child(4) { animation-delay: 0.4s; }
+.bracket-match:nth-child(5) { animation-delay: 0.5s; }
+.bracket-match:nth-child(6) { animation-delay: 0.6s; }
+.bracket-match:nth-child(7) { animation-delay: 0.7s; }
+.bracket-match:nth-child(8) { animation-delay: 0.8s; }
+
+/* Estilo para partidas concluídas */
+.match-completed {
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
+  border-color: #22c55e;
+}
+
+.match-completed:hover {
+  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.25);
+  transform: translateY(-2px);
+}
+
+/* Estilo para partidas pendentes */
+.match-pending {
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.15);
+  border-color: #f97316;
+}
+
+.match-pending:hover {
+  box-shadow: 0 8px 20px rgba(249, 115, 22, 0.25);
+  transform: translateY(-2px);
+}
+
+/* Estilo para partidas de 3º lugar */
+.match-third-place {
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+  border-color: #f59e0b;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.match-third-place:hover {
+  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.25);
+  transform: translateY(-2px);
+}
+
+/* Estilo para vencedores */
+.player-winner {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  border: 2px solid #22c55e !important;
+  font-weight: 600;
+}
+
+.player-loser {
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.player-tbd {
+  background: #f1f5f9;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* Efeitos hover para cards de partida */
+.bracket-match-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.bracket-match-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* Estilo para títulos de rodada */
+.round-title {
+  position: relative;
+  padding-bottom: 8px;
+}
+
+.round-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(to right, #3b82f6, #6366f1);
+  border-radius: 2px;
+}
+
+.round-title.second-division::after {
+  background: linear-gradient(to right, #f97316, #ea580c);
+}
+
+/* Responsividade melhorada */
+@media (max-width: 768px) {
+  .bracket-match-card {
+    width: 180px;
+  }
+  
+  .round-title {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .bracket-match-card {
+    width: 160px;
+  }
+  
+  .bracket-match-card .card-content {
+    padding: 8px;
+  }
+  
+  .player-name {
+    font-size: 12px;
+  }
+}
+
+/* Estilo para barras de progresso */
+.progress-bar {
+  background: linear-gradient(to right, #e5e7eb, #d1d5db);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(to right, #3b82f6, #1d4ed8);
+  border-radius: 8px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Estilo para o pódium melhorado */
+.podium-container {
+  perspective: 1000px;
+}
+
+.podium-position {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.podium-position:hover {
+  transform: rotateY(5deg) translateY(-5px);
+}
+
+.podium-first {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+  box-shadow: 0 8px 32px rgba(245, 158, 11, 0.4);
+}
+
+.podium-second {
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 50%, #4b5563 100%);
+  box-shadow: 0 6px 24px rgba(107, 114, 128, 0.4);
+}
+
+.podium-third {
+  background: linear-gradient(135deg, #cd7c2f 0%, #b45309 50%, #92400e 100%);
+  box-shadow: 0 6px 24px rgba(180, 83, 9, 0.4);
+}
+
+/* Scrollbar personalizada para a área do bracket */
+.bracket-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.bracket-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.bracket-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(to right, #cbd5e1, #94a3b8);
+  border-radius: 4px;
+}
+
+.bracket-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to right, #94a3b8, #64748b);
+}
+
+/* Loading state para partidas */
+.match-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.match-loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: loading-shimmer 1.5s infinite;
+}
+
+@keyframes loading-shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Estilo para badges */
+.status-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-completed {
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+  color: #166534;
+  border: 1px solid #22c55e;
+}
+
+.badge-pending {
+  background: linear-gradient(135deg, #fed7aa, #fdba74);
+  color: #9a3412;
+  border: 1px solid #f97316;
+}
+
+.badge-walkover {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border: 1px solid #f59e0b;
+}
+
+/* Efeitos de entrada para as estatísticas */
+.stats-card {
+  animation: slideInFromLeft 0.6s ease-out;
+  animation-fill-mode: both;
+}
+
+.stats-card:nth-child(1) { animation-delay: 0.1s; }
+.stats-card:nth-child(2) { animation-delay: 0.2s; }
+.stats-card:nth-child(3) { animation-delay: 0.3s; }
+.stats-card:nth-child(4) { animation-delay: 0.4s; }
+
+/* Conectores de bracket melhorados */
+.bracket-connector {
+  position: relative;
+}
+
+/* Melhor visualização dos conectores */
+.bracket-connector::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -12px;
+  width: 12px;
+  height: 2px;
+  background: linear-gradient(to right, #94a3b8, #64748b);
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+/* Conectores verticais para formar bracket */
+.bracket-connector.has-vertical::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -12px;
+  width: 2px;
+  height: 100px;
+  background: linear-gradient(to bottom, #94a3b8, #64748b);
+  transform: translateY(-50%);
+  z-index: 1;
+}
