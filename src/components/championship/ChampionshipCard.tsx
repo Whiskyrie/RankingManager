@@ -38,6 +38,20 @@ export const ChampionshipCard: React.FC<ChampionshipCardProps> = ({
     }
   };
 
+  // ✅ CORREÇÃO: Tratamento defensivo para data
+  const displayDate = React.useMemo(() => {
+    try {
+      return formatDate(championship.date);
+    } catch (error) {
+      console.error(
+        "ChampionshipCard: Erro ao formatar data:",
+        error,
+        championship.date
+      );
+      return "Data não disponível";
+    }
+  }, [championship.date]);
+
   return (
     <Card className="hover:shadow-lg transition-shadow">
       <CardHeader className="pb-4">
@@ -48,9 +62,7 @@ export const ChampionshipCard: React.FC<ChampionshipCardProps> = ({
             </CardTitle>
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-blue-600" />
-              <span className="text-sm text-gray-600">
-                {formatDate(championship.date)}
-              </span>
+              <span className="text-sm text-gray-600">{displayDate}</span>
             </div>
           </div>
           <Badge className={getStatusColor(championship.status)}>

@@ -1,23 +1,72 @@
 import { jsPDF } from "jspdf";
 import { Championship, Athlete, Group, Match, SetResult } from "../types/index";
 
-// Utilitários de formatação
-export const formatDate = (date: Date): string => {
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(date);
+// ✅ CORREÇÃO: Funções de formatação com validação robusta
+const isValidDate = (date: any): boolean => {
+  if (!date) return false;
+  const dateObj = date instanceof Date ? date : new Date(date);
+  return dateObj instanceof Date && !isNaN(dateObj.getTime());
 };
 
-export const formatDateTime = (date: Date): string => {
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
+const safeParseDate = (date: any): Date | null => {
+  if (!date) return null;
+
+  // Se já é um Date válido
+  if (date instanceof Date && isValidDate(date)) {
+    return date;
+  }
+
+  // Tentar converter string/number para Date
+  try {
+    const parsed = new Date(date);
+    return isValidDate(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+export const formatDate = (date: Date | string | null | undefined): string => {
+  const safeDate = safeParseDate(date);
+
+  if (!safeDate) {
+    console.warn("formatDate: Data inválida recebida:", date);
+    return "Data inválida";
+  }
+
+  try {
+    return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(safeDate);
+  } catch (error) {
+    console.error("formatDate: Erro ao formatar data:", error);
+    return "Data inválida";
+  }
+};
+
+export const formatDateTime = (
+  date: Date | string | null | undefined
+): string => {
+  const safeDate = safeParseDate(date);
+
+  if (!safeDate) {
+    console.warn("formatDateTime: Data inválida recebida:", date);
+    return "Data/hora inválida";
+  }
+
+  try {
+    return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(safeDate);
+  } catch (error) {
+    console.error("formatDateTime: Erro ao formatar data/hora:", error);
+    return "Data/hora inválida";
+  }
 };
 
 export const getOrdinalPosition = (position: number): string => {
@@ -1094,4 +1143,133 @@ export const slugify = (text: string): string => {
     .replace(/\s+/g, "-") // Substitui espaços por hífens
     .replace(/-+/g, "-") // Remove hífens duplicados
     .trim();
+};
+
+// ✅ NOVA FUNÇÃO: Gerenciar cache de abas do bracket
+export const clearBracketTabCache = (championshipId?: string): void => {
+  if (typeof window === "undefined") return;
+
+  try {
+    if (championshipId) {
+      localStorage.removeItem(`bracket-tab-${championshipId}`);
+    } else {
+      // Limpar todos os caches de abas
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith("bracket-tab-")) {
+          localStorage.removeItem(key);
+        }
+      });
+    }
+  } catch (error) {
+    console.warn("Erro ao limpar cache de abas:", error);
+  }
+};
+
+export const getBracketTabCache = (championshipId: string): string | null => {
+  if (typeof window === "undefined") return null;
+
+  try {
+    return localStorage.getItem(`bracket-tab-${championshipId}`);
+  } catch (error) {
+    console.warn("Erro ao recuperar cache de aba:", error);
+    return null;
+  }
+};
+
+export const setBracketTabCache = (
+  championshipId: string,
+  tab: string
+): void => {
+  if (typeof window === "undefined") return;
+
+  try {
+    localStorage.setItem(`bracket-tab-${championshipId}`, tab);
+  } catch (error) {
+    console.warn("Erro ao salvar cache de aba:", error);
+  }
+};
+
+// ✅ FUNÇÃO APRIMORADA: Gerenciar cache do store de forma segura
+export const clearStoreCache = (): void => {
+  try {
+    // Acessar o store e limpar cache se disponível
+    if (typeof window !== "undefined" && (window as any).championshipStore) {
+      const store = (window as any).championshipStore;
+      const state = store.getState();
+
+      if (
+        state.invalidateCache &&
+        typeof state.invalidateCache === "function"
+      ) {
+        state.invalidateCache();
+        console.log("✅ Cache do store limpo com sucesso");
+      }
+    }
+  } catch (error) {
+    console.warn("Erro ao limpar cache do store:", error);
+  }
+};
+
+// ✅ NOVA FUNÇÃO: Converter qualquer valor para timestamp seguro
+export const getSafeTimestamp = (date: any): number => {
+  try {
+    if (!date) return Date.now();
+
+    // Se já é um número (timestamp)
+    if (typeof date === "number" && !isNaN(date)) {
+      return date;
+    }
+
+    // Se é um objeto Date válido
+    if (date instanceof Date && !isNaN(date.getTime())) {
+      return date.getTime();
+    }
+
+    // Se é uma string, tentar converter
+    if (typeof date === "string") {
+      const parsed = new Date(date);
+      if (!isNaN(parsed.getTime())) {
+        return parsed.getTime();
+      }
+    }
+
+    // Fallback: usar timestamp atual
+    return Date.now();
+  } catch (error) {
+    console.warn("getSafeTimestamp: Erro ao processar data:", error);
+    return Date.now();
+  }
+};
+
+// ✅ FUNÇÃO APRIMORADA: Formatação de data mais robusta
+export const formatDateSafe = (date: any): string => {
+  const safeDate = safeParseDate(date);
+
+  if (!safeDate) {
+    return "Data inválida";
+  }
+
+  try {
+    return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(safeDate);
+  } catch (error) {
+    console.error("formatDateSafe: Erro ao formatar:", error);
+    return "Data inválida";
+  }
+};
+
+// ✅ NOVA FUNÇÃO: Validar se um objeto tem propriedades de data válidas
+export const hasValidDateProperty = (
+  obj: any,
+  propertyName: string
+): boolean => {
+  try {
+    const value = obj?.[propertyName];
+    return safeParseDate(value) !== null;
+  } catch {
+    return false;
+  }
 };

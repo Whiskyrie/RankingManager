@@ -445,14 +445,9 @@ export const KnockoutBracket: React.FC = () => {
           </Card>
         </div>
 
-        {/* ✅ Visualização da Chave com Cache e Key única */}
+        {/* ✅ Visualização da Chave com Cache mas sem key que força reset */}
         <div className="bracket-container">
-          <BracketVisualization
-            key={`bracket-${
-              currentChampionship.id
-            }-${currentChampionship.updatedAt?.getTime()}`}
-            onMatchClick={handleMatchClick}
-          />
+          <BracketVisualization onMatchClick={handleMatchClick} />
         </div>
 
         {/* Modal para detalhes da partida */}

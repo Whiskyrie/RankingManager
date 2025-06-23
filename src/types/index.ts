@@ -86,7 +86,7 @@ export interface KnockoutNode {
 export interface Championship {
   id: string;
   name: string;
-  date: Date;
+  date: Date | string; // ✅ CORREÇÃO: Permitir string também para flexibilidade
   status: "created" | "groups" | "knockout" | "completed";
   groupSize: 3 | 4 | 5;
   qualificationSpotsPerGroup: number;
@@ -100,13 +100,13 @@ export interface Championship {
   knockoutBracket: KnockoutNode[];
   totalMatches: number;
   completedMatches: number;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | string; // ✅ CORREÇÃO: Permitir string também
+  updatedAt: Date | string; // ✅ CORREÇÃO: Permitir string também
 }
 
 export interface TournamentConfig {
   name: string;
-  date: Date;
+  date: Date | string; // ✅ CORREÇÃO: Permitir string também
   groupSize: 3 | 4 | 5;
   qualificationSpotsPerGroup: number;
   groupsBestOf: 3 | 5;

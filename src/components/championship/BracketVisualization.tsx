@@ -1,4 +1,4 @@
-import React, { useState, memo, useCallback, useMemo } from "react";
+import React, { useState, memo, useCallback, useMemo, useEffect } from "react";
 import { useChampionshipStore } from "../../store/championship";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -320,22 +320,99 @@ const BracketDisplay = memo<{
 
 export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
   ({ onMatchClick }) => {
-    const { currentChampionship, getCachedBracket, setCachedBracket } =
-      useChampionshipStore();
-    const [activeTab, setActiveTab] = useState("primeira");
+    // ✅ CORREÇÃO: Desestruturação mais segura com fallbacks
+    const store = useChampionshipStore();
+    const { currentChampionship } = store;
+    const getCachedBracket = store.getCachedBracket || (() => null);
+    const setCachedBracket = store.setCachedBracket || (() => {});
 
-    // ✅ Dados do bracket memoizados com cache
+    // ✅ CORREÇÃO: Estado persistente para a aba ativa
+    const [activeTab, setActiveTab] = useState(() => {
+      // Recuperar a aba ativa do localStorage se existir
+      if (typeof window !== "undefined" && currentChampionship) {
+        const savedTab = localStorage.getItem(
+          `bracket-tab-${currentChampionship.id}`
+        );
+        return savedTab || "primeira";
+      }
+      return "primeira";
+    });
+
+    // ✅ Persistir mudanças de aba no localStorage
+    const handleTabChange = useCallback(
+      (value: string) => {
+        setActiveTab(value);
+        if (typeof window !== "undefined" && currentChampionship) {
+          localStorage.setItem(`bracket-tab-${currentChampionship.id}`, value);
+        }
+      },
+      [currentChampionship]
+    );
+
+    // ✅ CORREÇÃO: Limpar cache da aba quando mudar de campeonato
+    useEffect(() => {
+      if (currentChampionship) {
+        const savedTab = localStorage.getItem(
+          `bracket-tab-${currentChampionship.id}`
+        );
+        if (savedTab && savedTab !== activeTab) {
+          setActiveTab(savedTab);
+        }
+      }
+    }, [currentChampionship?.id]);
+
+    // ✅ CORREÇÃO: Função auxiliar para gerar timestamp seguro
+    const getSafeTimestamp = useCallback((date: any): string => {
+      try {
+        if (!date) return "no-date";
+
+        // Se já é um número (timestamp)
+        if (typeof date === "number") return date.toString();
+
+        // Se é um objeto Date válido
+        if (date instanceof Date && !isNaN(date.getTime())) {
+          return date.getTime().toString();
+        }
+
+        // Se é uma string, tentar converter
+        if (typeof date === "string") {
+          const parsed = new Date(date);
+          if (!isNaN(parsed.getTime())) {
+            return parsed.getTime().toString();
+          }
+        }
+
+        // Fallback: usar timestamp atual como identificador único
+        return Date.now().toString();
+      } catch (error) {
+        console.warn("Erro ao processar timestamp:", error);
+        return Date.now().toString();
+      }
+    }, []);
+
+    // ✅ Dados do bracket memoizados com cache - CORREÇÃO APLICADA
     const bracketData = useMemo(() => {
       if (!currentChampionship) return null;
 
-      const cacheKey = `bracket-${
-        currentChampionship.id
-      }-${currentChampionship.updatedAt?.getTime()}`;
-      const cached = getCachedBracket?.(cacheKey);
+      // ✅ CORREÇÃO: Usar função auxiliar para timestamp seguro
+      const timestamp = getSafeTimestamp(currentChampionship.updatedAt);
+      const cacheKey = `bracket-${currentChampionship.id}-${timestamp}`;
+
+      // ✅ CORREÇÃO: Verificação mais robusta do cache
+      let cached = null;
+      try {
+        cached = getCachedBracket(cacheKey);
+      } catch (error) {
+        console.warn("Erro ao acessar cache do bracket:", error);
+        cached = null;
+      }
 
       if (cached) {
+        console.log("🚀 [BRACKET] Cache hit para:", cacheKey);
         return cached;
       }
+
+      console.log("🔄 [BRACKET] Recalculando dados para:", cacheKey);
 
       const allKnockoutMatches = currentChampionship.groups
         .flatMap((group) => group.matches)
@@ -373,11 +450,21 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
         secondDivMatches,
       };
 
-      // Cache dos dados
-      setCachedBracket?.(cacheKey, data);
+      // ✅ CORREÇÃO: Tentar salvar no cache com tratamento de erro
+      try {
+        setCachedBracket(cacheKey, data);
+        console.log("💾 [BRACKET] Dados salvos no cache:", cacheKey);
+      } catch (error) {
+        console.warn("Erro ao salvar cache do bracket:", error);
+      }
 
       return data;
-    }, [currentChampionship, getCachedBracket, setCachedBracket]);
+    }, [
+      currentChampionship,
+      getCachedBracket,
+      setCachedBracket,
+      getSafeTimestamp,
+    ]);
 
     // ✅ Callback memoizado para clique em partida
     const handleMatchClick = useCallback(
@@ -386,11 +473,6 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
       },
       [onMatchClick]
     );
-
-    // ✅ Callback memoizado para mudança de aba
-    const handleTabChange = useCallback((value: string) => {
-      setActiveTab(value);
-    }, []);
 
     if (!currentChampionship || !bracketData) return null;
 

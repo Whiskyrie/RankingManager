@@ -24,9 +24,9 @@ interface ChampionshipState {
   isLoading: boolean;
   error: string | null;
 
-  // ✅ Sistema de cache para memoização
+  // ✅ CORREÇÃO: Sistema de cache simplificado sem Map
   _lastUpdateTimestamp: number;
-  _bracketCache: Map<string, any>;
+  _bracketCache: Record<string, any>;
 }
 
 interface ChampionshipActions {
@@ -68,25 +68,39 @@ export const useChampionshipStore = create<
         isLoading: false,
         error: null,
         _lastUpdateTimestamp: 0,
-        _bracketCache: new Map(),
+        _bracketCache: {}, // ✅ CORREÇÃO: Usar objeto simples ao invés de Map
 
-        // ✅ Métodos de cache
+        // ✅ CORREÇÃO: Métodos de cache com verificação de segurança
         invalidateCache: () => {
-          set((state) => ({
-            _bracketCache: new Map(),
+          set((_state) => ({
+            _bracketCache: {},
             _lastUpdateTimestamp: Date.now(),
           }));
         },
 
         getCachedBracket: (key: string) => {
-          return get()._bracketCache.get(key);
+          const state = get();
+          // ✅ CORREÇÃO: Verificar se _bracketCache existe e é um objeto
+          if (!state._bracketCache || typeof state._bracketCache !== "object") {
+            return null;
+          }
+          return state._bracketCache[key] || null;
         },
 
         setCachedBracket: (key: string, data: any) => {
           set((state) => {
-            const newCache = new Map(state._bracketCache);
-            newCache.set(key, data);
-            return { _bracketCache: newCache };
+            // ✅ CORREÇÃO: Garantir que _bracketCache seja um objeto válido
+            const currentCache =
+              state._bracketCache && typeof state._bracketCache === "object"
+                ? state._bracketCache
+                : {};
+
+            return {
+              _bracketCache: {
+                ...currentCache,
+                [key]: data,
+              },
+            };
           });
         },
 
@@ -403,8 +417,20 @@ export const useChampionshipStore = create<
 
             await get().updateChampionship(updatedChampionship);
 
-            // Invalidar cache para forçar re-render controlado
-            get().invalidateCache();
+            // ✅ CORREÇÃO: Invalidar cache de forma mais seletiva
+            // Não invalidar cache para mudanças simples de resultado
+            const hasNewMatches =
+              updatedChampionship.groups
+                .flatMap((g) => g.matches)
+                .filter((m) => m.phase === "knockout").length >
+              currentChampionship.groups
+                .flatMap((g) => g.matches)
+                .filter((m) => m.phase === "knockout").length;
+
+            // Só invalida cache se novas partidas foram criadas
+            if (hasNewMatches) {
+              get().invalidateCache();
+            }
           } catch (error) {
             console.error("❌ [STORE] Error updating match result:", error);
             set({
@@ -691,6 +717,14 @@ export const useChampionshipStore = create<
       {
         name: "championship-storage",
         version: 1,
+        // ✅ CORREÇÃO: Configurar serialização para evitar problemas com Map
+        partialize: (state) => ({
+          championships: state.championships,
+          currentChampionship: state.currentChampionship,
+          // Não persistir cache para evitar problemas de serialização
+          _lastUpdateTimestamp: 0,
+          _bracketCache: {},
+        }),
       }
     ),
     {
@@ -844,7 +878,7 @@ function generateThirdPlaceMatches(
   semifinalMatches: Match[],
   roundName: string,
   athletes: Athlete[],
-  bestOf: number
+  _bestOf: number
 ): Match[] {
   if (semifinalMatches.length !== 2) return [];
 
@@ -926,7 +960,7 @@ function generateGroupMatches(group: Group): Match[] {
 function updateStandingsWithMatch(
   standings: GroupStanding[],
   match: Match,
-  bestOf: number
+  _bestOf: number
 ) {
   const player1Standing = standings.find(
     (s) => s.athleteId === match.player1Id
@@ -978,7 +1012,7 @@ function updateStandingsWithMatch(
   player2Standing.setsWon += player2Sets;
   player2Standing.setsLost += player1Sets;
   player2Standing.pointsWon += player2Points;
-  player2Standing.pointsLost += player1Points;
+  player2Standing.pointsLost += player2Points;
 
   if (match.winnerId === match.player1Id) {
     player1Standing.wins++;
