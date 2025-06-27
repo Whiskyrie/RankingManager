@@ -45,6 +45,8 @@ interface ChampionshipActions {
   createManualGroups: (
     groups: { name: string; athleteIds: string[] }[]
   ) => Promise<void>;
+  // ✅ NOVA FUNÇÃO: Distribuir atletas restantes
+  distributeRemainingAthletes: () => Promise<boolean>;
   updateMatchResult: (result: MatchResult) => Promise<void>;
   setWalkover: (matchId: string, winnerId: string) => Promise<void>;
   generateKnockoutBracket: () => Promise<void>;
@@ -249,7 +251,25 @@ export const useChampionshipStore = create<
           if (!state.currentChampionship) return;
 
           const { athletes, groupSize } = state.currentChampionship;
-          const numGroups = Math.ceil(athletes.length / groupSize);
+          const totalAthletes = athletes.length;
+
+          // Calcular quantos grupos completos podemos formar
+          const maxCompleteGroups = Math.floor(totalAthletes / groupSize);
+          const remainingAthletes = totalAthletes % groupSize;
+
+          // Se temos atletas restantes que não formam um grupo completo,
+          // distribuí-los nos grupos existentes
+          let numGroups = maxCompleteGroups;
+          if (remainingAthletes > 0) {
+            // Se restam menos de 3 atletas e temos pelo menos um grupo completo,
+            // distribuímos os restantes nos grupos existentes
+            if (remainingAthletes < 3 && maxCompleteGroups > 0) {
+              numGroups = maxCompleteGroups;
+            } else {
+              // Se restam 3 ou mais atletas, criamos um grupo adicional
+              numGroups = maxCompleteGroups + 1;
+            }
+          }
 
           const seeded = athletes
             .filter((a) => a.isSeeded)
@@ -267,15 +287,48 @@ export const useChampionshipStore = create<
             isCompleted: false,
           }));
 
+          // Distribuir cabeças de chave primeiro
           seeded.forEach((athlete, index) => {
             const groupIndex = index % numGroups;
             groups[groupIndex].athletes.push(athlete);
           });
 
-          unseeded.forEach((athlete, index) => {
-            const groupIndex = index % numGroups;
-            groups[groupIndex].athletes.push(athlete);
-          });
+          // Distribuir atletas não cabeça de chave
+          if (
+            remainingAthletes > 0 &&
+            remainingAthletes < 3 &&
+            maxCompleteGroups > 0
+          ) {
+            // Caso especial: temos atletas restantes que não formam um grupo completo
+            // Distribuir primeiro os atletas nos grupos completos
+            const athletesToDistribute = [...unseeded];
+            const athletesForCompleteGroups = athletesToDistribute.splice(
+              0,
+              maxCompleteGroups * (groupSize - 1)
+            );
+
+            athletesForCompleteGroups.forEach((athlete, index) => {
+              const groupIndex = index % maxCompleteGroups;
+              groups[groupIndex].athletes.push(athlete);
+            });
+
+            // Sortear os atletas restantes nos grupos existentes
+            const remainingUnseeded = athletesToDistribute;
+            const shuffledGroups = [...Array(numGroups).keys()].sort(
+              () => Math.random() - 0.5
+            );
+
+            remainingUnseeded.forEach((athlete, index) => {
+              const groupIndex = shuffledGroups[index % numGroups];
+              groups[groupIndex].athletes.push(athlete);
+            });
+          } else {
+            // Distribuição normal
+            unseeded.forEach((athlete, index) => {
+              const groupIndex = index % numGroups;
+              groups[groupIndex].athletes.push(athlete);
+            });
+          }
 
           let totalMatches = 0;
           groups.forEach((group) => {
@@ -792,6 +845,59 @@ export const useChampionshipStore = create<
                 : "Erro inesperado ao excluir campeonato";
             set({ error: errorMessage, isLoading: false });
           }
+        },
+
+        // ✅ NOVA FUNÇÃO: Distribuir atletas restantes automaticamente
+        distributeRemainingAthletes: async () => {
+          const state = get();
+          if (!state.currentChampionship) return;
+
+          const { athletes, groups } = state.currentChampionship;
+
+          // Encontrar atletas não distribuídos
+          const assignedAthleteIds = groups.flatMap((group) =>
+            group.athletes.map((a) => a.id)
+          );
+          const unassignedAthletes = athletes.filter(
+            (athlete) => !assignedAthleteIds.includes(athlete.id)
+          );
+
+          if (unassignedAthletes.length === 0) return;
+
+          // Se há menos de 3 atletas restantes, distribuí-los aleatoriamente nos grupos existentes
+          if (unassignedAthletes.length < 3 && groups.length > 0) {
+            const updatedGroups = [...groups];
+
+            // Embaralhar os grupos para distribuição aleatória
+            const shuffledGroupIndices = [...Array(groups.length).keys()].sort(
+              () => Math.random() - 0.5
+            );
+
+            unassignedAthletes.forEach((athlete, index) => {
+              const groupIndex = shuffledGroupIndices[index % groups.length];
+              updatedGroups[groupIndex].athletes.push(athlete);
+            });
+
+            // Regenerar partidas para os grupos modificados
+            let totalMatches = 0;
+            updatedGroups.forEach((group) => {
+              const groupMatches = generateGroupMatches(group);
+              group.matches = groupMatches;
+              group.standings = get().calculateGroupStandings(group);
+              totalMatches += groupMatches.length;
+            });
+
+            const updatedChampionship = {
+              ...state.currentChampionship,
+              groups: updatedGroups,
+              totalMatches,
+            };
+
+            await get().updateChampionship(updatedChampionship);
+            return true; // Indica que atletas foram distribuídos
+          }
+
+          return false; // Não foi possível distribuir (3+ atletas restantes)
         },
       }),
       {

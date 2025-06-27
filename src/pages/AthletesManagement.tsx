@@ -299,6 +299,37 @@ export const AthletesManagement: React.FC = () => {
     }
   };
 
+  const handleDistributeRemaining = async () => {
+    const allAssignedAthletes = manualGroups.flatMap((g) => g.athleteIds);
+    const unassignedAthletes = athletes.filter(
+      (a) => !allAssignedAthletes.includes(a.id)
+    );
+
+    if (
+      confirm(
+        `Tem certeza que deseja sortear os ${unassignedAthletes.length} atleta(s) restante(s) nos grupos existentes? Esta ação distribuirá automaticamente os atletas que não formam um grupo completo.`
+      )
+    ) {
+      // Simular a distribuição nos grupos manuais
+      const shuffledGroupIndices = [...Array(manualGroups.length).keys()].sort(
+        () => Math.random() - 0.5
+      );
+
+      const updatedGroups = [...manualGroups];
+      unassignedAthletes.forEach((athlete, index) => {
+        const groupIndex = shuffledGroupIndices[index % manualGroups.length];
+        updatedGroups[groupIndex].athleteIds.push(athlete.id);
+      });
+
+      setManualGroups(updatedGroups);
+
+      // Mostrar notificação de sucesso
+      alert(
+        `${unassignedAthletes.length} atleta(s) foram distribuídos automaticamente nos grupos!`
+      );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -624,7 +655,7 @@ Pedro Henrique"
                     </h4>
                     <p className="text-sm text-gray-600">
                       {canGenerateGroups
-                        ? `Pronto para gerar grupos com ${athletes.length} atletas`
+                        ? `Pronto para gerar grupos com ${athletes.length} atletas. Atletas restantes serão distribuídos automaticamente.`
                         : `Adicione pelo menos ${
                             6 - athletes.length
                           } atleta(s) para gerar grupos`}
@@ -653,8 +684,9 @@ Pedro Henrique"
                     <div>
                       <h4 className="font-medium">Criar Grupos Manualmente</h4>
                       <p className="text-sm text-gray-600">
-                        Distribua os atletas nos grupos manualmente para
-                        controle total
+                        Distribua os atletas nos grupos manualmente. Atletas que
+                        não formam grupos completos podem ser sorteados
+                        automaticamente.
                       </p>
                     </div>
                     <Dialog
@@ -693,6 +725,7 @@ Pedro Henrique"
                           }}
                           onAddToGroup={handleAddAthleteToGroup}
                           onRemoveFromGroup={handleRemoveAthleteFromGroup}
+                          onDistributeRemaining={handleDistributeRemaining}
                         />
                       </DialogContent>
                     </Dialog>

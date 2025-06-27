@@ -27,6 +27,7 @@ interface ManualGroupsFormProps {
   onCancel: () => void;
   onAddToGroup: (athleteId: string, groupIndex: number) => void;
   onRemoveFromGroup: (athleteId: string, groupIndex: number) => void;
+  onDistributeRemaining?: () => void;
 }
 
 export const ManualGroupsForm: React.FC<ManualGroupsFormProps> = ({
@@ -38,6 +39,7 @@ export const ManualGroupsForm: React.FC<ManualGroupsFormProps> = ({
   onCancel,
   onAddToGroup,
   onRemoveFromGroup,
+  onDistributeRemaining,
 }) => {
   const { currentChampionship } = useChampionshipStore();
   const [isCreating, setIsCreating] = useState(false);
@@ -70,33 +72,22 @@ export const ManualGroupsForm: React.FC<ManualGroupsFormProps> = ({
   };
 
   const addAthleteToGroup = (groupIndex: number, athleteId: string) => {
-    setManualGroups(
-      manualGroups.map((group, i) =>
-        i === groupIndex
-          ? { ...group, athleteIds: [...group.athleteIds, athleteId] }
-          : group
-      )
-    );
     onAddToGroup(athleteId, groupIndex);
   };
 
   const removeAthleteFromGroup = (groupIndex: number, athleteId: string) => {
-    setManualGroups(
-      manualGroups.map((group, i) =>
-        i === groupIndex
-          ? {
-              ...group,
-              athleteIds: group.athleteIds.filter((id) => id !== athleteId),
-            }
-          : group
-      )
-    );
     onRemoveFromGroup(athleteId, groupIndex);
   };
 
   const canCreate =
-    manualGroups.every((group) => group.athleteIds.length >= 3) &&
+    manualGroups.every((group) => group.athleteIds.length >= 2) &&
     availableAthletes.length === 0;
+
+  const canDistributeRemaining =
+    availableAthletes.length > 0 &&
+    availableAthletes.length < 3 &&
+    manualGroups.some((group) => group.athleteIds.length >= 3) &&
+    onDistributeRemaining;
 
   const handleCreateGroups = async () => {
     if (!canCreate) return;
@@ -133,8 +124,8 @@ export const ManualGroupsForm: React.FC<ManualGroupsFormProps> = ({
         <CardContent className="space-y-4">
           <div className="flex justify-between items-center">
             <p className="text-sm text-gray-600">
-              Distribua os {athletes.length} atletas em grupos de pelo menos 3
-              pessoas.
+              Distribua os {athletes.length} atletas em grupos de pelo menos 2
+              pessoas. Atletas restantes podem ser sorteados automaticamente.
             </p>
             <Button onClick={addGroup} variant="outline" size="sm">
               <Plus className="h-4 w-4 mr-2" />
@@ -233,8 +224,8 @@ export const ManualGroupsForm: React.FC<ManualGroupsFormProps> = ({
                   )}
 
                   <div className="text-xs text-gray-500">
-                    Mínimo: 3 atletas | Atual: {group.athleteIds.length}
-                    {group.athleteIds.length >= 3 && (
+                    Mínimo: 2 atletas | Atual: {group.athleteIds.length}
+                    {group.athleteIds.length >= 2 && (
                       <Check className="inline h-3 w-3 ml-1 text-green-500" />
                     )}
                   </div>
@@ -252,7 +243,7 @@ export const ManualGroupsForm: React.FC<ManualGroupsFormProps> = ({
                     Atletas não distribuídos ({availableAthletes.length})
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 mb-3">
                   {availableAthletes.map((athlete) => (
                     <Badge
                       key={athlete.id}
@@ -264,6 +255,27 @@ export const ManualGroupsForm: React.FC<ManualGroupsFormProps> = ({
                     </Badge>
                   ))}
                 </div>
+
+                {canDistributeRemaining && (
+                  <div className="flex items-center gap-2 mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-blue-800">
+                        Sortear atletas restantes
+                      </p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        Como restam menos de 3 atletas, eles podem ser
+                        distribuídos aleatoriamente nos grupos existentes
+                      </p>
+                    </div>
+                    <Button
+                      onClick={onDistributeRemaining}
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      🎲 Sortear
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -276,7 +288,8 @@ export const ManualGroupsForm: React.FC<ManualGroupsFormProps> = ({
                 </span>
               ) : (
                 <span>
-                  Distribua todos os atletas em grupos de pelo menos 3 pessoas
+                  Distribua todos os atletas em grupos de pelo menos 2 pessoas
+                  ou use o sorteio automático
                 </span>
               )}
             </div>
