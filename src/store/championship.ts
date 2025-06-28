@@ -59,6 +59,10 @@ interface ChampionshipActions {
   invalidateCache: () => void;
   getCachedBracket: (key: string) => any;
   setCachedBracket: (key: string, data: any) => void;
+
+  // ✅ NOVO: Validação e correção CBTM/ITTF
+  validateChampionshipCBTM: () => void;
+  fixChampionshipCBTM: () => Promise<void>;
 }
 
 export const useChampionshipStore = create<
@@ -899,6 +903,62 @@ export const useChampionshipStore = create<
 
           return false; // Não foi possível distribuir (3+ atletas restantes)
         },
+
+        // ✅ NOVO: Validação e correção CBTM/ITTF
+        validateChampionshipCBTM: () => {
+          const state = get();
+          if (!state.currentChampionship)
+            return { isValid: true, errors: [], warnings: [] };
+
+          // Importar validações CBTM
+          import("../utils/cbtm-validator").then(
+            ({ validateFullChampionshipCBTM }) => {
+              const validation = validateFullChampionshipCBTM(
+                state.currentChampionship!
+              );
+
+              console.log(
+                "🔍 [CBTM-VALIDATION] Resultado da validação:",
+                validation
+              );
+
+              if (!validation.isValid) {
+                console.error(
+                  "❌ [CBTM-VALIDATION] Erros encontrados:",
+                  validation.errors
+                );
+              }
+
+              if (validation.warnings.length > 0) {
+                console.warn(
+                  "⚠️ [CBTM-VALIDATION] Avisos:",
+                  validation.warnings
+                );
+              }
+
+              return validation;
+            }
+          );
+        },
+
+        fixChampionshipCBTM: async () => {
+          const state = get();
+          if (!state.currentChampionship) return;
+
+          try {
+            const { applyAutomaticFixesCBTM } = await import(
+              "../utils/cbtm-validator"
+            );
+            const fixedChampionship = applyAutomaticFixesCBTM(
+              state.currentChampionship
+            );
+
+            await get().updateChampionship(fixedChampionship);
+            console.log("✅ [CBTM-FIXES] Correções automáticas aplicadas");
+          } catch (error) {
+            console.error("❌ [CBTM-FIXES] Erro ao aplicar correções:", error);
+          }
+        },
       }),
       {
         name: "championship-storage",
@@ -999,7 +1059,8 @@ async function checkAndGenerateRounds(
       semifinalMatches,
       `Final${suffix}`,
       championship.athletes,
-      championship.knockoutBestOf
+      championship.knockoutBestOf,
+      championship.athletes // Passar lista completa para sistema BYE
     );
 
     if (finalMatch.length > 0) {
@@ -1046,7 +1107,8 @@ async function checkAndGenerateRounds(
         currentRoundMatches,
         nextRound,
         championship.athletes,
-        championship.knockoutBestOf
+        championship.knockoutBestOf,
+        championship.athletes // Passar lista completa para sistema BYE
       );
 
       if (newMatches.length > 0) {

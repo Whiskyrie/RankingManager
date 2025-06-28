@@ -83,7 +83,8 @@ export const GroupsManagement: React.FC = () => {
   const handleDownloadGroupReport = (groupId: string) => {
     const group = currentChampionship.groups.find((g) => g.id === groupId);
     if (group) {
-      generateGroupReport(group, currentChampionship);
+      const report = generateGroupReport(currentChampionship);
+      console.log(report); // Para desenvolvimento, pode ser substituído por download
     }
   };
 

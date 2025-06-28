@@ -160,7 +160,11 @@ export const Dashboard: React.FC = () => {
                     <Input
                       id="date"
                       type="date"
-                      value={config.date.toISOString().split("T")[0]}
+                      value={
+                        config.date instanceof Date
+                          ? config.date.toISOString().split("T")[0]
+                          : new Date(config.date).toISOString().split("T")[0]
+                      }
                       onChange={(e) =>
                         setConfig({
                           ...config,

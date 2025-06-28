@@ -1,5 +1,4 @@
-import { jsPDF } from "jspdf";
-import { Championship, Athlete, Group, Match, SetResult } from "../types/index";
+import { Athlete, Match, SetResult } from "../types/index";
 
 // ✅ CORREÇÃO: Funções de formatação com validação robusta
 const isValidDate = (date: any): boolean => {
@@ -230,701 +229,1035 @@ const getRoundName = (rounds: number): string => {
   return roundNames[rounds] || `Rodada ${rounds}`;
 };
 
-// Geração de chaves mata-mata
+// Geração de chaves mata-mata com sistema de BYE para cabeças de chave - CORRIGIDO PARA CBTM/ITTF
 export const generateMainKnockoutMatches = (
   qualifiedAthletes: Athlete[],
   bracketSize: number
 ): Match[] => {
   const matches: Match[] = [];
 
-  // Separar cabeças de chave dos demais classificados
-  const seeded = qualifiedAthletes
-    .filter((a) => a.isSeeded)
-    .sort((a, b) => (a.seedNumber || 0) - (b.seedNumber || 0));
+  console.log(
+    `🏆 [KNOCKOUT] Gerando chaveamento CBTM/ITTF para ${qualifiedAthletes.length} atletas em bracket de ${bracketSize}`
+  );
 
-  const unseeded = qualifiedAthletes.filter((a) => !a.isSeeded);
+  // ✅ REGRA CBTM/ITTF: Validar número mínimo de atletas
+  if (qualifiedAthletes.length < 2) {
+    console.error("❌ [CBTM] Mínimo de 2 atletas necessário para mata-mata");
+    return matches;
+  }
 
-  // Criar lista de atletas ordenados para a chave
-  const orderedAthletes: (Athlete | null)[] = Array.from(
+  // ✅ REGRA CBTM/ITTF: Determinar estrutura de bracket correta
+  let validBracketSize = 2;
+  while (validBracketSize < qualifiedAthletes.length) {
+    validBracketSize *= 2;
+  }
+
+  // Forçar uso do bracketSize correto
+  bracketSize = validBracketSize;
+
+  // ✅ REGRA CBTM/ITTF: Separar e ordenar cabeças de chave corretamente
+  const seededAthletes = qualifiedAthletes
+    .filter((a) => a.isSeeded && a.seedNumber)
+    .sort((a, b) => (a.seedNumber || 999) - (b.seedNumber || 999));
+
+  const unseededAthletes = qualifiedAthletes.filter((a) => !a.isSeeded);
+
+  console.log(
+    `🎯 [CBTM] Cabeças de chave identificados: ${seededAthletes.length}`
+  );
+  console.log(`🎯 [CBTM] Atletas sem seed: ${unseededAthletes.length}`);
+
+  // ✅ REGRA CBTM/ITTF: Verificar se precisa implementar sistema de BYE
+  const needsBye = qualifiedAthletes.length < bracketSize;
+
+  if (needsBye) {
+    return generateKnockoutWithBye(
+      qualifiedAthletes,
+      bracketSize,
+      seededAthletes,
+      unseededAthletes
+    );
+  }
+
+  // ✅ REGRA CBTM/ITTF: Bracket completo - distribuição conforme padrão internacional
+  return generateCompleteKnockoutBracket(
+    qualifiedAthletes,
+    bracketSize,
+    seededAthletes,
+    unseededAthletes
+  );
+};
+
+// ✅ NOVA FUNÇÃO: Gerar bracket com sistema BYE conforme CBTM/ITTF
+const generateKnockoutWithBye = (
+  qualifiedAthletes: Athlete[],
+  bracketSize: number,
+  seededAthletes: Athlete[],
+  unseededAthletes: Athlete[]
+): Match[] => {
+  const matches: Match[] = [];
+  const byeCount = bracketSize - qualifiedAthletes.length;
+
+  console.log(`🎯 [CBTM-BYE] Sistema BYE ativado: ${byeCount} passes livres`);
+
+  // ✅ REGRA CBTM/ITTF: Prioridade BYE - sempre para os melhores cabeças de chave
+  const athletesWithBye: Athlete[] = [];
+  const remainingSeeded: Athlete[] = [];
+
+  // Dar BYE aos melhores cabeças primeiro
+  seededAthletes.forEach((athlete, index) => {
+    if (index < byeCount) {
+      athletesWithBye.push(athlete);
+      console.log(
+        `🎯 [CBTM-BYE] BYE concedido: ${athlete.name} (Cabeça #${athlete.seedNumber})`
+      );
+    } else {
+      remainingSeeded.push(athlete);
+    }
+  });
+
+  // Se ainda precisar de mais BYEs, dar aos melhores classificados não-cabeças
+  const remainingByes = byeCount - athletesWithBye.length;
+  if (remainingByes > 0) {
+    // Ordenar não-cabeças por posição de classificação (assumindo que foram classificados por mérito)
+    const sortedUnseeded = [...unseededAthletes].slice(0, remainingByes);
+    athletesWithBye.push(...sortedUnseeded);
+
+    sortedUnseeded.forEach((athlete) => {
+      console.log(`🎯 [CBTM-BYE] BYE concedido (não-cabeça): ${athlete.name}`);
+    });
+  }
+
+  // Atletas que jogam na primeira rodada
+  const athletesToPlay = qualifiedAthletes.filter(
+    (athlete) => !athletesWithBye.includes(athlete)
+  );
+
+  // ✅ REGRA CBTM/ITTF: Distribuição estratégica para evitar confrontos precoces
+  const orderedForFirstRound = arrangePlayersForFirstRound(
+    athletesToPlay,
+    remainingSeeded,
+    unseededAthletes.filter((a) => !athletesWithBye.includes(a))
+  );
+
+  // Criar partidas da primeira rodada
+  const rounds = Math.ceil(Math.log2(qualifiedAthletes.length));
+  const currentRoundName = getRoundName(rounds);
+
+  console.log(
+    `🎯 [CBTM] Primeira rodada: ${currentRoundName} com ${athletesToPlay.length} atletas`
+  );
+
+  let matchPosition = 0;
+  for (let i = 0; i < orderedForFirstRound.length; i += 2) {
+    if (orderedForFirstRound[i] && orderedForFirstRound[i + 1]) {
+      const match = createMatch(
+        orderedForFirstRound[i],
+        orderedForFirstRound[i + 1],
+        currentRoundName,
+        matchPosition
+      );
+      matches.push(match);
+      matchPosition++;
+    }
+  }
+
+  return matches;
+};
+
+// ✅ NOVA FUNÇÃO: Gerar bracket completo conforme CBTM/ITTF
+const generateCompleteKnockoutBracket = (
+  qualifiedAthletes: Athlete[],
+  bracketSize: number,
+  seededAthletes: Athlete[],
+  unseededAthletes: Athlete[]
+): Match[] => {
+  const matches: Match[] = [];
+
+  console.log(
+    `🏆 [CBTM] Bracket completo - ${qualifiedAthletes.length} atletas`
+  );
+
+  // ✅ REGRA CBTM/ITTF: Distribuição padrão de cabeças de chave
+  const orderedAthletes = distributeSeedsAccordingToCBTM(
+    bracketSize,
+    seededAthletes,
+    unseededAthletes
+  );
+
+  // Criar primeira rodada
+  const rounds = Math.log2(bracketSize);
+  const currentRoundName = getRoundName(rounds);
+
+  let matchPosition = 0;
+  for (let i = 0; i < orderedAthletes.length; i += 2) {
+    if (orderedAthletes[i] && orderedAthletes[i + 1]) {
+      const match = createMatch(
+        orderedAthletes[i],
+        orderedAthletes[i + 1],
+        currentRoundName,
+        matchPosition
+      );
+      matches.push(match);
+      matchPosition++;
+    }
+  }
+
+  return matches;
+};
+
+// ✅ NOVA FUNÇÃO: Distribuição de cabeças conforme padrão CBTM/ITTF
+const distributeSeedsAccordingToCBTM = (
+  bracketSize: number,
+  seededAthletes: Athlete[],
+  unseededAthletes: Athlete[]
+): Athlete[] => {
+  const orderedAthletes: Athlete[] = Array.from(
     { length: bracketSize },
     () => null
   );
 
-  // Posicionar cabeças de chave (distribuição padrão)
-  if (seeded.length > 0) orderedAthletes[0] = seeded[0]; // 1º cabeça
-  if (seeded.length > 1) orderedAthletes[bracketSize - 1] = seeded[1]; // 2º cabeça
-  if (seeded.length > 2)
-    orderedAthletes[Math.floor(bracketSize / 2) - 1] = seeded[2]; // 3º cabeça
-  if (seeded.length > 3)
-    orderedAthletes[Math.floor(bracketSize / 2)] = seeded[3]; // 4º cabeça
+  // ✅ REGRA CBTM/ITTF: Posicionamento padrão de cabeças de chave
+  if (seededAthletes.length >= 1) {
+    orderedAthletes[0] = seededAthletes[0]; // Cabeça #1 sempre na posição 1
+    console.log(
+      `🎯 [CBTM-SEED] Cabeça #1: ${seededAthletes[0].name} → Posição 1`
+    );
+  }
 
-  // Preencher com demais atletas
+  if (seededAthletes.length >= 2) {
+    orderedAthletes[bracketSize - 1] = seededAthletes[1]; // Cabeça #2 sempre na última posição
+    console.log(
+      `🎯 [CBTM-SEED] Cabeça #2: ${seededAthletes[1].name} → Posição ${bracketSize}`
+    );
+  }
+
+  if (seededAthletes.length >= 3) {
+    // Cabeça #3 na metade superior da chave inferior
+    const pos3 = bracketSize / 2;
+    orderedAthletes[pos3 - 1] = seededAthletes[2];
+    console.log(
+      `🎯 [CBTM-SEED] Cabeça #3: ${seededAthletes[2].name} → Posição ${pos3}`
+    );
+  }
+
+  if (seededAthletes.length >= 4) {
+    // Cabeça #4 na metade inferior da chave superior
+    const pos4 = bracketSize / 2;
+    orderedAthletes[pos4] = seededAthletes[3];
+    console.log(
+      `🎯 [CBTM-SEED] Cabeça #4: ${seededAthletes[3].name} → Posição ${
+        pos4 + 1
+      }`
+    );
+  }
+
+  // ✅ REGRA CBTM/ITTF: Distribuir cabeças adicionais em quartos
+  if (seededAthletes.length > 4) {
+    distributeAdditionalSeeds(
+      orderedAthletes,
+      seededAthletes.slice(4),
+      bracketSize
+    );
+  }
+
+  // ✅ REGRA CBTM/ITTF: Embaralhar e distribuir não-cabeças
+  const shuffledUnseeded = [...unseededAthletes].sort(
+    () => Math.random() - 0.5
+  );
   let unseededIndex = 0;
+
   for (
     let i = 0;
-    i < orderedAthletes.length && unseededIndex < unseeded.length;
+    i < orderedAthletes.length && unseededIndex < shuffledUnseeded.length;
     i++
   ) {
     if (orderedAthletes[i] === null) {
-      orderedAthletes[i] = unseeded[unseededIndex++];
+      orderedAthletes[i] = shuffledUnseeded[unseededIndex++];
     }
   }
 
-  // Gerar partidas da primeira rodada
-  const rounds = Math.log2(bracketSize);
-  const currentRoundName = getRoundName(rounds);
-
-  // Criar partidas em pares
-  for (let i = 0; i < orderedAthletes.length; i += 2) {
-    if (orderedAthletes[i] && orderedAthletes[i + 1]) {
-      const match: Match = {
-        id: `knockout-${i / 2}`,
-        player1Id: orderedAthletes[i]!.id,
-        player2Id: orderedAthletes[i + 1]!.id,
-        player1: orderedAthletes[i]!,
-        player2: orderedAthletes[i + 1]!,
-        sets: [],
-        isCompleted: false,
-        phase: "knockout",
-        round: currentRoundName,
-        position: i / 2,
-        timeoutsUsed: {
-          player1: false,
-          player2: false,
-        },
-        createdAt: new Date(),
-      };
-      matches.push(match);
-    }
-  }
-
-  return matches;
+  return orderedAthletes.filter((athlete) => athlete !== null);
 };
 
-export const generateSecondDivisionMatches = (athletes: Athlete[]): Match[] => {
-  const matches: Match[] = [];
-
-  console.log("\n🥈 [UTILS-2ND] === GERAÇÃO SEGUNDA DIVISÃO ===");
-  console.log("🥈 [UTILS-2ND] Atletas recebidos:", athletes.length);
-  athletes.forEach((athlete, index) => {
-    console.log(`  ${index + 1}. ${athlete.name} (ID: ${athlete.id})`);
-  });
-
-  // Validação inicial
-  if (!athletes || athletes.length < 2) {
-    console.log(
-      "❌ [UTILS-2ND] Insuficientes atletas para segunda divisão:",
-      athletes?.length || 0
-    );
-    return matches;
-  }
-
-  // ✅ CORREÇÃO: Melhor determinação do tamanho da chave
-  let bracketSize = 2;
-  while (bracketSize < athletes.length) {
-    bracketSize *= 2;
-  }
-
-  console.log(
-    `🎯 [UTILS-2ND] Tamanho da chave determinado: ${bracketSize} (para ${athletes.length} atletas)`
-  );
-
-  // ✅ CORREÇÃO: Embaralhar atletas de forma mais robusta
-  const shuffledAthletes = [...athletes]
-    .map((athlete) => ({ athlete, sort: Math.random() }))
-    .sort((a, b) => a.sort - b.sort)
-    .map((item) => item.athlete);
-
-  console.log("🔀 [UTILS-2ND] Atletas embaralhados:");
-  shuffledAthletes.forEach((athlete, index) => {
-    console.log(`  ${index + 1}. ${athlete.name}`);
-  });
-
-  // ✅ CORREÇÃO: Criar array ordenado mais robusto
-  const orderedAthletes: (Athlete | null)[] = Array.from(
-    { length: bracketSize },
-    (_, index) =>
-      index < shuffledAthletes.length ? shuffledAthletes[index] : null
-  );
-
-  console.log("📋 [UTILS-2ND] Posições na chave:");
-  orderedAthletes.forEach((athlete, index) => {
-    console.log(`  Posição ${index + 1}: ${athlete?.name || "null"}`);
-  });
-
-  // ✅ CORREÇÃO: Determinação mais robusta da rodada inicial
-  const rounds = Math.log2(bracketSize);
-  const roundNames = {
-    1: "Final 2ª Div",
-    2: "Semifinal 2ª Div",
-    3: "Quartas 2ª Div",
-    4: "Oitavas 2ª Div",
-    5: "Décimo-sextos 2ª Div",
-  };
-
-  const currentRoundName =
-    roundNames[rounds as keyof typeof roundNames] || "Oitavas 2ª Div";
-
-  console.log(
-    `🏆 [UTILS-2ND] Rodada inicial: ${currentRoundName} (${rounds} rodadas)`
-  );
-
-  // ✅ CORREÇÃO: Geração de partidas mais robusta
-  let matchCount = 0;
-  for (let i = 0; i < orderedAthletes.length; i += 2) {
-    const player1 = orderedAthletes[i];
-    const player2 = orderedAthletes[i + 1];
-
-    // ✅ Só criar partida se ambos os jogadores existem
-    if (player1 && player2) {
-      const matchId = `second-div-${Date.now()}-${Math.random()
-        .toString(36)
-        .substr(2, 9)}-${matchCount}`;
-
-      const match: Match = {
-        id: matchId,
-        player1Id: player1.id,
-        player2Id: player2.id,
-        player1: player1,
-        player2: player2,
-        sets: [],
-        isCompleted: false,
-        phase: "knockout",
-        round: currentRoundName,
-        position: matchCount,
-        timeoutsUsed: {
-          player1: false,
-          player2: false,
-        },
-        createdAt: new Date(),
-      };
-
-      matches.push(match);
-      matchCount++;
-
-      console.log(`✅ [UTILS-2ND] Partida ${matchCount} criada:`);
-      console.log(`    ID: ${matchId}`);
-      console.log(`    Jogadores: ${player1.name} vs ${player2.name}`);
-      console.log(`    Rodada: ${currentRoundName}`);
-      console.log(`    Posição: ${matchCount - 1}`);
-    } else if (player1 && !player2) {
-      // ✅ CORREÇÃO: Player1 avança automaticamente se não há oponente
-      console.log(
-        `⭐ [UTILS-2ND] ${player1.name} avança automaticamente (sem oponente)`
-      );
-      // Nota: Em uma implementação mais avançada, poderia criar um "bye" ou avançar diretamente
-    }
-  }
-
-  console.log(
-    `🎉 [UTILS-2ND] Geração concluída: ${matches.length} partidas criadas`
-  );
-  console.log("🥈 [UTILS-2ND] === FIM GERAÇÃO SEGUNDA DIVISÃO ===\n");
-
-  return matches;
-};
-export const validateSecondDivisionMatches = (matches: Match[]): boolean => {
-  console.log("\n🔍 [VALIDATE-2ND] Validando partidas da segunda divisão...");
-
-  const issues: string[] = [];
-
-  matches.forEach((match, index) => {
-    // Verificar estrutura básica
-    if (!match.id) {
-      issues.push(`Partida ${index + 1}: ID ausente`);
-    }
-
-    if (!match.player1Id || !match.player2Id) {
-      issues.push(`Partida ${index + 1}: IDs dos jogadores ausentes`);
-    }
-
-    if (!match.player1 || !match.player2) {
-      issues.push(`Partida ${index + 1}: Objetos dos jogadores ausentes`);
-    }
-
-    if (match.phase !== "knockout") {
-      issues.push(`Partida ${index + 1}: Fase incorreta (${match.phase})`);
-    }
-
-    if (!match.round?.includes("2ª Div")) {
-      issues.push(`Partida ${index + 1}: Rodada incorreta (${match.round})`);
-    }
-
-    // Verificar duplicação de IDs
-    const duplicateId = matches.findIndex(
-      (m, i) => i !== index && m.id === match.id
-    );
-    if (duplicateId !== -1) {
-      issues.push(
-        `Partida ${index + 1}: ID duplicado com partida ${duplicateId + 1}`
-      );
-    }
-  });
-
-  if (issues.length === 0) {
-    console.log("✅ [VALIDATE-2ND] Todas as partidas são válidas");
-    return true;
-  } else {
-    console.log("❌ [VALIDATE-2ND] Problemas encontrados:");
-    issues.forEach((issue, index) => {
-      console.log(`  ${index + 1}. ${issue}`);
-    });
-    return false;
-  }
-};
-
-// ✅ FUNÇÃO DE TESTE: Simular geração da segunda divisão
-export const testSecondDivisionGeneration = () => {
-  console.log("\n🧪 [TEST-2ND] === TESTE DE GERAÇÃO ===");
-
-  // Criar atletas de teste
-  const testAthletes: Athlete[] = [
-    { id: "test-1", name: "Atleta A" },
-    { id: "test-2", name: "Atleta B" },
-    { id: "test-3", name: "Atleta C" },
-    { id: "test-4", name: "Atleta D" },
-    { id: "test-5", name: "Atleta E" },
-    { id: "test-6", name: "Atleta F" },
+// ✅ NOVA FUNÇÃO: Distribuir cabeças adicionais em quartos conforme CBTM
+const distributeAdditionalSeeds = (
+  orderedAthletes: Athlete[],
+  additionalSeeds: Athlete[],
+  bracketSize: number
+): void => {
+  const quarterSize = bracketSize / 4;
+  const positions = [
+    quarterSize / 2, // Primeiro quarto
+    quarterSize + quarterSize / 2, // Segundo quarto
+    2 * quarterSize + quarterSize / 2, // Terceiro quarto
+    3 * quarterSize + quarterSize / 2, // Quarto quarto
   ];
 
-  console.log("🧪 [TEST-2ND] Testando com 6 atletas eliminados...");
+  additionalSeeds.forEach((seed, index) => {
+    const targetPosition = Math.floor(positions[index % 4]);
 
-  // Testar geração
-  const matches = generateSecondDivisionMatches(testAthletes);
+    // Encontrar posição livre próxima
+    let actualPosition = targetPosition;
+    while (
+      actualPosition < bracketSize &&
+      orderedAthletes[actualPosition] !== null
+    ) {
+      actualPosition++;
+    }
 
-  // Validar resultado
-  const isValid = validateSecondDivisionMatches(matches);
-
-  console.log(`🧪 [TEST-2ND] Resultado: ${matches.length} partidas geradas`);
-  console.log(
-    `🧪 [TEST-2ND] Validação: ${isValid ? "✅ Passou" : "❌ Falhou"}`
-  );
-
-  // Teste com 2 atletas
-  console.log("\n🧪 [TEST-2ND] Testando com 2 atletas eliminados...");
-  const matches2 = generateSecondDivisionMatches(testAthletes.slice(0, 2));
-  console.log(`🧪 [TEST-2ND] Resultado: ${matches2.length} partidas geradas`);
-
-  // Teste com 1 atleta (deve falhar)
-  console.log("\n🧪 [TEST-2ND] Testando com 1 atleta (deve falhar)...");
-  const matches3 = generateSecondDivisionMatches(testAthletes.slice(0, 1));
-  console.log(`🧪 [TEST-2ND] Resultado: ${matches3.length} partidas geradas`);
-
-  console.log("🧪 [TEST-2ND] === FIM TESTE ===\n");
-
-  return {
-    test6Athletes: { matches: matches.length, valid: isValid },
-    test2Athletes: { matches: matches2.length },
-    test1Athlete: { matches: matches3.length },
-  };
+    if (actualPosition < bracketSize) {
+      orderedAthletes[actualPosition] = seed;
+      console.log(
+        `🎯 [CBTM-SEED] Cabeça #${seed.seedNumber}: ${seed.name} → Posição ${
+          actualPosition + 1
+        }`
+      );
+    }
+  });
 };
 
-// ✅ CORREÇÃO: Usar consistentemente winnerId ao invés de winner
+// ✅ NOVA FUNÇÃO: Arranjar jogadores para primeira rodada evitando confrontos precoces
+const arrangePlayersForFirstRound = (
+  athletesToPlay: Athlete[],
+  remainingSeeded: Athlete[],
+  remainingUnseeded: Athlete[]
+): Athlete[] => {
+  const result: Athlete[] = [];
+
+  // ✅ REGRA CBTM/ITTF: Distribuir cabeças alternadamente para evitar confrontos
+  const shuffledUnseeded = [...remainingUnseeded].sort(
+    () => Math.random() - 0.5
+  );
+
+  let seededIndex = 0;
+  let unseededIndex = 0;
+
+  while (result.length < athletesToPlay.length) {
+    // Tentar adicionar um cabeça de chave
+    if (seededIndex < remainingSeeded.length) {
+      result.push(remainingSeeded[seededIndex++]);
+    }
+
+    // Adicionar um não-cabeça
+    if (
+      unseededIndex < shuffledUnseeded.length &&
+      result.length < athletesToPlay.length
+    ) {
+      result.push(shuffledUnseeded[unseededIndex++]);
+    }
+  }
+
+  return result;
+};
+
+// ✅ FUNÇÃO AUXILIAR: Criar partida padronizada
+const createMatch = (
+  player1: Athlete,
+  player2: Athlete,
+  round: string,
+  position: number
+): Match => {
+  const match: Match = {
+    id: `knockout-${round
+      .toLowerCase()
+      .replace(/\s+/g, "-")}-${position}-${Date.now()}`,
+    player1Id: player1.id,
+    player2Id: player2.id,
+    player1: player1,
+    player2: player2,
+    sets: [],
+    isCompleted: false,
+    phase: "knockout",
+    round: round,
+    position: position,
+    timeoutsUsed: {
+      player1: false,
+      player2: false,
+    },
+    createdAt: new Date(),
+  };
+
+  console.log(
+    `⚡ [CBTM] Partida criada: ${player1.name}${
+      player1.isSeeded ? ` (#${player1.seedNumber})` : ""
+    } vs ${player2.name}${player2.isSeeded ? ` (#${player2.seedNumber})` : ""}`
+  );
+
+  return match;
+};
+
+// ✅ CORREÇÃO CBTM/ITTF: Sistema de geração de próximas rodadas conforme regras oficiais
 export const generateNextRoundMatches = (
   currentRoundMatches: Match[],
   round: string,
   allAthletes: Athlete[],
-  bestOf: 3 | 5 | 7 = 5 // Parâmetro adicionado com valor padrão
+  bestOf: 3 | 5 | 7 = 5,
+  championshipAthletes?: Athlete[]
 ): Match[] => {
   const matches: Match[] = [];
 
-  // Verificar se todas as partidas da rodada atual foram completadas
+  // ✅ REGRA CBTM/ITTF: Verificar se todas as partidas foram completadas
   const completedMatches = currentRoundMatches.filter((m) => m.isCompleted);
   if (completedMatches.length !== currentRoundMatches.length) {
     console.log(
-      `❌ [GENERATE] Ainda há partidas pendentes na rodada anterior (${completedMatches.length}/${currentRoundMatches.length})`
+      `❌ [CBTM] Rodada anterior incompleta (${completedMatches.length}/${currentRoundMatches.length})`
     );
-    return matches; // Ainda há partidas pendentes
+    return matches;
   }
 
-  console.log(`✅ [GENERATE] Gerando próxima rodada: ${round}`, {
-    completedMatches: completedMatches.length,
-    round,
-  });
+  console.log(`✅ [CBTM] Gerando próxima rodada: ${round}`);
 
-  // ✅ LÓGICA ESPECIAL PARA DISPUTA DE TERCEIRO LUGAR
+  // ✅ REGRA CBTM/ITTF: Lógica especial para disputa de terceiro lugar
   if (round.includes("3º Lugar")) {
-    console.log(
-      "🥉 [GENERATE] Gerando disputa de terceiro lugar - usando PERDEDORES das semifinais"
+    return generateThirdPlaceMatch(
+      completedMatches,
+      round,
+      allAthletes,
+      bestOf
     );
+  }
 
-    // Para terceiro lugar, usar os PERDEDORES das semifinais
-    const loserIds: string[] = [];
+  // ✅ REGRA CBTM/ITTF: Gerar rodadas normais (Final, Semifinal, etc.)
+  return generateNormalRoundMatches(
+    completedMatches,
+    round,
+    allAthletes,
+    bestOf,
+    championshipAthletes
+  );
+};
 
-    completedMatches.forEach((match) => {
-      // ✅ CORREÇÃO: Usar winnerId consistentemente
-      let winnerId = match.winnerId;
-      if (!winnerId && match.sets && match.sets.length > 0) {
-        winnerId = getMatchWinner(
-          match.sets,
-          bestOf,
-          match.player1Id,
-          match.player2Id
-        );
-      }
+// ✅ NOVA FUNÇÃO: Gerar disputa de terceiro lugar conforme CBTM/ITTF
+const generateThirdPlaceMatch = (
+  completedMatches: Match[],
+  round: string,
+  allAthletes: Athlete[],
+  bestOf: 3 | 5 | 7
+): Match[] => {
+  console.log("🥉 [CBTM] Gerando disputa de terceiro lugar");
 
-      // Identificar o perdedor da partida
+  const loserIds: string[] = [];
+
+  // ✅ REGRA CBTM/ITTF: Usar perdedores das semifinais
+  completedMatches.forEach((match) => {
+    let winnerId = match.winnerId;
+    if (!winnerId && match.sets && match.sets.length > 0) {
+      winnerId = getMatchWinner(
+        match.sets,
+        bestOf,
+        match.player1Id,
+        match.player2Id
+      );
+    }
+
+    if (winnerId) {
       const loserId =
         winnerId === match.player1Id ? match.player2Id : match.player1Id;
-
       if (loserId) {
         loserIds.push(loserId);
         const loserName =
           winnerId === match.player1Id
             ? match.player2?.name
             : match.player1?.name;
-        console.log(
-          `  🥉 [GENERATE] Perdedor encontrado: ${loserName} (ID: ${loserId})`
-        );
+        console.log(`🥉 [CBTM] Perdedor semifinal: ${loserName}`);
       }
-    });
+    }
+  });
 
-    // Criar partida de 3º lugar com os dois perdedores
-    if (loserIds.length >= 2) {
-      const loser1 = allAthletes.find((a) => a.id === loserIds[0]);
-      const loser2 = allAthletes.find((a) => a.id === loserIds[1]);
+  // Criar partida de 3º lugar
+  if (loserIds.length >= 2) {
+    const loser1 = allAthletes.find((a) => a.id === loserIds[0]);
+    const loser2 = allAthletes.find((a) => a.id === loserIds[1]);
 
-      if (loser1 && loser2) {
-        const thirdPlaceMatch: Match = {
+    if (loser1 && loser2) {
+      const thirdPlaceMatch: Match = {
+        id: `third-place-${Date.now()}-${Math.random()
+          .toString(36)
+          .substr(2, 5)}`,
+        player1Id: loser1.id,
+        player2Id: loser2.id,
+        player1: loser1,
+        player2: loser2,
+        sets: [],
+        isCompleted: false,
+        phase: "knockout",
+        round: round,
+        isThirdPlace: true,
+        position: 0,
+        timeoutsUsed: { player1: false, player2: false },
+        createdAt: new Date(),
+      };
+
+      console.log(
+        `✅ [CBTM] Disputa 3º lugar: ${loser1.name} vs ${loser2.name}`
+      );
+      return [thirdPlaceMatch];
+    }
+  }
+
+  console.log("❌ [CBTM] Não foi possível gerar disputa de 3º lugar");
+  return [];
+};
+
+// ✅ NOVA FUNÇÃO: Gerar rodadas normais conforme CBTM/ITTF
+const generateNormalRoundMatches = (
+  completedMatches: Match[],
+  round: string,
+  allAthletes: Athlete[],
+  bestOf: 3 | 5 | 7,
+  championshipAthletes?: Athlete[]
+): Match[] => {
+  console.log("🏆 [CBTM] Gerando rodada normal com vencedores + BYE");
+
+  // ✅ REGRA CBTM/ITTF: Coletar todos os vencedores
+  const winnerIds: string[] = [];
+
+  completedMatches.forEach((match, index) => {
+    let winnerId = match.winnerId;
+
+    if (!winnerId && match.sets && match.sets.length > 0) {
+      winnerId = getMatchWinner(
+        match.sets,
+        bestOf,
+        match.player1Id,
+        match.player2Id
+      );
+    }
+
+    if (winnerId) {
+      winnerIds.push(winnerId);
+      const winnerName =
+        winnerId === match.player1Id
+          ? match.player1?.name
+          : match.player2?.name;
+      console.log(`✅ [CBTM] Vencedor ${index + 1}: ${winnerName}`);
+    }
+  });
+
+  // ✅ REGRA CBTM/ITTF: Incluir atletas com BYE automático
+  const allAdvancingAthletes = [...winnerIds];
+
+  if (championshipAthletes) {
+    const athletesWithBye = detectAthletsWithBye(
+      round,
+      winnerIds,
+      completedMatches,
+      championshipAthletes
+    );
+    allAdvancingAthletes.push(...athletesWithBye);
+  }
+
+  // ✅ REGRA CBTM/ITTF: Sistema BYE para próxima rodada se número ímpar
+  const { playingAthletes, byeAthlete } = handleNextRoundBye(
+    allAdvancingAthletes,
+    allAthletes
+  );
+
+  if (byeAthlete) {
+    console.log(`🎯 [CBTM] BYE para próxima rodada: ${byeAthlete.name}`);
+  }
+
+  // Criar partidas para a próxima rodada
+  return createMatchesForRound(playingAthletes, round, allAthletes);
+};
+
+// ✅ FUNÇÃO AUXILIAR: Determinar o nível da rodada no chaveamento
+const getCurrentRoundLevel = (round: string): number => {
+  if (round.includes("Final")) return 1;
+  if (round.includes("Semifinal")) return 2;
+  if (round.includes("Quartas")) return 3;
+  if (round.includes("Oitavas")) return 4;
+  if (round.includes("Décimo-sextos")) return 5;
+  return 6; // Para rodadas maiores
+};
+
+// ✅ NOVA FUNÇÃO: Detectar atletas com BYE conforme CBTM/ITTF
+const detectAthletsWithBye = (
+  round: string,
+  winnerIds: string[],
+  completedMatches: Match[],
+  championshipAthletes: Athlete[]
+): string[] => {
+  const currentRoundLevel = getCurrentRoundLevel(round);
+  const expectedAthletes = Math.pow(2, currentRoundLevel);
+  const athletesWithBye = expectedAthletes - winnerIds.length;
+
+  if (athletesWithBye <= 0) return [];
+
+  console.log(`🎯 [CBTM] ${athletesWithBye} atletas com BYE detectados`);
+
+  const playersInLastRound = completedMatches.flatMap((match) => [
+    match.player1Id,
+    match.player2Id,
+  ]);
+
+  // ✅ REGRA CBTM/ITTF: Prioridade para melhores cabeças de chave
+  const eligibleForBye = championshipAthletes
+    .filter(
+      (athlete) =>
+        athlete.isSeeded &&
+        !winnerIds.includes(athlete.id) &&
+        !playersInLastRound.includes(athlete.id)
+    )
+    .sort((a, b) => (a.seedNumber || 999) - (b.seedNumber || 999))
+    .slice(0, athletesWithBye);
+
+  eligibleForBye.forEach((athlete) => {
+    console.log(
+      `🎯 [CBTM] BYE automático: ${athlete.name} (Cabeça #${athlete.seedNumber})`
+    );
+  });
+
+  return eligibleForBye.map((athlete) => athlete.id);
+};
+
+// ✅ NOVA FUNÇÃO: Gerenciar BYE para próxima rodada conforme CBTM/ITTF
+const handleNextRoundBye = (
+  allAdvancingAthletes: string[],
+  allAthletes: Athlete[]
+): { playingAthletes: string[]; byeAthlete: Athlete | null } => {
+  if (allAdvancingAthletes.length % 2 === 0) {
+    return { playingAthletes: allAdvancingAthletes, byeAthlete: null };
+  }
+
+  // ✅ REGRA CBTM/ITTF: Melhor cabeça de chave recebe BYE
+  const advancingAthleteObjects = allAthletes.filter((a) =>
+    allAdvancingAthletes.includes(a.id)
+  );
+
+  const bestSeeded = advancingAthleteObjects
+    .filter((a) => a.isSeeded)
+    .sort((a, b) => (a.seedNumber || 999) - (b.seedNumber || 999))[0];
+
+  if (bestSeeded) {
+    const playingAthletes = allAdvancingAthletes.filter(
+      (id) => id !== bestSeeded.id
+    );
+    return { playingAthletes, byeAthlete: bestSeeded };
+  }
+
+  // Se não há cabeças, remover o primeiro atleta
+  const [byeId, ...playingIds] = allAdvancingAthletes;
+  const byeAthlete = allAthletes.find((a) => a.id === byeId) || null;
+
+  return { playingAthletes: playingIds, byeAthlete };
+};
+
+// ✅ NOVA FUNÇÃO: Criar partidas para rodada conforme CBTM/ITTF
+const createMatchesForRound = (
+  playingAthletes: string[],
+  round: string,
+  allAthletes: Athlete[]
+): Match[] => {
+  const matches: Match[] = [];
+
+  for (let i = 0; i < playingAthletes.length; i += 2) {
+    if (playingAthletes[i] && playingAthletes[i + 1]) {
+      const athlete1 = allAthletes.find((a) => a.id === playingAthletes[i]);
+      const athlete2 = allAthletes.find((a) => a.id === playingAthletes[i + 1]);
+
+      if (athlete1 && athlete2) {
+        const match: Match = {
           id: `${round
-            .replace(/\s+/g, "-")
-            .toLowerCase()}-${Date.now()}-${Math.random()
+            .toLowerCase()
+            .replace(/\s+/g, "-")}-${Date.now()}-${Math.random()
             .toString(36)
-            .substr(2, 5)}`,
-          player1Id: loser1.id,
-          player2Id: loser2.id,
-          player1: loser1,
-          player2: loser2,
+            .substr(2, 5)}-${i / 2}`,
+          player1Id: athlete1.id,
+          player2Id: athlete2.id,
+          player1: athlete1,
+          player2: athlete2,
           sets: [],
           isCompleted: false,
           phase: "knockout",
           round: round,
-          isThirdPlace: true, // ✅ MARCAR COMO TERCEIRO LUGAR
-          position: 0,
-          timeoutsUsed: {
-            player1: false,
-            player2: false,
-          },
+          position: i / 2,
+          timeoutsUsed: { player1: false, player2: false },
           createdAt: new Date(),
         };
-        matches.push(thirdPlaceMatch);
+
+        matches.push(match);
         console.log(
-          `✅ [GENERATE] Partida de 3º lugar criada: ${loser1.name} vs ${loser2.name}`
+          `✅ [CBTM] Partida ${round}: ${athlete1.name} vs ${athlete2.name}`
         );
       }
     }
-  } else {
-    // ✅ LÓGICA PARA FINAL E OUTRAS RODADAS (usar VENCEDORES)
-    console.log("🏆 [GENERATE] Gerando rodada normal - usando VENCEDORES");
+  }
 
-    // Coletar todos os vencedores - ✅ USAR winnerId CONSISTENTEMENTE
-    const winnerIds: string[] = [];
+  return matches;
+};
 
-    completedMatches.forEach((match, index) => {
-      let winnerId = match.winnerId;
+// ✅ NOVA FUNÇÃO: Gerar resultado de teste para partidas
+export const generateTestMatchResult = (
+  bestOf: number
+): {
+  sets: { player1Score: number; player2Score: number }[];
+  timeouts: { player1: boolean; player2: boolean };
+} => {
+  const setsToWin = Math.ceil(bestOf / 2);
+  const sets: { player1Score: number; player2Score: number }[] = [];
 
-      // Se não houver winnerId definido, calcular usando getMatchWinner
-      if (!winnerId && match.sets && match.sets.length > 0) {
-        console.log(
-          `⚠️ [GENERATE] Campo winnerId não definido para partida ${match.id}, recalculando...`
-        );
-        winnerId = getMatchWinner(
-          match.sets,
-          bestOf,
-          match.player1Id,
-          match.player2Id
-        );
-        console.log(`   Resultado do recálculo: ${winnerId}`);
+  let player1Wins = 0;
+  let player2Wins = 0;
+
+  // Gerar sets até que um jogador ganhe
+  while (player1Wins < setsToWin && player2Wins < setsToWin) {
+    // Gerar pontuação aleatória para um set
+    const isPlayer1Winner = Math.random() > 0.5;
+    let player1Score: number;
+    let player2Score: number;
+
+    if (isPlayer1Winner) {
+      // Player 1 ganha o set
+      player1Score = 11;
+      player2Score = Math.floor(Math.random() * 10); // 0-9
+
+      // Chance de deuce (10-10 indo para 12-10, 13-11, etc.)
+      if (Math.random() > 0.8) {
+        const extraPoints = Math.floor(Math.random() * 3) + 1; // 1-3 pontos extras
+        player1Score = 10 + extraPoints + 1;
+        player2Score = 10 + extraPoints - 1;
       }
 
-      if (winnerId) {
-        winnerIds.push(winnerId);
-        const winnerName =
-          winnerId === match.player1Id
-            ? match.player1?.name
-            : match.player2?.name;
-        console.log(
-          `  ✅ [GENERATE] Partida ${
-            index + 1
-          } - Vencedor: ${winnerName} (ID: ${winnerId})`
-        );
-      } else {
-        console.log(
-          `  ❌ [GENERATE] Nenhum vencedor encontrado para partida ${
-            index + 1
-          }: ${match.player1?.name} vs ${match.player2?.name}`
-        );
-      }
-    });
+      player1Wins++;
+    } else {
+      // Player 2 ganha o set
+      player2Score = 11;
+      player1Score = Math.floor(Math.random() * 10); // 0-9
 
+      // Chance de deuce
+      if (Math.random() > 0.8) {
+        const extraPoints = Math.floor(Math.random() * 3) + 1;
+        player2Score = 10 + extraPoints + 1;
+        player1Score = 10 + extraPoints - 1;
+      }
+
+      player2Wins++;
+    }
+
+    sets.push({ player1Score, player2Score });
+  }
+
+  // Gerar timeouts aleatórios (baixa probabilidade)
+  const timeouts = {
+    player1: Math.random() > 0.9, // 10% chance
+    player2: Math.random() > 0.9, // 10% chance
+  };
+
+  return { sets, timeouts };
+};
+
+// ✅ CORREÇÃO CBTM/ITTF: Geração da segunda divisão conforme regras oficiais
+export const generateSecondDivisionMatches = (athletes: Athlete[]): Match[] => {
+  const matches: Match[] = [];
+
+  console.log("\n🥈 [CBTM-2ND] === GERAÇÃO SEGUNDA DIVISÃO CBTM/ITTF ===");
+  console.log(`🥈 [CBTM-2ND] Atletas eliminados: ${athletes.length}`);
+
+  // ✅ REGRA CBTM/ITTF: Validação mínima
+  if (!athletes || athletes.length < 2) {
+    console.log("❌ [CBTM-2ND] Insuficientes atletas para segunda divisão");
+    return matches;
+  }
+
+  // ✅ REGRA CBTM/ITTF: Determinar estrutura de bracket adequada
+  let bracketSize = 2;
+  while (bracketSize < athletes.length) {
+    bracketSize *= 2;
+  }
+
+  console.log(
+    `🎯 [CBTM-2ND] Bracket determinado: ${bracketSize} posições para ${athletes.length} atletas`
+  );
+
+  // ✅ REGRA CBTM/ITTF: Ordenação por critério de eliminação (último eliminado = melhor posicionado)
+  const orderedAthletes = orderAthletesForSecondDivision(athletes);
+
+  // ✅ REGRA CBTM/ITTF: Aplicar sistema BYE se necessário
+  const needsBye = athletes.length < bracketSize;
+
+  if (needsBye) {
+    return generateSecondDivisionWithBye(orderedAthletes, bracketSize);
+  }
+
+  // ✅ REGRA CBTM/ITTF: Bracket completo para segunda divisão
+  return generateCompleteSecondDivisionBracket(orderedAthletes, bracketSize);
+};
+
+// ✅ NOVA FUNÇÃO: Ordenar atletas para segunda divisão conforme CBTM/ITTF
+const orderAthletesForSecondDivision = (athletes: Athlete[]): Athlete[] => {
+  // ✅ REGRA CBTM/ITTF: Atletas são ordenados por:
+  // 1. Posição de eliminação (últimos eliminados primeiro)
+  // 2. Ranking original (cabeças de chave primeiro)
+  // 3. Ordem alfabética como critério final
+
+  return [...athletes].sort((a, b) => {
+    // Priorizar cabeças de chave
+    if (a.isSeeded && !b.isSeeded) return -1;
+    if (!a.isSeeded && b.isSeeded) return 1;
+
+    // Entre cabeças, ordenar por seed number
+    if (a.isSeeded && b.isSeeded) {
+      return (a.seedNumber || 999) - (b.seedNumber || 999);
+    }
+
+    // Para não-cabeças, ordem alfabética
+    return a.name.localeCompare(b.name);
+  });
+};
+
+// ✅ NOVA FUNÇÃO: Gerar segunda divisão com BYE conforme CBTM/ITTF
+const generateSecondDivisionWithBye = (
+  athletes: Athlete[],
+  bracketSize: number
+): Match[] => {
+  const byeCount = bracketSize - athletes.length;
+  console.log(`🎯 [CBTM-2ND] Sistema BYE ativado: ${byeCount} passes livres`);
+
+  // ✅ REGRA CBTM/ITTF: Melhores atletas eliminados recebem BYE
+  const athletesWithBye = athletes.slice(0, byeCount);
+  const athletesToPlay = athletes.slice(byeCount);
+
+  athletesWithBye.forEach((athlete) => {
     console.log(
-      `📊 [GENERATE] Total de vencedores encontrados: ${winnerIds.length}`
+      `🎯 [CBTM-2ND] BYE concedido: ${athlete.name}${
+        athlete.isSeeded ? ` (ex-Cabeça #${athlete.seedNumber})` : ""
+      }`
     );
+  });
 
-    // Criar partidas com os vencedores em pares
-    for (let i = 0; i < winnerIds.length; i += 2) {
-      if (winnerIds[i] && winnerIds[i + 1]) {
-        const winner1 = allAthletes.find((a) => a.id === winnerIds[i]);
-        const winner2 = allAthletes.find((a) => a.id === winnerIds[i + 1]);
+  // Criar primeira rodada apenas com atletas que jogam
+  const rounds = Math.ceil(Math.log2(athletes.length));
+  const currentRoundName = getRoundNameForSecondDivision(rounds);
 
-        if (winner1 && winner2) {
-          const newMatch: Match = {
-            id: `${round
-              .replace(/\s+/g, "-")
-              .toLowerCase()}-${Date.now()}-${Math.random()
-              .toString(36)
-              .substr(2, 5)}-${i / 2}`,
-            player1Id: winner1.id,
-            player2Id: winner2.id,
-            player1: winner1,
-            player2: winner2,
-            sets: [],
-            isCompleted: false,
-            phase: "knockout",
-            round: round,
-            position: i / 2,
-            timeoutsUsed: {
-              player1: false,
-              player2: false,
-            },
-            createdAt: new Date(),
-          };
-          matches.push(newMatch);
+  return createSecondDivisionMatches(athletesToPlay, currentRoundName);
+};
 
-          console.log(
-            `✅ [GENERATE] Partida ${round} criada: ${winner1.name} vs ${winner2.name} (ID: ${newMatch.id})`
-          );
-        }
-      }
+// ✅ NOVA FUNÇÃO: Gerar bracket completo para segunda divisão
+const generateCompleteSecondDivisionBracket = (
+  athletes: Athlete[],
+  bracketSize: number
+): Match[] => {
+  console.log(
+    `🥈 [CBTM-2ND] Bracket completo - todos os ${athletes.length} atletas jogarão`
+  );
+
+  // ✅ REGRA CBTM/ITTF: Distribuição estratégica similar ao mata-mata principal
+  const distributedAthletes = distributeAthletesForSecondDivision(
+    athletes,
+    bracketSize
+  );
+
+  const rounds = Math.log2(bracketSize);
+  const currentRoundName = getRoundNameForSecondDivision(rounds);
+
+  return createSecondDivisionMatches(distributedAthletes, currentRoundName);
+};
+
+// ✅ NOVA FUNÇÃO: Distribuir atletas na segunda divisão conforme CBTM/ITTF
+const distributeAthletesForSecondDivision = (
+  athletes: Athlete[],
+  bracketSize: number
+): Athlete[] => {
+  const distributed: Athlete[] = Array.from(
+    { length: bracketSize },
+    () => null
+  );
+
+  // ✅ REGRA CBTM/ITTF: Separar ex-cabeças de chave dos demais
+  const formerSeeds = athletes
+    .filter((a) => a.isSeeded)
+    .sort((a, b) => (a.seedNumber || 999) - (b.seedNumber || 999));
+  const others = athletes.filter((a) => !a.isSeeded);
+
+  // Posicionar ex-cabeças estrategicamente
+  if (formerSeeds.length >= 1) {
+    distributed[0] = formerSeeds[0];
+  }
+  if (formerSeeds.length >= 2) {
+    distributed[bracketSize - 1] = formerSeeds[1];
+  }
+  if (formerSeeds.length >= 3) {
+    distributed[Math.floor(bracketSize / 2) - 1] = formerSeeds[2];
+  }
+  if (formerSeeds.length >= 4) {
+    distributed[Math.floor(bracketSize / 2)] = formerSeeds[3];
+  }
+
+  // Distribuir ex-cabeças restantes
+  const remainingSeeds = formerSeeds.slice(4);
+  let seedIndex = 0;
+  for (
+    let i = 0;
+    i < distributed.length && seedIndex < remainingSeeds.length;
+    i++
+  ) {
+    if (distributed[i] === null) {
+      distributed[i] = remainingSeeds[seedIndex++];
+    }
+  }
+
+  // Embaralhar e distribuir outros atletas
+  const shuffledOthers = [...others].sort(() => Math.random() - 0.5);
+  let otherIndex = 0;
+  for (
+    let i = 0;
+    i < distributed.length && otherIndex < shuffledOthers.length;
+    i++
+  ) {
+    if (distributed[i] === null) {
+      distributed[i] = shuffledOthers[otherIndex++];
+    }
+  }
+
+  return distributed.filter((athlete) => athlete !== null);
+};
+
+// ✅ NOVA FUNÇÃO: Criar partidas da segunda divisão
+const createSecondDivisionMatches = (
+  athletes: Athlete[],
+  roundName: string
+): Match[] => {
+  const matches: Match[] = [];
+  let matchPosition = 0;
+
+  for (let i = 0; i < athletes.length; i += 2) {
+    if (athletes[i] && athletes[i + 1]) {
+      const match: Match = {
+        id: `second-div-${roundName
+          .toLowerCase()
+          .replace(/\s+/g, "-")}-${matchPosition}-${Date.now()}`,
+        player1Id: athletes[i].id,
+        player2Id: athletes[i + 1].id,
+        player1: athletes[i],
+        player2: athletes[i + 1],
+        sets: [],
+        isCompleted: false,
+        phase: "knockout",
+        round: roundName,
+        position: matchPosition,
+        timeoutsUsed: { player1: false, player2: false },
+        createdAt: new Date(),
+      };
+
+      matches.push(match);
+      console.log(
+        `⚡ [CBTM-2ND] Partida criada: ${athletes[i].name} vs ${
+          athletes[i + 1].name
+        }`
+      );
+      matchPosition++;
     }
   }
 
   console.log(
-    `📊 [GENERATE] Total de partidas criadas para ${round}: ${matches.length}`
+    `✅ [CBTM-2ND] ${matches.length} partidas criadas para ${roundName}`
   );
   return matches;
 };
 
-// Geração de súmulas em PDF
-export const generateMatchSheet = (
-  match: Match,
-  championship: Championship
-): void => {
-  const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.width;
-
-  // Cabeçalho
-  doc.setFontSize(16);
-  doc.text("CONFEDERAÇÃO BRASILEIRA DE TÊNIS DE MESA", pageWidth / 2, 20, {
-    align: "center",
-  });
-  doc.setFontSize(14);
-  doc.text("SÚMULA OFICIAL", pageWidth / 2, 30, { align: "center" });
-
-  // Informações do campeonato
-  doc.setFontSize(12);
-  doc.text(`Campeonato: ${championship.name}`, 20, 50);
-  doc.text(`Data: ${formatDate(new Date())}`, 20, 70);
-
-  // Informações da partida
-  doc.text(`Partida: ${match.player1?.name} vs ${match.player2?.name}`, 20, 90);
-  doc.text(
-    `Fase: ${match.phase === "groups" ? "Grupos" : "Mata-mata"}`,
-    20,
-    100
-  );
-  if (match.groupId) {
-    const group = championship.groups.find((g) => g.id === match.groupId);
-    doc.text(`Grupo: ${group?.name}`, 20, 110);
-  }
-
-  // Tabela de sets
-  const startY = 130;
-  const cellHeight = 10;
-  const colWidths = [30, 40, 40, 40];
-
-  // Cabeçalho da tabela
-  doc.rect(20, startY, colWidths[0], cellHeight);
-  doc.rect(20 + colWidths[0], startY, colWidths[1], cellHeight);
-  doc.rect(20 + colWidths[0] + colWidths[1], startY, colWidths[2], cellHeight);
-  doc.rect(
-    20 + colWidths[0] + colWidths[1] + colWidths[2],
-    startY,
-    colWidths[3],
-    cellHeight
-  );
-
-  doc.text("Set", 25, startY + 7);
-  doc.text(
-    match.player1?.name.substring(0, 15) || "Jogador 1",
-    25 + colWidths[0],
-    startY + 7
-  );
-  doc.text(
-    match.player2?.name.substring(0, 15) || "Jogador 2",
-    25 + colWidths[0] + colWidths[1],
-    startY + 7
-  );
-  doc.text(
-    "Vencedor",
-    25 + colWidths[0] + colWidths[1] + colWidths[2],
-    startY + 7
-  );
-
-  // Linhas para sets
-  const maxSets = championship.groupsBestOf;
-  for (let i = 0; i < maxSets; i++) {
-    const y = startY + (i + 1) * cellHeight;
-    doc.rect(20, y, colWidths[0], cellHeight);
-    doc.rect(20 + colWidths[0], y, colWidths[1], cellHeight);
-    doc.rect(20 + colWidths[0] + colWidths[1], y, colWidths[2], cellHeight);
-    doc.rect(
-      20 + colWidths[0] + colWidths[1] + colWidths[2],
-      y,
-      colWidths[3],
-      cellHeight
-    );
-
-    doc.text(`${i + 1}º`, 25, y + 7);
-  }
-
-  // Resultado Final
-  const resultY = startY + (maxSets + 2) * cellHeight + 20;
-  doc.text("Resultado Final:", 20, resultY);
-  doc.text("Vencedor:", 20, resultY + 15);
-
-  // Assinaturas
-  const signY = resultY + 40;
-  doc.text("_____________________", 20, signY);
-  doc.text("Árbitro", 30, signY + 10);
-
-  doc.text("_____________________", 120, signY);
-  doc.text("Jogador 1", 130, signY + 10);
-
-  doc.text("_____________________", 20, signY + 30);
-  doc.text("Mesário", 30, signY + 40);
-
-  doc.text("_____________________", 120, signY + 30);
-  doc.text("Jogador 2", 130, signY + 40);
-
-  // Observações
-  doc.text("Observações:", 20, signY + 60);
-  doc.line(20, signY + 70, pageWidth - 20, signY + 70);
-  doc.line(20, signY + 80, pageWidth - 20, signY + 80);
-  doc.line(20, signY + 90, pageWidth - 20, signY + 90);
-
-  // Salvar PDF
-  doc.save(`sumula_${match.player1?.name}_vs_${match.player2?.name}.pdf`);
+// ✅ NOVA FUNÇÃO: Determinar nome da rodada para segunda divisão
+const getRoundNameForSecondDivision = (rounds: number): string => {
+  const baseRoundName = getRoundName(rounds);
+  return `${baseRoundName} 2ª Div`;
 };
 
-// Geração de relatório de classificação do grupo
-export const generateGroupReport = (
-  group: Group,
-  championship: Championship
-): void => {
-  const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.width;
+// ✅ NOVA FUNÇÃO: Calcular estatísticas do torneio
+export const calculateTournamentStats = (championship: any) => {
+  if (!championship) {
+    return {
+      totalAthletes: 0,
+      totalMatches: 0,
+      completedMatches: 0,
+      completionPercentage: 0,
+      progress: 0,
+      groupsPhaseComplete: false,
+      knockoutPhaseStarted: false,
+      groupMatches: 0,
+      groupMatchesCompleted: 0,
+      knockoutMatches: 0,
+      knockoutMatchesCompleted: 0,
+      mainKnockoutMatches: 0,
+      secondDivMatches: 0,
+      totalGroups: 0,
+      groupsCompleted: 0,
+    };
+  }
 
-  // Cabeçalho
-  doc.setFontSize(16);
-  doc.text("CONFEDERAÇÃO BRASILEIRA DE TÊNIS DE MESA", pageWidth / 2, 20, {
-    align: "center",
-  });
-  doc.setFontSize(14);
-  doc.text(`CLASSIFICAÇÃO - ${group.name}`, pageWidth / 2, 30, {
-    align: "center",
-  });
+  const totalAthletes = championship.athletes?.length || 0;
 
-  // Informações do campeonato
-  doc.setFontSize(12);
-  doc.text(`Campeonato: ${championship.name}`, 20, 50);
-  doc.text(`Data: ${formatDate(new Date())}`, 20, 70);
+  // Contar partidas dos grupos
+  const groupMatches =
+    championship.groups?.flatMap((group: any) => group.matches || []) || [];
+  const groupMatchesCount = groupMatches.length;
+  const groupCompletedMatches = groupMatches.filter(
+    (match: any) => match.isCompleted
+  ).length;
 
-  // Tabela de classificação
-  const startY = 90;
-  const cellHeight = 8;
-  const colWidths = [15, 60, 20, 20, 20, 25, 25];
+  // Contar partidas do knockout
+  const knockoutMatches = championship.knockoutMatches || [];
+  const knockoutMatchesCount = knockoutMatches.length;
+  const knockoutCompletedMatches = knockoutMatches.filter(
+    (match: any) => match.isCompleted
+  ).length;
 
-  // Cabeçalho da tabela
-  const headers = ["Pos", "Atleta", "J", "V", "D", "Dif Sets", "Dif Pts"];
-  let x = 20;
-  headers.forEach((header, index) => {
-    doc.rect(x, startY, colWidths[index], cellHeight);
-    doc.text(header, x + 2, startY + 6);
-    x += colWidths[index];
-  });
+  // Separar partidas principais e segunda divisão
+  const mainKnockoutMatches = knockoutMatches.filter(
+    (match: any) => !match.round?.includes("2ª Div")
+  ).length;
+  const secondDivMatches = knockoutMatches.filter((match: any) =>
+    match.round?.includes("2ª Div")
+  ).length;
 
-  // Dados dos atletas
-  group.standings.forEach((standing, index) => {
-    const y = startY + (index + 1) * cellHeight;
-    x = 20;
+  const totalMatches = groupMatchesCount + knockoutMatchesCount;
+  const completedMatches = groupCompletedMatches + knockoutCompletedMatches;
+  const completionPercentage =
+    totalMatches > 0 ? (completedMatches / totalMatches) * 100 : 0;
 
-    const data = [
-      getOrdinalPosition(standing.position),
-      standing.athlete.name.substring(0, 25),
-      standing.matches.toString(),
-      standing.wins.toString(),
-      standing.losses.toString(),
-      standing.setsDiff >= 0
-        ? `+${standing.setsDiff}`
-        : standing.setsDiff.toString(),
-      standing.pointsDiff >= 0
-        ? `+${standing.pointsDiff}`
-        : standing.pointsDiff.toString(),
-    ];
+  const groupsPhaseComplete =
+    groupMatchesCount > 0 &&
+    groupMatches.every((match: any) => match.isCompleted);
+  const knockoutPhaseStarted = knockoutMatchesCount > 0;
 
-    data.forEach((value, colIndex) => {
-      doc.rect(x, y, colWidths[colIndex], cellHeight);
-      doc.text(value, x + 2, y + 6);
-      x += colWidths[colIndex];
-    });
-  });
-
-  // Qualificados
-  const qualifiedY = startY + (group.standings.length + 2) * cellHeight;
-  doc.text("Qualificados para a próxima fase:", 20, qualifiedY);
-
-  group.standings
-    .filter((s) => s.qualified)
-    .forEach((standing, index) => {
-      doc.text(
-        `${index + 1}. ${standing.athlete.name}`,
-        20,
-        qualifiedY + 10 + index * 8
+  // Contar grupos
+  const totalGroups = championship.groups?.length || 0;
+  const groupsCompleted =
+    championship.groups?.filter((group: any) => {
+      const matches = group.matches || [];
+      return (
+        matches.length > 0 && matches.every((match: any) => match.isCompleted)
       );
-    });
+    }).length || 0;
 
-  // Salvar PDF
-  doc.save(`classificacao_${group.name.toLowerCase()}.pdf`);
+  return {
+    totalAthletes,
+    totalMatches,
+    completedMatches,
+    completionPercentage: Math.round(completionPercentage),
+    progress: Math.round(completionPercentage),
+    groupsPhaseComplete,
+    knockoutPhaseStarted,
+    groupMatches: groupMatchesCount,
+    groupMatchesCompleted: groupCompletedMatches,
+    knockoutMatches: knockoutMatchesCount,
+    knockoutMatchesCompleted: knockoutCompletedMatches,
+    mainKnockoutMatches,
+    secondDivMatches,
+    totalGroups,
+    groupsCompleted,
+  };
 };
 
-// Geração de chave de eliminação
-export const generateKnockoutBracket = (championship: Championship): void => {
-  const doc = new jsPDF("landscape");
-
-  // Cabeçalho
-  doc.setFontSize(16);
-  doc.text("CHAVE DE ELIMINAÇÃO", doc.internal.pageSize.width / 2, 20, {
-    align: "center",
-  });
-  doc.setFontSize(14);
-  doc.text(championship.name, doc.internal.pageSize.width / 2, 30, {
-    align: "center",
-  });
-
-  // TODO: Implementar desenho da chave
-  // Por ora, apenas uma implementação básica
-  doc.setFontSize(12);
-  doc.text("Chave em desenvolvimento...", 50, 60);
-
-  doc.save(`chave_${championship.name.toLowerCase().replace(/\s+/g, "_")}.pdf`);
-};
-
-// Validação de dados
-export const validateAthlete = (athlete: Partial<Athlete>): string[] => {
+// ✅ NOVA FUNÇÃO: Validar atleta
+export const validateAthlete = (
+  athlete: Partial<
+    Athlete & { club?: string; ranking?: number; rating?: number }
+  >
+): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
-  if (!athlete.name?.trim()) {
+  if (!athlete.name || athlete.name.trim().length === 0) {
     errors.push("Nome é obrigatório");
   }
 
@@ -932,419 +1265,109 @@ export const validateAthlete = (athlete: Partial<Athlete>): string[] => {
     errors.push("Nome deve ter pelo menos 2 caracteres");
   }
 
-  return errors;
-};
-
-// Utilitários para localStorage
-export const saveToLocalStorage = (key: string, data: unknown): void => {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (error) {
-    console.error("Erro ao salvar no localStorage:", error);
+  if (
+    athlete.club !== undefined &&
+    (!athlete.club || athlete.club.trim().length === 0)
+  ) {
+    errors.push("Clube é obrigatório");
   }
-};
 
-export const loadFromLocalStorage = <T>(key: string, defaultValue: T): T => {
-  try {
-    const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : defaultValue;
-  } catch (error) {
-    console.error("Erro ao carregar do localStorage:", error);
-    return defaultValue;
+  if (athlete.ranking !== undefined && athlete.ranking < 0) {
+    errors.push("Ranking deve ser um número positivo");
   }
+
+  if (
+    athlete.rating !== undefined &&
+    (athlete.rating < 0 || athlete.rating > 3000)
+  ) {
+    errors.push("Rating deve estar entre 0 e 3000");
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
 };
 
-// Utilitários para exportação de dados
-export const exportToJSON = <T>(data: T, filename: string): void => {
-  const jsonString = JSON.stringify(data, null, 2);
-  const blob = new Blob([jsonString], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
+// ✅ NOVA FUNÇÃO: Gerar relatório de grupos
+export const generateGroupReport = (championship: any): string => {
+  if (!championship || !championship.groups) {
+    return "Nenhum grupo encontrado";
+  }
 
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  let report = `RELATÓRIO DE GRUPOS - ${championship.name}\n`;
+  report += `Data: ${formatDate(championship.date)}\n`;
+  report += `=====================================\n\n`;
 
-  URL.revokeObjectURL(url);
+  championship.groups.forEach((group: any, index: number) => {
+    report += `GRUPO ${String.fromCharCode(65 + index)}\n`;
+    report += `${"-".repeat(20)}\n`;
+
+    if (group.athletes && group.athletes.length > 0) {
+      group.athletes.forEach((athlete: any, pos: number) => {
+        report += `${pos + 1}. ${athlete.name} (${athlete.club})\n`;
+        if (athlete.ranking) report += `   Ranking: ${athlete.ranking}\n`;
+        if (athlete.rating) report += `   Rating: ${athlete.rating}\n`;
+      });
+    } else {
+      report += "Nenhum atleta neste grupo\n";
+    }
+
+    report += `\nPARTIDAS:\n`;
+    if (group.matches && group.matches.length > 0) {
+      group.matches.forEach((match: any) => {
+        const player1 = group.athletes.find(
+          (a: any) => a.id === match.player1Id
+        );
+        const player2 = group.athletes.find(
+          (a: any) => a.id === match.player2Id
+        );
+
+        report += `${player1?.name || "TBD"} vs ${player2?.name || "TBD"}`;
+
+        if (match.isCompleted) {
+          const setsText = match.sets
+            .map((set: any) => `${set.player1Score}-${set.player2Score}`)
+            .join(", ");
+          report += ` - ${setsText}`;
+        } else {
+          report += " - Pendente";
+        }
+        report += `\n`;
+      });
+    } else {
+      report += "Nenhuma partida gerada\n";
+    }
+
+    report += `\n`;
+  });
+
+  return report;
 };
 
-// Utilitários para cálculos estatísticos - ✅ CORRIGIDO
-export const calculateTournamentStats = (championship: Championship) => {
-  // ✅ CORREÇÃO: Incluir TODAS as partidas, incluindo mata-mata da segunda divisão
-  const allMatches = championship.groups.flatMap((group) => group.matches);
+// ✅ NOVA FUNÇÃO: Gerar bracket do knockout (simplificado)
+export const generateKnockoutBracket = (championship: any) => {
+  if (!championship || !championship.knockoutMatches) {
+    return null;
+  }
 
-  // Filtrar apenas partidas válidas (com jogadores definidos)
-  const validMatches = allMatches.filter(
-    (match) =>
-      match.player1?.id &&
-      match.player2?.id &&
-      match.player1.id !== match.player2.id
-  );
+  // Agrupar partidas por rodada
+  const matchesByRound: { [key: string]: any[] } = {};
 
-  const totalMatches = validMatches.length;
-  const completedMatches = validMatches.filter(
-    (match) => match.isCompleted
-  ).length;
-
-  // ✅ CORREÇÃO: Garantir que o progresso nunca ultrapasse 100%
-  const progress =
-    totalMatches > 0
-      ? Math.min(100, Math.round((completedMatches / totalMatches) * 100))
-      : 0;
-
-  // ✅ SEPARAR estatísticas por fase
-  const groupMatches = validMatches.filter((match) => match.phase === "groups");
-  const knockoutMatches = validMatches.filter(
-    (match) => match.phase === "knockout"
-  );
-  const mainKnockoutMatches = knockoutMatches.filter(
-    (m) => !m.round?.includes("2ª Div")
-  );
-  const secondDivMatches = knockoutMatches.filter((m) =>
-    m.round?.includes("2ª Div")
-  );
-
-  // ✅ CORREÇÃO: Contar apenas grupos com partidas válidas
-  const validGroups = championship.groups.filter((group) =>
-    group.matches.some(
-      (match) =>
-        match.player1?.id &&
-        match.player2?.id &&
-        match.player1.id !== match.player2.id &&
-        match.phase === "groups"
-    )
-  );
-
-  const groupsCompleted = validGroups.filter((group) => {
-    const groupValidMatches = group.matches.filter(
-      (match) =>
-        match.player1?.id &&
-        match.player2?.id &&
-        match.player1.id !== match.player2.id &&
-        match.phase === "groups"
-    );
-    return (
-      groupValidMatches.length > 0 &&
-      groupValidMatches.every((match) => match.isCompleted)
-    );
-  }).length;
-
-  const totalGroups = validGroups.length;
-  const groupsProgress =
-    totalGroups > 0
-      ? Math.min(100, Math.round((groupsCompleted / totalGroups) * 100))
-      : 0;
-
-  console.log("📊 [STATS] Estatísticas recalculadas:", {
-    totalMatches,
-    groupMatches: groupMatches.length,
-    knockoutMatches: knockoutMatches.length,
-    mainKnockoutMatches: mainKnockoutMatches.length,
-    secondDivMatches: secondDivMatches.length,
-    completedMatches,
-    progress,
-    validGroups: totalGroups,
-    groupsCompleted,
-    groupsProgress,
+  championship.knockoutMatches.forEach((match: any) => {
+    const round = match.round || "Indefinido";
+    if (!matchesByRound[round]) {
+      matchesByRound[round] = [];
+    }
+    matchesByRound[round].push(match);
   });
 
   return {
-    totalMatches,
-    completedMatches,
-    pendingMatches: Math.max(0, totalMatches - completedMatches),
-    progress,
-    groupsCompleted,
-    totalGroups,
-    groupsProgress,
-    // ✅ NOVO: Estatísticas detalhadas
-    groupMatches: groupMatches.length,
-    knockoutMatches: knockoutMatches.length,
-    mainKnockoutMatches: mainKnockoutMatches.length,
-    secondDivMatches: secondDivMatches.length,
-    groupMatchesCompleted: groupMatches.filter((m) => m.isCompleted).length,
-    knockoutMatchesCompleted: knockoutMatches.filter((m) => m.isCompleted)
-      .length,
+    rounds: Object.keys(matchesByRound).sort(),
+    matchesByRound,
+    totalMatches: championship.knockoutMatches.length,
+    completedMatches: championship.knockoutMatches.filter(
+      (m: any) => m.isCompleted
+    ).length,
   };
-};
-
-// ✅ FUNÇÃO PARA CRIAR DADOS DE TESTE COMPLETOS
-export const createTestChampionshipData = () => {
-  // Lista de nomes realistas para teste
-  const testAthletes = [
-    "João Silva",
-    "Maria Santos",
-    "Pedro Oliveira",
-    "Ana Costa",
-    "Carlos Ferreira",
-    "Lucia Rodrigues",
-    "Bruno Almeida",
-    "Fernanda Lima",
-    "Rafael Santos",
-    "Julia Pereira",
-    "Diego Souza",
-    "Camila Barbosa",
-    "Lucas Martins",
-    "Beatriz Castro",
-    "Marcos Ribeiro",
-    "Amanda Rocha",
-    "Thiago Carvalho",
-    "Leticia Gomes",
-    "Rodrigo Dias",
-    "Gabriela Nunes",
-    "Anderson Moura",
-    "Carolina Lopes",
-    "Felipe Cardoso",
-    "Renata Freitas",
-  ];
-
-  const config = {
-    name: "Campeonato de Teste - TM Club",
-    date: new Date(),
-    groupSize: 4 as const,
-    qualificationSpotsPerGroup: 2,
-    groupsBestOf: 5 as const,
-    knockoutBestOf: 5 as const,
-    hasThirdPlace: true,
-    hasRepechage: true,
-  };
-
-  const athletes = testAthletes.slice(0, 18).map((name, index) => ({
-    id: `test-athlete-${index}`,
-    name,
-    isSeeded: index < 4, // Primeiros 4 são cabeças de chave
-    seedNumber: index < 4 ? index + 1 : undefined,
-  }));
-
-  return { config, athletes };
-};
-
-// ✅ FUNÇÃO PARA GERAR RESULTADOS DE TESTE REALISTAS
-export const generateTestMatchResult = (bestOf: 3 | 5 | 7 = 5) => {
-  const setsToWin = bestOf === 3 ? 2 : bestOf === 5 ? 3 : 4;
-  const sets: { player1Score: number; player2Score: number }[] = [];
-  let player1Sets = 0;
-  let player2Sets = 0;
-
-  // Tipos de sets realistas
-  const setTypes = [
-    {
-      type: "normal",
-      weight: 0.5,
-      scores: [
-        [11, 8],
-        [11, 6],
-        [11, 9],
-        [11, 7],
-        [11, 5],
-      ],
-    },
-    {
-      type: "close",
-      weight: 0.3,
-      scores: [
-        [11, 9],
-        [12, 10],
-        [13, 11],
-        [14, 12],
-      ],
-    },
-    {
-      type: "tight",
-      weight: 0.2,
-      scores: [
-        [15, 13],
-        [16, 14],
-        [17, 15],
-        [18, 16],
-      ],
-    },
-  ];
-
-  const generateSet = () => {
-    const random = Math.random();
-    let cumulativeWeight = 0;
-    let selectedType = setTypes[0];
-
-    for (const type of setTypes) {
-      cumulativeWeight += type.weight;
-      if (random <= cumulativeWeight) {
-        selectedType = type;
-        break;
-      }
-    }
-
-    const scores = selectedType.scores;
-    const scoreIndex = Math.floor(Math.random() * scores.length);
-    const [score1, score2] = scores[scoreIndex];
-
-    // 50% chance de inverter o resultado
-    if (Math.random() < 0.5) {
-      return { player1Score: score1, player2Score: score2 };
-    } else {
-      return { player1Score: score2, player2Score: score1 };
-    }
-  };
-
-  // Gerar sets até um jogador vencer
-  while (player1Sets < setsToWin && player2Sets < setsToWin) {
-    const set = generateSet();
-    sets.push(set);
-
-    if (set.player1Score > set.player2Score) {
-      player1Sets++;
-    } else {
-      player2Sets++;
-    }
-  }
-
-  return {
-    sets,
-    timeouts: {
-      player1: Math.random() < 0.2,
-      player2: Math.random() < 0.2,
-    },
-  };
-};
-
-// Utilitários para manipulação de strings
-export const slugify = (text: string): string => {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // Remove acentos
-    .replace(/[^a-z0-9 -]/g, "") // Remove caracteres especiais
-    .replace(/\s+/g, "-") // Substitui espaços por hífens
-    .replace(/-+/g, "-") // Remove hífens duplicados
-    .trim();
-};
-
-// ✅ NOVA FUNÇÃO: Gerenciar cache de abas do bracket
-export const clearBracketTabCache = (championshipId?: string): void => {
-  if (typeof window === "undefined") return;
-
-  try {
-    if (championshipId) {
-      localStorage.removeItem(`bracket-tab-${championshipId}`);
-    } else {
-      // Limpar todos os caches de abas
-      Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith("bracket-tab-")) {
-          localStorage.removeItem(key);
-        }
-      });
-    }
-  } catch (error) {
-    console.warn("Erro ao limpar cache de abas:", error);
-  }
-};
-
-export const getBracketTabCache = (championshipId: string): string | null => {
-  if (typeof window === "undefined") return null;
-
-  try {
-    return localStorage.getItem(`bracket-tab-${championshipId}`);
-  } catch (error) {
-    console.warn("Erro ao recuperar cache de aba:", error);
-    return null;
-  }
-};
-
-export const setBracketTabCache = (
-  championshipId: string,
-  tab: string
-): void => {
-  if (typeof window === "undefined") return;
-
-  try {
-    localStorage.setItem(`bracket-tab-${championshipId}`, tab);
-  } catch (error) {
-    console.warn("Erro ao salvar cache de aba:", error);
-  }
-};
-
-// ✅ FUNÇÃO APRIMORADA: Gerenciar cache do store de forma segura
-export const clearStoreCache = (): void => {
-  try {
-    // Acessar o store e limpar cache se disponível
-    if (typeof window !== "undefined" && (window as any).championshipStore) {
-      const store = (window as any).championshipStore;
-      const state = store.getState();
-
-      if (
-        state.invalidateCache &&
-        typeof state.invalidateCache === "function"
-      ) {
-        state.invalidateCache();
-        console.log("✅ Cache do store limpo com sucesso");
-      }
-    }
-  } catch (error) {
-    console.warn("Erro ao limpar cache do store:", error);
-  }
-};
-
-// ✅ NOVA FUNÇÃO: Converter qualquer valor para timestamp seguro
-export const getSafeTimestamp = (date: any): number => {
-  try {
-    if (!date) return Date.now();
-
-    // Se já é um número (timestamp)
-    if (typeof date === "number" && !isNaN(date)) {
-      return date;
-    }
-
-    // Se é um objeto Date válido
-    if (date instanceof Date && !isNaN(date.getTime())) {
-      return date.getTime();
-    }
-
-    // Se é uma string, tentar converter
-    if (typeof date === "string") {
-      const parsed = new Date(date);
-      if (!isNaN(parsed.getTime())) {
-        return parsed.getTime();
-      }
-    }
-
-    // Fallback: usar timestamp atual
-    return Date.now();
-  } catch (error) {
-    console.warn("getSafeTimestamp: Erro ao processar data:", error);
-    return Date.now();
-  }
-};
-
-// ✅ FUNÇÃO APRIMORADA: Formatação de data mais robusta
-export const formatDateSafe = (date: any): string => {
-  const safeDate = safeParseDate(date);
-
-  if (!safeDate) {
-    return "Data inválida";
-  }
-
-  try {
-    return new Intl.DateTimeFormat("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }).format(safeDate);
-  } catch (error) {
-    console.error("formatDateSafe: Erro ao formatar:", error);
-    return "Data inválida";
-  }
-};
-
-// ✅ NOVA FUNÇÃO: Validar se um objeto tem propriedades de data válidas
-export const hasValidDateProperty = (
-  obj: any,
-  propertyName: string
-): boolean => {
-  try {
-    const value = obj?.[propertyName];
-    return safeParseDate(value) !== null;
-  } catch {
-    return false;
-  }
 };

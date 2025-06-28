@@ -87,9 +87,9 @@ export const AthletesManagement: React.FC = () => {
   const unseededAthletes = athletes.length - seededAthletes;
 
   const handleSubmitAdd = async () => {
-    const errors = validateAthlete(formData);
-    if (errors.length > 0) {
-      setFormErrors(errors);
+    const validation = validateAthlete(formData);
+    if (!validation.isValid) {
+      setFormErrors(validation.errors);
       return;
     }
 
@@ -109,12 +109,12 @@ export const AthletesManagement: React.FC = () => {
       if (!name) continue;
 
       const athleteData = { name };
-      const validationErrors = validateAthlete(athleteData);
+      const validation = validateAthlete(athleteData);
 
-      if (validationErrors.length === 0) {
+      if (validation.isValid) {
         await addAthlete(athleteData);
       } else {
-        errors.push(`Erro em ${name}: ${validationErrors.join(", ")}`);
+        errors.push(`Erro em ${name}: ${validation.errors.join(", ")}`);
       }
     }
 
@@ -178,9 +178,9 @@ export const AthletesManagement: React.FC = () => {
   const handleSubmitEdit = async () => {
     if (!editingAthlete) return;
 
-    const errors = validateAthlete(formData);
-    if (errors.length > 0) {
-      setFormErrors(errors);
+    const validation = validateAthlete(formData);
+    if (!validation.isValid) {
+      setFormErrors(validation.errors);
       return;
     }
 

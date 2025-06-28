@@ -133,18 +133,35 @@ export interface AppState {
   error?: string;
 }
 
-// Utilitários para validação de sets - CORRIGIDO
+// Utilitários para validação de sets - CORRIGIDO CONFORME CBTM/ITTF
 export const isValidSet = (set: SetResult): boolean => {
   const { player1Score, player2Score } = set;
+
+  // ✅ REGRA CBTM/ITTF: Pontuações não podem ser negativas
   if (player1Score < 0 || player2Score < 0) return false;
+
+  // ✅ REGRA CBTM/ITTF: Deve haver pelo menos um ponto marcado
   if (player1Score === 0 && player2Score === 0) return false;
+
   const maxScore = Math.max(player1Score, player2Score);
+  const minScore = Math.min(player1Score, player2Score);
   const diff = Math.abs(player1Score - player2Score);
+
+  // ✅ REGRA CBTM/ITTF: Set deve ter pelo menos 11 pontos para o vencedor
   if (maxScore < 11) return false;
-  if (player1Score >= 10 && player2Score >= 10) {
-    return diff === 2;
+
+  // ✅ REGRA CBTM/ITTF: Diferença mínima de 2 pontos
+  if (diff < 2) return false;
+
+  // ✅ REGRA CBTM/ITTF: Se placar for 10-10 ou superior, pode continuar indefinidamente
+  // mas sempre com diferença de 2 pontos
+  if (minScore >= 10) {
+    return diff === 2; // Exatamente 2 pontos de diferença
   }
-  return diff >= 2;
+
+  // ✅ REGRA CBTM/ITTF: Para sets normais (abaixo de 10-10),
+  // vencedor tem 11+ e diferença >= 2
+  return maxScore >= 11 && diff >= 2;
 };
 
 export const getSetWinner = (set: SetResult): AthleteID | undefined => {
