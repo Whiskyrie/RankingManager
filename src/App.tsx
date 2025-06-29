@@ -21,11 +21,19 @@ import {
 import { calculateTournamentStats, formatDate, getStatusColor } from "./utils";
 import "./App.css";
 
+console.log('🎯 [APP] Componente App carregando...');
+
 type PageType = "dashboard" | "groups" | "knockout" | "athletes" | "settings";
 
 function App() {
+  console.log('🎯 [APP] Função App executando...');
+  
   const [currentPage, setCurrentPage] = useState<PageType>("dashboard");
+  
+  console.log('🎯 [APP] Estado inicial definido, acessando store...');
   const { currentChampionship } = useChampionshipStore();
+  
+  console.log('🎯 [APP] Store acessado, campeonato atual:', currentChampionship);
 
   // Navegação baseada no estado do campeonato
   useEffect(() => {

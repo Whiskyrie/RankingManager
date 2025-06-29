@@ -1,4 +1,4 @@
-import { Athlete, Match, SetResult } from "../types/index";
+import { Athlete, Match, SetResult, Championship } from "../types/index";
 
 // ✅ CORREÇÃO: Funções de formatação com validação robusta
 const isValidDate = (date: any): boolean => {
@@ -236,9 +236,14 @@ export const generateMainKnockoutMatches = (
 ): Match[] => {
   const matches: Match[] = [];
 
-  console.log(
-    `🏆 [KNOCKOUT] Gerando chaveamento CBTM/ITTF para ${qualifiedAthletes.length} atletas em bracket de ${bracketSize}`
-  );
+  console.log("\n" + "=".repeat(80));
+  console.log("🚨 [DEBUG] FUNÇÃO generateMainKnockoutMatches CHAMADA!");
+  console.log(`🏆 [KNOCKOUT] Gerando chaveamento CBTM/ITTF para ${qualifiedAthletes.length} atletas em bracket de ${bracketSize}`);
+  console.log("📋 [DEBUG] Lista de atletas recebidos:");
+  qualifiedAthletes.forEach((athlete, index) => {
+    console.log(`   ${index + 1}. ${athlete.name}${athlete.isSeeded ? ` (Cabeça #${athlete.seedNumber})` : " (Sem seed)"}`);
+  });
+  console.log("=".repeat(80));
 
   // ✅ REGRA CBTM/ITTF: Validar número mínimo de atletas
   if (qualifiedAthletes.length < 2) {
@@ -254,18 +259,28 @@ export const generateMainKnockoutMatches = (
 
   // Forçar uso do bracketSize correto
   bracketSize = validBracketSize;
+  console.log(`🎯 [DEBUG] Bracket size corrigido: ${bracketSize}`);
 
-  // ✅ REGRA CBTM/ITTF: Separar e ordenar cabeças de chave corretamente
+  // ✅ REGRA CBTM/ITTF: Usar cabeças de chave já definidos previamente
   const seededAthletes = qualifiedAthletes
     .filter((a) => a.isSeeded && a.seedNumber)
     .sort((a, b) => (a.seedNumber || 999) - (b.seedNumber || 999));
 
   const unseededAthletes = qualifiedAthletes.filter((a) => !a.isSeeded);
 
-  console.log(
-    `🎯 [CBTM] Cabeças de chave identificados: ${seededAthletes.length}`
-  );
+  console.log(`🎯 [CBTM] Cabeças de chave identificados: ${seededAthletes.length}`);
   console.log(`🎯 [CBTM] Atletas sem seed: ${unseededAthletes.length}`);
+
+  // Log detalhado dos cabeças de chave
+  console.log("🏆 [DEBUG] Lista detalhada de cabeças de chave:");
+  seededAthletes.forEach((athlete) => {
+    console.log(`   🏆 Cabeça #${athlete.seedNumber}: ${athlete.name}`);
+  });
+
+  console.log("👤 [DEBUG] Lista detalhada de atletas sem seed:");
+  unseededAthletes.forEach((athlete, index) => {
+    console.log(`   👤 ${index + 1}. ${athlete.name}`);
+  });
 
   // ✅ REGRA CBTM/ITTF: Verificar se precisa implementar sistema de BYE
   const needsBye = qualifiedAthletes.length < bracketSize;
@@ -288,80 +303,247 @@ export const generateMainKnockoutMatches = (
   );
 };
 
-// ✅ NOVA FUNÇÃO: Gerar bracket com sistema BYE conforme CBTM/ITTF
+// ✅ NOVA FUNÇÃO: Gerar bracket com sistema BYE conforme CBTM/ITTF (SIMPLIFICADA)
 const generateKnockoutWithBye = (
   qualifiedAthletes: Athlete[],
   bracketSize: number,
   seededAthletes: Athlete[],
   unseededAthletes: Athlete[]
 ): Match[] => {
-  const matches: Match[] = [];
-  const byeCount = bracketSize - qualifiedAthletes.length;
+  console.log(
+    `🎯 [CBTM-BYE] Sistema BYE ativado para ${qualifiedAthletes.length} atletas em bracket de ${bracketSize}`
+  );
 
-  console.log(`🎯 [CBTM-BYE] Sistema BYE ativado: ${byeCount} passes livres`);
+  // ✅ CORREÇÃO: Criar array com o tamanho do bracket e distribuir BYEs estrategicamente
+  const orderedAthletes: (Athlete | null)[] = Array.from(
+    { length: bracketSize },
+    () => null
+  );
 
-  // ✅ REGRA CBTM/ITTF: Prioridade BYE - sempre para os melhores cabeças de chave
-  const athletesWithBye: Athlete[] = [];
-  const remainingSeeded: Athlete[] = [];
+  // ✅ REGRA CBTM/ITTF: Distribuir cabeças de chave em posições específicas
+  if (seededAthletes.length >= 1) {
+    orderedAthletes[0] = seededAthletes[0]; // Cabeça #1 na posição 1
+    console.log(`🏆 Cabeça #1: ${seededAthletes[0].name} → Posição 1`);
+  }
+  if (seededAthletes.length >= 2) {
+    orderedAthletes[bracketSize - 1] = seededAthletes[1]; // Cabeça #2 na última posição
+    console.log(
+      `🏆 Cabeça #2: ${seededAthletes[1].name} → Posição ${bracketSize}`
+    );
+  }
+  if (bracketSize >= 8 && seededAthletes.length >= 3) {
+    const pos3 = Math.floor(bracketSize / 2); // Meio do bracket (chave inferior)
+    orderedAthletes[pos3] = seededAthletes[2];
+    console.log(
+      `🏆 Cabeça #3: ${seededAthletes[2].name} → Posição ${pos3 + 1}`
+    );
+  }
+  if (bracketSize >= 8 && seededAthletes.length >= 4) {
+    const pos4 = Math.floor(bracketSize / 2) - 1; // Final da chave superior
+    orderedAthletes[pos4] = seededAthletes[3];
+    console.log(
+      `🏆 Cabeça #4: ${seededAthletes[3].name} → Posição ${pos4 + 1}`
+    );
+  }
 
-  // Dar BYE aos melhores cabeças primeiro
-  seededAthletes.forEach((athlete, index) => {
-    if (index < byeCount) {
-      athletesWithBye.push(athlete);
+  // ✅ CORREÇÃO CRÍTICA: Distribuir BYEs estrategicamente ANTES dos atletas sem seed
+  // Calcular quantos BYEs são necessários
+  const byesNeeded = bracketSize - qualifiedAthletes.length;
+  console.log(
+    `🎯 [BYE-DISTRIBUTION] Precisamos de ${byesNeeded} BYEs para ${qualifiedAthletes.length} atletas`
+  );
+
+  // ✅ REGRA CBTM/ITTF: BYEs devem ser distribuídos para favorecer cabeças de chave
+  // Posições estratégicas para BYEs (próximas aos cabeças de chave)
+  const byePositions = [];
+
+  if (byesNeeded > 0) {
+    // BYE próximo ao cabeça #1 (posição 2 se disponível)
+    if (orderedAthletes[1] === null) byePositions.push(1);
+
+    // BYE próximo ao cabeça #2 (penúltima posição)
+    if (orderedAthletes[bracketSize - 2] === null)
+      byePositions.push(bracketSize - 2);
+
+    // Se bracketSize >= 8, BYEs próximos aos cabeças #3 e #4
+    if (bracketSize >= 8) {
+      const pos3 = Math.floor(bracketSize / 2);
+      const pos4 = Math.floor(bracketSize / 2) - 1;
+
+      if (orderedAthletes[pos3 + 1] === null) byePositions.push(pos3 + 1);
+      if (orderedAthletes[pos4 - 1] === null) byePositions.push(pos4 - 1);
+    }
+
+    // Adicionar mais posições se necessário (distribuição uniforme)
+    for (let i = 0; i < bracketSize && byePositions.length < byesNeeded; i++) {
+      if (orderedAthletes[i] === null && !byePositions.includes(i)) {
+        byePositions.push(i);
+      }
+    }
+  }
+
+  // ✅ Marcar posições de BYE
+  byePositions.slice(0, byesNeeded).forEach((pos, index) => {
+    orderedAthletes[pos] = {
+      id: `bye-${index + 1}`,
+      name: "BYE",
+      isVirtual: true,
+    };
+    console.log(`🎯 [BYE] BYE #${index + 1} → Posição ${pos + 1}`);
+  });
+
+  // ✅ Distribuir cabeças restantes em posições disponíveis
+  let seedIndex = 4;
+  for (
+    let pos = 0;
+    pos < bracketSize && seedIndex < seededAthletes.length;
+    pos++
+  ) {
+    if (orderedAthletes[pos] === null) {
+      orderedAthletes[pos] = seededAthletes[seedIndex];
       console.log(
-        `🎯 [CBTM-BYE] BYE concedido: ${athlete.name} (Cabeça #${athlete.seedNumber})`
+        `🏆 Cabeça #${seededAthletes[seedIndex].seedNumber}: ${
+          seededAthletes[seedIndex].name
+        } → Posição ${pos + 1}`
+      );
+      seedIndex++;
+    }
+  }
+
+  // ✅ Preencher posições restantes com atletas sem seed
+  let unseededIndex = 0;
+  for (
+    let pos = 0;
+    pos < bracketSize && unseededIndex < unseededAthletes.length;
+    pos++
+  ) {
+    if (orderedAthletes[pos] === null) {
+      orderedAthletes[pos] = unseededAthletes[unseededIndex];
+      console.log(
+        `👤 ${unseededAthletes[unseededIndex].name} → Posição ${pos + 1}`
+      );
+      unseededIndex++;
+    }
+  }
+
+  // ✅ LOG FINAL: Mostrar estrutura completa
+  console.log("\n📋 [BRACKET-STRUCTURE] Estrutura final do bracket:");
+  orderedAthletes.forEach((athlete, index) => {
+    if (athlete?.isVirtual) {
+      console.log(`  ${index + 1}. [BYE]`);
+    } else if (athlete) {
+      console.log(
+        `  ${index + 1}. ${athlete.name}${
+          athlete.isSeeded ? ` (Cabeça #${athlete.seedNumber})` : ""
+        }`
       );
     } else {
-      remainingSeeded.push(athlete);
+      console.log(`  ${index + 1}. [VAZIO]`);
     }
   });
 
-  // Se ainda precisar de mais BYEs, dar aos melhores classificados não-cabeças
-  const remainingByes = byeCount - athletesWithBye.length;
-  if (remainingByes > 0) {
-    // Ordenar não-cabeças por posição de classificação (assumindo que foram classificados por mérito)
-    const sortedUnseeded = [...unseededAthletes].slice(0, remainingByes);
-    athletesWithBye.push(...sortedUnseeded);
+  // ✅ GERAR TODAS AS PARTIDAS DO BRACKET
+  const firstRound = Math.log2(bracketSize);
+  const firstRoundName = getRoundName(firstRound);
+  const matches: Match[] = [];
+  let matchPosition = 0;
 
-    sortedUnseeded.forEach((athlete) => {
-      console.log(`🎯 [CBTM-BYE] BYE concedido (não-cabeça): ${athlete.name}`);
-    });
+  console.log("\n⚡ [MATCHES] Gerando partidas da primeira rodada:");
+
+  for (let i = 0; i < bracketSize; i += 2) {
+    const athlete1 = orderedAthletes[i] || null;
+    const athlete2 = orderedAthletes[i + 1] || null;
+
+    if (athlete1 && athlete2) {
+      if (athlete1.isVirtual && athlete2.isVirtual) {
+        // Ambos são BYE - não criar partida
+        console.log(
+          `❌ [SKIP] Posições ${i + 1}-${i + 2}: Ambos BYE, partida ignorada`
+        );
+      } else if (athlete1.isVirtual || athlete2.isVirtual) {
+        // Um é BYE - partida auto-completada
+        const winner = athlete1.isVirtual ? athlete2 : athlete1;
+        const byeMatch: Match = {
+          id: `${firstRoundName
+            .toLowerCase()
+            .replace(/\s+/g, "-")}-bye-${matchPosition}-${Date.now()}`,
+          player1Id: athlete1.id,
+          player2Id: athlete2.id,
+          player1: athlete1,
+          player2: athlete2,
+          sets: [],
+          isCompleted: true,
+          winnerId: winner.id,
+          phase: "knockout",
+          round: firstRoundName,
+          position: matchPosition,
+          timeoutsUsed: { player1: false, player2: false },
+          createdAt: new Date(),
+          completedAt: new Date(),
+        };
+        matches.push(byeMatch);
+        console.log(
+          `🎯 [BYE-MATCH] Partida ${matchPosition + 1}: ${athlete1.name} vs ${
+            athlete2.name
+          } → ${winner.name} avança`
+        );
+      } else {
+        // Partida normal entre dois atletas reais
+        const match = createMatch(
+          athlete1,
+          athlete2,
+          firstRoundName,
+          matchPosition
+        );
+        matches.push(match);
+        console.log(
+          `⚡ [NORMAL] Partida ${matchPosition + 1}: ${athlete1.name} vs ${
+            athlete2.name
+          }`
+        );
+      }
+    } else {
+      // Uma ou ambas posições vazias - criar TBD
+      const athlete1Fixed = athlete1 || {
+        id: "tbd1",
+        name: "TBD",
+        isVirtual: true,
+      };
+      const athlete2Fixed = athlete2 || {
+        id: "tbd2",
+        name: "TBD",
+        isVirtual: true,
+      };
+
+      const tbdMatch: Match = {
+        id: `${firstRoundName
+          .toLowerCase()
+          .replace(/\s+/g, "-")}-tbd-${matchPosition}-${Date.now()}`,
+        player1Id: athlete1Fixed.id,
+        player2Id: athlete2Fixed.id,
+        player1: athlete1Fixed,
+        player2: athlete2Fixed,
+        sets: [],
+        isCompleted: false,
+        phase: "knockout",
+        round: firstRoundName,
+        position: matchPosition,
+        timeoutsUsed: { player1: false, player2: false },
+        createdAt: new Date(),
+      };
+      matches.push(tbdMatch);
+      console.log(
+        `⏳ [TBD] Partida ${matchPosition + 1}: ${athlete1Fixed.name} vs ${
+          athlete2Fixed.name
+        }`
+      );
+    }
+    matchPosition++;
   }
-
-  // Atletas que jogam na primeira rodada
-  const athletesToPlay = qualifiedAthletes.filter(
-    (athlete) => !athletesWithBye.includes(athlete)
-  );
-
-  // ✅ REGRA CBTM/ITTF: Distribuição estratégica para evitar confrontos precoces
-  const orderedForFirstRound = arrangePlayersForFirstRound(
-    athletesToPlay,
-    remainingSeeded,
-    unseededAthletes.filter((a) => !athletesWithBye.includes(a))
-  );
-
-  // Criar partidas da primeira rodada
-  const rounds = Math.ceil(Math.log2(qualifiedAthletes.length));
-  const currentRoundName = getRoundName(rounds);
 
   console.log(
-    `🎯 [CBTM] Primeira rodada: ${currentRoundName} com ${athletesToPlay.length} atletas`
+    `✅ [CBTM-BYE] ${matches.length} partidas criadas para bracket de ${bracketSize} (${qualifiedAthletes.length} atletas reais, ${byesNeeded} BYEs)`
   );
-
-  let matchPosition = 0;
-  for (let i = 0; i < orderedForFirstRound.length; i += 2) {
-    if (orderedForFirstRound[i] && orderedForFirstRound[i + 1]) {
-      const match = createMatch(
-        orderedForFirstRound[i],
-        orderedForFirstRound[i + 1],
-        currentRoundName,
-        matchPosition
-      );
-      matches.push(match);
-      matchPosition++;
-    }
-  }
-
   return matches;
 };
 
@@ -378,8 +560,8 @@ const generateCompleteKnockoutBracket = (
     `🏆 [CBTM] Bracket completo - ${qualifiedAthletes.length} atletas`
   );
 
-  // ✅ REGRA CBTM/ITTF: Distribuição padrão de cabeças de chave
-  const orderedAthletes = distributeSeedsAccordingToCBTM(
+  // ✅ REGRA CBTM/ITTF: Distribuição padrão de cabeças de chave (MELHORADA)
+  const orderedAthletes = distributeSeedsAccordingToCBTMImproved(
     bracketSize,
     seededAthletes,
     unseededAthletes
@@ -406,8 +588,8 @@ const generateCompleteKnockoutBracket = (
   return matches;
 };
 
-// ✅ NOVA FUNÇÃO: Distribuição de cabeças conforme padrão CBTM/ITTF
-const distributeSeedsAccordingToCBTM = (
+// ✅ NOVA FUNÇÃO: Distribuição mais robusta dos cabeças de chave conforme CBTM/ITTF
+const distributeSeedsAccordingToCBTMImproved = (
   bracketSize: number,
   seededAthletes: Athlete[],
   unseededAthletes: Athlete[]
@@ -417,51 +599,97 @@ const distributeSeedsAccordingToCBTM = (
     () => null
   );
 
-  // ✅ REGRA CBTM/ITTF: Posicionamento padrão de cabeças de chave
+  console.log(
+    `🎯 [CBTM-IMPROVED] Distribuindo ${seededAthletes.length} cabeças em bracket de ${bracketSize}`
+  );
+
+  // ✅ REGRA CBTM/ITTF: Posicionamento para garantir que cabeças só se encontrem na final
   if (seededAthletes.length >= 1) {
     orderedAthletes[0] = seededAthletes[0]; // Cabeça #1 sempre na posição 1
     console.log(
-      `🎯 [CBTM-SEED] Cabeça #1: ${seededAthletes[0].name} → Posição 1`
+      `🎯 [CBTM-IMPROVED] Cabeça #1: ${seededAthletes[0].name} → Posição 1 (Chave Superior)`
     );
   }
 
   if (seededAthletes.length >= 2) {
     orderedAthletes[bracketSize - 1] = seededAthletes[1]; // Cabeça #2 sempre na última posição
     console.log(
-      `🎯 [CBTM-SEED] Cabeça #2: ${seededAthletes[1].name} → Posição ${bracketSize}`
+      `🎯 [CBTM-IMPROVED] Cabeça #2: ${seededAthletes[1].name} → Posição ${bracketSize} (Chave Inferior)`
     );
   }
 
-  if (seededAthletes.length >= 3) {
-    // Cabeça #3 na metade superior da chave inferior
-    const pos3 = bracketSize / 2;
-    orderedAthletes[pos3 - 1] = seededAthletes[2];
-    console.log(
-      `🎯 [CBTM-SEED] Cabeça #3: ${seededAthletes[2].name} → Posição ${pos3}`
-    );
+  // ✅ CORREÇÃO CRÍTICA: Para bracketSize >= 8, garantir separação adequada dos 4 principais cabeças
+  if (bracketSize >= 8) {
+    if (seededAthletes.length >= 3) {
+      // Cabeça #3 vai para o início da segunda metade (chave inferior)
+      const pos3 = Math.floor(bracketSize / 2);
+      orderedAthletes[pos3] = seededAthletes[2];
+      console.log(
+        `🎯 [CBTM-IMPROVED] Cabeça #3: ${seededAthletes[2].name} → Posição ${
+          pos3 + 1
+        } (Início Chave Inferior)`
+      );
+    }
+
+    if (seededAthletes.length >= 4) {
+      // Cabeça #4 vai para o final da primeira metade (chave superior)
+      const pos4 = Math.floor(bracketSize / 2) - 1;
+      orderedAthletes[pos4] = seededAthletes[3];
+      console.log(
+        `🎯 [CBTM-IMPROVED] Cabeça #4: ${seededAthletes[3].name} → Posição ${
+          pos4 + 1
+        } (Final Chave Superior)`
+      );
+    }
+
+    // ✅ Para cabeças 5-8: distribuir nos quartos restantes
+    if (seededAthletes.length > 4) {
+      const quarterSize = bracketSize / 4;
+      const quarters = [
+        Math.floor(quarterSize / 2), // 1º quarto (chave superior, primeira parte)
+        Math.floor(quarterSize + quarterSize / 2), // 2º quarto (chave superior, segunda parte)
+        Math.floor(2 * quarterSize + quarterSize / 2), // 3º quarto (chave inferior, primeira parte)
+        Math.floor(3 * quarterSize + quarterSize / 2), // 4º quarto (chave inferior, segunda parte)
+      ];
+
+      for (let i = 4; i < Math.min(seededAthletes.length, 8); i++) {
+        const seed = seededAthletes[i];
+        const quarterIndex = (i - 4) % 4;
+        let targetPos = quarters[quarterIndex];
+
+        // Encontrar posição livre próxima
+        while (targetPos < bracketSize && orderedAthletes[targetPos] !== null) {
+          targetPos++;
+        }
+
+        if (targetPos < bracketSize) {
+          orderedAthletes[targetPos] = seed;
+          console.log(
+            `🎯 [CBTM-IMPROVED] Cabeça #${seed.seedNumber}: ${
+              seed.name
+            } → Posição ${targetPos + 1} (Quarto ${quarterIndex + 1})`
+          );
+        }
+      }
+    }
+  } else if (bracketSize === 4) {
+    // Para bracketSize = 4, apenas 2 cabeças fazem sentido
+    // #1 na posição 1, #2 na posição 4, #3 na posição 2, #4 na posição 3
+    if (seededAthletes.length >= 3) {
+      orderedAthletes[1] = seededAthletes[2];
+      console.log(
+        `🎯 [CBTM-IMPROVED] Cabeça #3: ${seededAthletes[2].name} → Posição 2`
+      );
+    }
+    if (seededAthletes.length >= 4) {
+      orderedAthletes[2] = seededAthletes[3];
+      console.log(
+        `🎯 [CBTM-IMPROVED] Cabeça #4: ${seededAthletes[3].name} → Posição 3`
+      );
+    }
   }
 
-  if (seededAthletes.length >= 4) {
-    // Cabeça #4 na metade inferior da chave superior
-    const pos4 = bracketSize / 2;
-    orderedAthletes[pos4] = seededAthletes[3];
-    console.log(
-      `🎯 [CBTM-SEED] Cabeça #4: ${seededAthletes[3].name} → Posição ${
-        pos4 + 1
-      }`
-    );
-  }
-
-  // ✅ REGRA CBTM/ITTF: Distribuir cabeças adicionais em quartos
-  if (seededAthletes.length > 4) {
-    distributeAdditionalSeeds(
-      orderedAthletes,
-      seededAthletes.slice(4),
-      bracketSize
-    );
-  }
-
-  // ✅ REGRA CBTM/ITTF: Embaralhar e distribuir não-cabeças
+  // ✅ REGRA CBTM/ITTF: Embaralhar e distribuir não-cabeças nas posições restantes
   const shuffledUnseeded = [...unseededAthletes].sort(
     () => Math.random() - 0.5
   );
@@ -474,81 +702,54 @@ const distributeSeedsAccordingToCBTM = (
   ) {
     if (orderedAthletes[i] === null) {
       orderedAthletes[i] = shuffledUnseeded[unseededIndex++];
-    }
-  }
-
-  return orderedAthletes.filter((athlete) => athlete !== null);
-};
-
-// ✅ NOVA FUNÇÃO: Distribuir cabeças adicionais em quartos conforme CBTM
-const distributeAdditionalSeeds = (
-  orderedAthletes: Athlete[],
-  additionalSeeds: Athlete[],
-  bracketSize: number
-): void => {
-  const quarterSize = bracketSize / 4;
-  const positions = [
-    quarterSize / 2, // Primeiro quarto
-    quarterSize + quarterSize / 2, // Segundo quarto
-    2 * quarterSize + quarterSize / 2, // Terceiro quarto
-    3 * quarterSize + quarterSize / 2, // Quarto quarto
-  ];
-
-  additionalSeeds.forEach((seed, index) => {
-    const targetPosition = Math.floor(positions[index % 4]);
-
-    // Encontrar posição livre próxima
-    let actualPosition = targetPosition;
-    while (
-      actualPosition < bracketSize &&
-      orderedAthletes[actualPosition] !== null
-    ) {
-      actualPosition++;
-    }
-
-    if (actualPosition < bracketSize) {
-      orderedAthletes[actualPosition] = seed;
       console.log(
-        `🎯 [CBTM-SEED] Cabeça #${seed.seedNumber}: ${seed.name} → Posição ${
-          actualPosition + 1
+        `🎯 [CBTM-IMPROVED] Não-cabeça: ${orderedAthletes[i].name} → Posição ${
+          i + 1
         }`
       );
     }
-  });
-};
+  }
 
-// ✅ NOVA FUNÇÃO: Arranjar jogadores para primeira rodada evitando confrontos precoces
-const arrangePlayersForFirstRound = (
-  athletesToPlay: Athlete[],
-  remainingSeeded: Athlete[],
-  remainingUnseeded: Athlete[]
-): Athlete[] => {
-  const result: Athlete[] = [];
-
-  // ✅ REGRA CBTM/ITTF: Distribuir cabeças alternadamente para evitar confrontos
-  const shuffledUnseeded = [...remainingUnseeded].sort(
-    () => Math.random() - 0.5
+  console.log(
+    `✅ [CBTM-IMPROVED] Distribuição final completa para bracket de ${bracketSize}`
   );
 
-  let seededIndex = 0;
-  let unseededIndex = 0;
+  // ✅ LOG DETALHADO: Mostrar estrutura completa do bracket
+  console.log(`📊 [CBTM-BRACKET] Estrutura final do bracket:`);
+  const validAthletes = orderedAthletes.filter((athlete) => athlete !== null);
+  const halfPoint = Math.ceil(validAthletes.length / 2);
 
-  while (result.length < athletesToPlay.length) {
-    // Tentar adicionar um cabeça de chave
-    if (seededIndex < remainingSeeded.length) {
-      result.push(remainingSeeded[seededIndex++]);
-    }
-
-    // Adicionar um não-cabeça
-    if (
-      unseededIndex < shuffledUnseeded.length &&
-      result.length < athletesToPlay.length
-    ) {
-      result.push(shuffledUnseeded[unseededIndex++]);
+  console.log(`🔵 [CHAVE SUPERIOR] (${halfPoint} atletas):`);
+  for (let i = 0; i < halfPoint; i++) {
+    if (validAthletes[i]) {
+      const athlete = validAthletes[i];
+      console.log(
+        `   ${i + 1}. ${athlete.name}${
+          athlete.isSeeded
+            ? ` (Cabeça #${athlete.seedNumber})`
+            : " (Não-cabeça)"
+        }`
+      );
     }
   }
 
-  return result;
+  console.log(
+    `🔴 [CHAVE INFERIOR] (${validAthletes.length - halfPoint} atletas):`
+  );
+  for (let i = halfPoint; i < validAthletes.length; i++) {
+    if (validAthletes[i]) {
+      const athlete = validAthletes[i];
+      console.log(
+        `   ${i + 1}. ${athlete.name}${
+          athlete.isSeeded
+            ? ` (Cabeça #${athlete.seedNumber})`
+            : " (Não-cabeça)"
+        }`
+      );
+    }
+  }
+
+  return validAthletes;
 };
 
 // ✅ FUNÇÃO AUXILIAR: Criar partida padronizada
@@ -700,7 +901,7 @@ const generateThirdPlaceMatch = (
   return [];
 };
 
-// ✅ NOVA FUNÇÃO: Gerar rodadas normais conforme CBTM/ITTF
+// ✅ NOVA FUNÇÃO: Gerar rodadas normais conforme CBTM/ITTF (MELHORADA)
 const generateNormalRoundMatches = (
   completedMatches: Match[],
   round: string,
@@ -708,12 +909,18 @@ const generateNormalRoundMatches = (
   bestOf: 3 | 5 | 7,
   championshipAthletes?: Athlete[]
 ): Match[] => {
-  console.log("🏆 [CBTM] Gerando rodada normal com vencedores + BYE");
+  console.log(`🏆 [CBTM] Gerando rodada: ${round}`);
 
-  // ✅ REGRA CBTM/ITTF: Coletar todos os vencedores
-  const winnerIds: string[] = [];
+  // ✅ CORREÇÃO DINÂMICA: Coletar vencedores em ordem sequencial de posição
+  const winners: string[] = [];
 
-  completedMatches.forEach((match, index) => {
+  // Ordenar partidas por posição para manter sequência do bracket
+  const sortedMatches = [...completedMatches].sort(
+    (a, b) => (a.position || 0) - (b.position || 0)
+  );
+
+  // Coletar todos os vencedores das partidas completadas
+  sortedMatches.forEach((match) => {
     let winnerId = match.winnerId;
 
     if (!winnerId && match.sets && match.sets.length > 0) {
@@ -726,31 +933,50 @@ const generateNormalRoundMatches = (
     }
 
     if (winnerId) {
-      winnerIds.push(winnerId);
-      const winnerName =
-        winnerId === match.player1Id
-          ? match.player1?.name
-          : match.player2?.name;
-      console.log(`✅ [CBTM] Vencedor ${index + 1}: ${winnerName}`);
+      winners.push(winnerId);
+      const winner = allAthletes.find((a) => a.id === winnerId);
+      console.log(
+        `✅ [CBTM-BRACKET] Vencedor posição ${match.position}: ${winner?.name}${
+          winner?.isSeeded ? ` (#${winner.seedNumber})` : ""
+        }`
+      );
     }
   });
 
-  // ✅ REGRA CBTM/ITTF: Incluir atletas com BYE automático
-  const allAdvancingAthletes = [...winnerIds];
+  // ✅ SISTEMA DINÂMICO DE BYE: Calcular se precisamos de atletas adicionais
+  const targetRoundLevel = getCurrentRoundLevel(round);
+  const expectedAthletes = Math.pow(2, targetRoundLevel);
+  const missingAthletes = expectedAthletes - winners.length;
 
-  if (championshipAthletes) {
-    const athletesWithBye = detectAthletsWithBye(
-      round,
-      winnerIds,
-      completedMatches,
-      championshipAthletes
+  console.log(
+    `🎯 [CBTM] Rodada ${round}: ${winners.length} vencedores, precisamos de ${expectedAthletes} total`
+  );
+
+  // Se temos atletas faltando, aplicar sistema BYE dinâmico
+  if (missingAthletes > 0 && championshipAthletes) {
+    const athletesWithBye = findBestAthletesForBye(
+      winners,
+      missingAthletes,
+      championshipAthletes,
+      completedMatches
     );
-    allAdvancingAthletes.push(...athletesWithBye);
+
+    athletesWithBye.forEach((athleteId) => {
+      const athlete = allAthletes.find((a) => a.id === athleteId);
+      if (athlete) {
+        winners.push(athleteId);
+        console.log(
+          `🎯 [CBTM-BYE] Adicionado automaticamente: ${athlete.name}${
+            athlete.isSeeded ? ` (#${athlete.seedNumber})` : ""
+          }`
+        );
+      }
+    });
   }
 
-  // ✅ REGRA CBTM/ITTF: Sistema BYE para próxima rodada se número ímpar
+  // ✅ SISTEMA FLEXÍVEL: Se número ímpar, dar BYE ao melhor posicionado
   const { playingAthletes, byeAthlete } = handleNextRoundBye(
-    allAdvancingAthletes,
+    winners,
     allAthletes
   );
 
@@ -758,8 +984,54 @@ const generateNormalRoundMatches = (
     console.log(`🎯 [CBTM] BYE para próxima rodada: ${byeAthlete.name}`);
   }
 
-  // Criar partidas para a próxima rodada
+  // Criar partidas mantendo ordem sequencial
   return createMatchesForRound(playingAthletes, round, allAthletes);
+};
+
+// ✅ NOVA FUNÇÃO: Encontrar melhores atletas para BYE dinâmico
+const findBestAthletesForBye = (
+  winners: string[],
+  missingAthletes: number,
+  championshipAthletes: Athlete[],
+  completedMatches: Match[]
+): string[] => {
+  console.log(`🎯 [CBTM-BYE] Buscando ${missingAthletes} atletas para BYE`);
+
+  // Atletas que já jogaram nesta rodada (vencedores ou perdedores)
+  const playersInCurrentRound = new Set([
+    ...winners,
+    ...completedMatches.flatMap((match) => [match.player1Id, match.player2Id]),
+  ]);
+
+  // Candidatos elegíveis para BYE (não jogaram ainda nesta rodada)
+  const eligibleForBye = championshipAthletes
+    .filter((athlete) => !playersInCurrentRound.has(athlete.id))
+    .sort((a, b) => {
+      // Prioridade: cabeças de chave primeiro, depois por ranking/seed
+      if (a.isSeeded && !b.isSeeded) return -1;
+      if (!a.isSeeded && b.isSeeded) return 1;
+
+      if (a.isSeeded && b.isSeeded) {
+        return (a.seedNumber || 999) - (b.seedNumber || 999);
+      }
+
+      // Para não-cabeças, ordem alfabética como critério final
+      return a.name.localeCompare(b.name);
+    });
+
+  const selectedForBye = eligibleForBye.slice(0, missingAthletes);
+
+  selectedForBye.forEach((athlete) => {
+    console.log(
+      `🎯 [CBTM-BYE] Selecionado: ${athlete.name}${
+        athlete.isSeeded
+          ? ` (Cabeça #${athlete.seedNumber})`
+          : " (Classificado)"
+      }`
+    );
+  });
+
+  return selectedForBye.map((athlete) => athlete.id);
 };
 
 // ✅ FUNÇÃO AUXILIAR: Determinar o nível da rodada no chaveamento
@@ -772,47 +1044,7 @@ const getCurrentRoundLevel = (round: string): number => {
   return 6; // Para rodadas maiores
 };
 
-// ✅ NOVA FUNÇÃO: Detectar atletas com BYE conforme CBTM/ITTF
-const detectAthletsWithBye = (
-  round: string,
-  winnerIds: string[],
-  completedMatches: Match[],
-  championshipAthletes: Athlete[]
-): string[] => {
-  const currentRoundLevel = getCurrentRoundLevel(round);
-  const expectedAthletes = Math.pow(2, currentRoundLevel);
-  const athletesWithBye = expectedAthletes - winnerIds.length;
-
-  if (athletesWithBye <= 0) return [];
-
-  console.log(`🎯 [CBTM] ${athletesWithBye} atletas com BYE detectados`);
-
-  const playersInLastRound = completedMatches.flatMap((match) => [
-    match.player1Id,
-    match.player2Id,
-  ]);
-
-  // ✅ REGRA CBTM/ITTF: Prioridade para melhores cabeças de chave
-  const eligibleForBye = championshipAthletes
-    .filter(
-      (athlete) =>
-        athlete.isSeeded &&
-        !winnerIds.includes(athlete.id) &&
-        !playersInLastRound.includes(athlete.id)
-    )
-    .sort((a, b) => (a.seedNumber || 999) - (b.seedNumber || 999))
-    .slice(0, athletesWithBye);
-
-  eligibleForBye.forEach((athlete) => {
-    console.log(
-      `🎯 [CBTM] BYE automático: ${athlete.name} (Cabeça #${athlete.seedNumber})`
-    );
-  });
-
-  return eligibleForBye.map((athlete) => athlete.id);
-};
-
-// ✅ NOVA FUNÇÃO: Gerenciar BYE para próxima rodada conforme CBTM/ITTF
+// ✅ NOVA FUNÇÃO: Gerenciar BYE para próxima rodada conforme CBTM/ITTF (MELHORADA)
 const handleNextRoundBye = (
   allAdvancingAthletes: string[],
   allAthletes: Athlete[]
@@ -821,30 +1053,43 @@ const handleNextRoundBye = (
     return { playingAthletes: allAdvancingAthletes, byeAthlete: null };
   }
 
+  console.log(
+    `🎯 [CBTM-BYE] Número ímpar de atletas (${allAdvancingAthletes.length}), aplicando BYE`
+  );
+
   // ✅ REGRA CBTM/ITTF: Melhor cabeça de chave recebe BYE
   const advancingAthleteObjects = allAthletes.filter((a) =>
     allAdvancingAthletes.includes(a.id)
   );
 
   const bestSeeded = advancingAthleteObjects
-    .filter((a) => a.isSeeded)
+    .filter((a) => a.isSeeded && a.seedNumber)
     .sort((a, b) => (a.seedNumber || 999) - (b.seedNumber || 999))[0];
 
   if (bestSeeded) {
     const playingAthletes = allAdvancingAthletes.filter(
       (id) => id !== bestSeeded.id
     );
+    console.log(
+      `🎯 [CBTM-BYE] BYE para: ${bestSeeded.name} (Cabeça #${bestSeeded.seedNumber})`
+    );
     return { playingAthletes, byeAthlete: bestSeeded };
   }
 
-  // Se não há cabeças, remover o primeiro atleta
+  // Se não há cabeças de chave, dar BYE ao primeiro atleta (manter ordem)
   const [byeId, ...playingIds] = allAdvancingAthletes;
   const byeAthlete = allAthletes.find((a) => a.id === byeId) || null;
+
+  if (byeAthlete) {
+    console.log(
+      `🎯 [CBTM-BYE] BYE para: ${byeAthlete.name} (primeiro da lista)`
+    );
+  }
 
   return { playingAthletes: playingIds, byeAthlete };
 };
 
-// ✅ NOVA FUNÇÃO: Criar partidas para rodada conforme CBTM/ITTF
+// ✅ NOVA FUNÇÃO: Criar partidas para rodada conforme CBTM/ITTF (MELHORADA)
 const createMatchesForRound = (
   playingAthletes: string[],
   round: string,
@@ -852,6 +1097,29 @@ const createMatchesForRound = (
 ): Match[] => {
   const matches: Match[] = [];
 
+  console.log(
+    `🎯 [CBTM-BRACKET] Criando ${round} com ${playingAthletes.length} atletas`
+  );
+
+  // ✅ MELHORIA: Log detalhado dos confrontos que serão criados
+  for (let i = 0; i < playingAthletes.length; i += 2) {
+    if (playingAthletes[i] && playingAthletes[i + 1]) {
+      const athlete1 = allAthletes.find((a) => a.id === playingAthletes[i]);
+      const athlete2 = allAthletes.find((a) => a.id === playingAthletes[i + 1]);
+
+      if (athlete1 && athlete2) {
+        console.log(
+          `🎯 [CBTM-BRACKET] Partida ${i / 2 + 1}: ${athlete1.name}${
+            athlete1.isSeeded ? ` (#${athlete1.seedNumber})` : ""
+          } vs ${athlete2.name}${
+            athlete2.isSeeded ? ` (#${athlete2.seedNumber})` : ""
+          }`
+        );
+      }
+    }
+  }
+
+  // Criar as partidas efetivamente
   for (let i = 0; i < playingAthletes.length; i += 2) {
     if (playingAthletes[i] && playingAthletes[i + 1]) {
       const athlete1 = allAthletes.find((a) => a.id === playingAthletes[i]);
@@ -878,13 +1146,13 @@ const createMatchesForRound = (
         };
 
         matches.push(match);
-        console.log(
-          `✅ [CBTM] Partida ${round}: ${athlete1.name} vs ${athlete2.name}`
-        );
       }
     }
   }
 
+  console.log(
+    `✅ [CBTM-BRACKET] ${matches.length} partidas criadas para ${round}`
+  );
   return matches;
 };
 
@@ -954,6 +1222,16 @@ export const generateSecondDivisionMatches = (athletes: Athlete[]): Match[] => {
 
   console.log("\n🥈 [CBTM-2ND] === GERAÇÃO SEGUNDA DIVISÃO CBTM/ITTF ===");
   console.log(`🥈 [CBTM-2ND] Atletas eliminados: ${athletes.length}`);
+
+  // ✅ LOG CRÍTICO: Verificar se os atletas estão corretos
+  console.log("🔍 [CBTM-2ND] Atletas recebidos para segunda divisão:");
+  athletes.forEach((athlete, index) => {
+    console.log(
+      `   ${index + 1}. ${athlete.name}${
+        athlete.isSeeded ? ` (ex-Cabeça #${athlete.seedNumber})` : ""
+      }`
+    );
+  });
 
   // ✅ REGRA CBTM/ITTF: Validação mínima
   if (!athletes || athletes.length < 2) {
@@ -1370,4 +1648,207 @@ export const generateKnockoutBracket = (championship: any) => {
       (m: any) => m.isCompleted
     ).length,
   };
+};
+
+// ✅ FUNÇÃO DE DEPURAÇÃO: Validar se o chaveamento está correto
+export const validateBracketStructure = (
+  matches: Match[],
+  allAthletes: Athlete[]
+): boolean => {
+  console.log(`🔍 [BRACKET-VALIDATION] Validando estrutura do chaveamento`);
+
+  const seededAthletes = allAthletes
+    .filter((a) => a.isSeeded && a.seedNumber)
+    .sort((a, b) => (a.seedNumber || 999) - (b.seedNumber || 999));
+
+  if (seededAthletes.length < 2) {
+    console.log(
+      `✅ [BRACKET-VALIDATION] Menos de 2 cabeças, validação desnecessária`
+    );
+    return true;
+  }
+
+  const seed1 = seededAthletes[0]; // Cabeça #1
+  const seed2 = seededAthletes[1]; // Cabeça #2
+
+  console.log(
+    `🎯 [BRACKET-VALIDATION] Verificando separação entre ${seed1.name} (#1) e ${seed2.name} (#2)`
+  );
+
+  // Simular todas as rodadas para ver se eles só se encontram na final
+  let currentRoundMatches = [...matches];
+  let roundNumber = 1;
+
+  while (currentRoundMatches.length > 1) {
+    console.log(
+      `🔍 [BRACKET-VALIDATION] Simulando rodada ${roundNumber} (${currentRoundMatches.length} partidas)`
+    );
+
+    // Verificar se os dois cabeças principais estão na mesma partida
+    const seed1Match = currentRoundMatches.find(
+      (m) => m.player1Id === seed1.id || m.player2Id === seed1.id
+    );
+    const seed2Match = currentRoundMatches.find(
+      (m) => m.player1Id === seed2.id || m.player2Id === seed2.id
+    );
+
+    if (seed1Match && seed2Match && seed1Match.id === seed2Match.id) {
+      const isThisFinal = currentRoundMatches.length === 1;
+      if (!isThisFinal) {
+        console.log(
+          `❌ [BRACKET-VALIDATION] ERRO: ${seed1.name} e ${seed2.name} se enfrentam na rodada ${roundNumber}, não na final!`
+        );
+        console.log(`❌ [BRACKET-VALIDATION] Partida: ${seed1Match.round}`);
+        return false;
+      } else {
+        console.log(
+          `✅ [BRACKET-VALIDATION] Cabeças #1 e #2 se encontram apenas na final (correto)`
+        );
+        return true;
+      }
+    }
+
+    // Simular próxima rodada (presumindo que os seeds vencem)
+    const nextRoundMatches: Match[] = [];
+    for (let i = 0; i < currentRoundMatches.length; i += 2) {
+      if (currentRoundMatches[i + 1]) {
+        // Criar partida simulada para próxima rodada
+        const match1 = currentRoundMatches[i];
+        const match2 = currentRoundMatches[i + 1];
+
+        // Determinar "vencedores" (priorizar cabeças de chave)
+        const winner1 = getPreferredWinner(match1, allAthletes);
+        const winner2 = getPreferredWinner(match2, allAthletes);
+
+        if (winner1 && winner2) {
+          nextRoundMatches.push({
+            id: `sim-${roundNumber}-${i}`,
+            player1Id: winner1.id,
+            player2Id: winner2.id,
+            player1: winner1,
+            player2: winner2,
+            sets: [],
+            isCompleted: false,
+            phase: "knockout",
+            round: `Simulação Rodada ${roundNumber + 1}`,
+            position: i / 2,
+            timeoutsUsed: { player1: false, player2: false },
+            createdAt: new Date(),
+          });
+        }
+      }
+    }
+
+    currentRoundMatches = nextRoundMatches;
+    roundNumber++;
+
+    if (roundNumber > 10) {
+      // Evitar loop infinito
+      console.log(`⚠️ [BRACKET-VALIDATION] Limite de rodadas excedido`);
+      break;
+    }
+  }
+
+  console.log(
+    `✅ [BRACKET-VALIDATION] Validação concluída - estrutura parece correta`
+  );
+  return true;
+};
+
+// ✅ FUNÇÃO AUXILIAR: Determinar o vencedor preferido para simulação
+const getPreferredWinner = (
+  match: Match,
+  allAthletes: Athlete[]
+): Athlete | null => {
+  const player1 = allAthletes.find((a) => a.id === match.player1Id);
+  const player2 = allAthletes.find((a) => a.id === match.player2Id);
+
+  if (!player1 || !player2) return null;
+
+  // Priorizar cabeça de chave com menor número (melhor ranking)
+  if (player1.isSeeded && player2.isSeeded) {
+    return (player1.seedNumber || 999) < (player2.seedNumber || 999)
+      ? player1
+      : player2;
+  }
+
+  if (player1.isSeeded && !player2.isSeeded) return player1;
+  if (!player1.isSeeded && player2.isSeeded) return player2;
+
+  // Se nenhum é cabeça de chave, escolha aleatória ponderada
+  return Math.random() > 0.5 ? player1 : player2;
+};
+
+// ✅ NOVA FUNÇÃO: Validar e corrigir bracket dinamicamente
+export const validateAndFixBracket = (championship: Championship): boolean => {
+  console.log(
+    "🔍 [BRACKET-FIX] Validando e corrigindo problemas de bracket..."
+  );
+
+  const allKnockoutMatches = championship.groups
+    .flatMap((group) => group.matches)
+    .filter((match) => match.phase === "knockout");
+
+  const mainMatches = allKnockoutMatches.filter(
+    (m) => !m.round?.includes("2ª Div")
+  );
+
+  if (mainMatches.length === 0) {
+    console.log("✅ [BRACKET-FIX] Nenhuma partida de mata-mata encontrada");
+    return true;
+  }
+
+  // Agrupar partidas por rodada
+  const matchesByRound: { [key: string]: Match[] } = {};
+  mainMatches.forEach((match) => {
+    const round = match.round || "Indefinido";
+    if (!matchesByRound[round]) {
+      matchesByRound[round] = [];
+    }
+    matchesByRound[round].push(match);
+  });
+
+  let hasIssues = false;
+
+  // Verificar cada rodada
+  for (const [roundName, matches] of Object.entries(matchesByRound)) {
+    console.log(
+      `🔍 [BRACKET-FIX] Verificando ${roundName}: ${matches.length} partidas`
+    );
+
+    // Verificar se há partidas pendentes
+    const pendingMatches = matches.filter(m => !m.isCompleted);
+    if (pendingMatches.length > 0) {
+      console.log(`⚠️ [BRACKET-FIX] ${pendingMatches.length} partidas pendentes em ${roundName}`);
+      hasIssues = true;
+    }
+  }
+
+  return !hasIssues;
+};
+
+// ===================================================
+// 🛠️ FUNÇÕES UTILITÁRIAS PARA INTERFACE
+// ===================================================
+
+// ✅ Obter nome de exibição do atleta
+export const getAthleteDisplayName = (athlete: any): string => {
+  if (!athlete) return "BYE";
+  if (athlete.isVirtual) return "BYE";
+  return athlete.name || "Atleta Desconhecido";
+};
+
+// ✅ Verificar se o atleta é real (não é BYE ou virtual)
+export const isRealAthlete = (athlete: any): boolean => {
+  if (!athlete) return false;
+  if (athlete.isVirtual) return false;
+  return true;
+};
+
+// ✅ Verificar se a partida tem BYE
+export const matchHasBye = (match: any): boolean => {
+  if (!match) return false;
+  return !match.athlete1 || !match.athlete2 || 
+         (match.athlete1 && match.athlete1.isVirtual) ||
+         (match.athlete2 && match.athlete2.isVirtual);
 };

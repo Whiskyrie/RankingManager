@@ -5,6 +5,7 @@ import { Badge } from "../ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Trophy, Crown, Medal, Target, Award } from "lucide-react";
 import { Match } from "../../types";
+import { getAthleteDisplayName, isRealAthlete, matchHasBye } from "../../utils";
 
 interface BracketVisualizationProps {
   onMatchClick?: (match: Match) => void;
@@ -89,9 +90,9 @@ const BracketMatch = memo<{
             )}`}
           >
             <span className="text-sm truncate flex-1">
-              {match.player1?.name || "TBD"}
+              {getAthleteDisplayName(match.player1)}
             </span>
-            {winner === match.player1Id && (
+            {winner === match.player1Id && isRealAthlete(match.player1) && (
               <Crown className="h-4 w-4 text-yellow-600 ml-1 flex-shrink-0" />
             )}
           </div>
@@ -103,9 +104,9 @@ const BracketMatch = memo<{
             )}`}
           >
             <span className="text-sm truncate flex-1">
-              {match.player2?.name || "TBD"}
+              {getAthleteDisplayName(match.player2)}
             </span>
-            {winner === match.player2Id && (
+            {winner === match.player2Id && isRealAthlete(match.player2) && (
               <Crown className="h-4 w-4 text-yellow-600 ml-1 flex-shrink-0" />
             )}
           </div>
@@ -323,8 +324,16 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
     // ✅ CORREÇÃO: Desestruturação mais segura com fallbacks
     const store = useChampionshipStore();
     const { currentChampionship } = store;
-    const getCachedBracket = store.getCachedBracket || (() => null);
-    const setCachedBracket = store.setCachedBracket || (() => {});
+
+    // ✅ CORREÇÃO: Memoizar funções do store para evitar recriação
+    const getCachedBracket = useMemo(
+      () => store.getCachedBracket || (() => null),
+      [store.getCachedBracket]
+    );
+    const setCachedBracket = useMemo(
+      () => store.setCachedBracket || (() => {}),
+      [store.setCachedBracket]
+    );
 
     // ✅ CORREÇÃO: Estado persistente para a aba ativa
     const [activeTab, setActiveTab] = useState(() => {
@@ -359,7 +368,7 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
           setActiveTab(savedTab);
         }
       }
-    }, [currentChampionship?.id]);
+    }, [currentChampionship?.id, currentChampionship, activeTab]);
 
     // ✅ CORREÇÃO: Função auxiliar para gerar timestamp seguro
     const getSafeTimestamp = useCallback((date: any): string => {
@@ -394,29 +403,25 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
     const bracketData = useMemo(() => {
       if (!currentChampionship) return null;
 
-      // ✅ CORREÇÃO: Usar função auxiliar para timestamp seguro
-      const timestamp = getSafeTimestamp(currentChampionship.updatedAt);
-      const cacheKey = `bracket-${currentChampionship.id}-${timestamp}`;
-
-      // ✅ CORREÇÃO: Verificação mais robusta do cache
-      let cached = null;
-      try {
-        cached = getCachedBracket(cacheKey);
-      } catch (error) {
-        console.warn("Erro ao acessar cache do bracket:", error);
-        cached = null;
-      }
-
-      if (cached) {
-        console.log("🚀 [BRACKET] Cache hit para:", cacheKey);
-        return cached;
-      }
-
-      console.log("🔄 [BRACKET] Recalculando dados para:", cacheKey);
+      // ✅ TEMPORÁRIO: Desabilitar cache para forçar regeneração
+      console.log(
+        "🔄 [BRACKET] FORÇANDO RECÁLCULO - Cache desabilitado temporariamente"
+      );
 
       const allKnockoutMatches = currentChampionship.groups
         .flatMap((group) => group.matches)
         .filter((match) => match.phase === "knockout");
+
+      console.log(
+        `� [DEBUG] Partidas knockout encontradas: ${allKnockoutMatches.length}`
+      );
+      allKnockoutMatches.forEach((match, index) => {
+        console.log(
+          `   ${index + 1}. ${match.player1?.name || "TBD"} vs ${
+            match.player2?.name || "TBD"
+          } (${match.round})`
+        );
+      });
 
       const mainMatches = allKnockoutMatches.filter(
         (m) => !m.round?.includes("2ª Div")
@@ -450,21 +455,10 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
         secondDivMatches,
       };
 
-      // ✅ CORREÇÃO: Tentar salvar no cache com tratamento de erro
-      try {
-        setCachedBracket(cacheKey, data);
-        console.log("💾 [BRACKET] Dados salvos no cache:", cacheKey);
-      } catch (error) {
-        console.warn("Erro ao salvar cache do bracket:", error);
-      }
+      console.log("✅ [DEBUG] Dados do bracket gerados:", data);
 
       return data;
-    }, [
-      currentChampionship,
-      getCachedBracket,
-      setCachedBracket,
-      getSafeTimestamp,
-    ]);
+    }, [currentChampionship]);
 
     // ✅ Callback memoizado para clique em partida
     const handleMatchClick = useCallback(

@@ -5,6 +5,7 @@ export interface Athlete {
   name: string;
   isSeeded?: boolean;
   seedNumber?: number;
+  isVirtual?: boolean; // Para atletas "BYE" virtuais
 }
 
 export interface SetResult {

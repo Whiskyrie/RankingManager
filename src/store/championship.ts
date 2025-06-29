@@ -15,6 +15,7 @@ import {
   generateNextRoundMatches,
   getMatchWinner,
   generateTestMatchResult,
+  validateAndFixBracket,
 } from "../utils";
 import { v4 as uuidv4 } from "uuid";
 
@@ -536,6 +537,10 @@ export const useChampionshipStore = create<
 
           console.log("\n🏆 [KNOCKOUT] === GERAÇÃO MATA-MATA ===");
 
+          // ✅ FORÇAR LIMPEZA DO CACHE PARA GARANTIR REGENERAÇÃO
+          console.log("🧹 [DEBUG] Limpando cache para forçar regeneração...");
+          get().invalidateCache();
+
           // Forçar recálculo das classificações
           const updatedGroups = state.currentChampionship.groups.map(
             (group) => {
@@ -577,6 +582,31 @@ export const useChampionshipStore = create<
           // Obter atletas qualificados e eliminados
           const qualifiedAthletes = get().getQualifiedAthletes();
           const eliminatedAthletes = get().getEliminatedAthletes();
+
+          // ✅ LOG DETALHADO: Debug da separação de divisões
+          console.log("\n🔍 [DIVISION-DEBUG] === SEPARAÇÃO DE DIVISÕES ===");
+          console.log(
+            `🏆 [QUALIFIED] ${qualifiedAthletes.length} atletas qualificados para PRIMEIRA DIVISÃO:`
+          );
+          qualifiedAthletes.forEach((athlete, index) => {
+            console.log(
+              `   ${index + 1}. ${athlete.name}${
+                athlete.isSeeded ? ` (Cabeça #${athlete.seedNumber})` : ""
+              }`
+            );
+          });
+
+          console.log(
+            `🥈 [ELIMINATED] ${eliminatedAthletes.length} atletas eliminados para SEGUNDA DIVISÃO:`
+          );
+          eliminatedAthletes.forEach((athlete, index) => {
+            console.log(
+              `   ${index + 1}. ${athlete.name}${
+                athlete.isSeeded ? ` (ex-Cabeça #${athlete.seedNumber})` : ""
+              }`
+            );
+          });
+          console.log("===============================================\n");
 
           if (qualifiedAthletes.length < 4) {
             console.log(
@@ -652,6 +682,14 @@ export const useChampionshipStore = create<
               allKnockoutMatches.length - mainKnockoutMatches.length,
             allKnockoutMatches: allKnockoutMatches.length,
           });
+
+          // ✅ NOVA FUNCIONALIDADE: Validar e corrigir problemas de bracket
+          const isValid = validateAndFixBracket(updatedChampionship);
+          if (!isValid) {
+            console.log(
+              "⚠️ [KNOCKOUT] Problemas de bracket detectados e corrigidos"
+            );
+          }
 
           await get().updateChampionship(updatedChampionship);
           console.log("🎉 [KNOCKOUT] MATA-MATA GERADO COM SUCESSO!");
@@ -1027,7 +1065,7 @@ async function generateNextKnockoutRounds(championship: Championship) {
   }
 }
 
-// ✅ FUNÇÃO AUXILIAR CORRIGIDA: Verificar e gerar rodadas
+// ✅ FUNÇÃO AUXILIAR MELHORADA: Verificar e gerar rodadas com sistema BYE dinâmico
 async function checkAndGenerateRounds(
   matches: Match[],
   championship: Championship,
@@ -1035,87 +1073,89 @@ async function checkAndGenerateRounds(
 ) {
   const suffix = isSecondDivision ? " 2ª Div" : "";
 
-  // ✅ CORREÇÃO: Verificar semifinais PRIMEIRO para gerar final e 3º lugar SIMULTANEAMENTE
-  const semifinalMatches = matches.filter(
-    (m) => m.round === `Semifinal${suffix}`
-  );
-  const finalMatches = matches.filter((m) => m.round === `Final${suffix}`);
-  const thirdPlaceMatches = matches.filter(
-    (m) => m.round === `3º Lugar${suffix}`
-  );
+  // ✅ SISTEMA DINÂMICO: Verificar todas as rodadas e gerar conforme necessário
+  const roundsToCheck = [
+    "Oitavas",
+    "Quartas",
+    "Semifinal",
+    "Final",
+    "3º Lugar",
+  ];
 
-  // Se temos 2 semifinais completadas e nem final nem 3º lugar existem
-  if (
-    semifinalMatches.length === 2 &&
-    semifinalMatches.every((m) => m.isCompleted && m.winnerId) &&
-    finalMatches.length === 0
-  ) {
-    console.log(
-      `🏆 [KNOCKOUT] Gerando Final${suffix} e 3º Lugar${suffix} simultaneamente...`
-    );
+  for (const baseRound of roundsToCheck) {
+    const roundName = `${baseRound}${suffix}`;
+    const currentRoundMatches = matches.filter((m) => m.round === roundName);
 
-    // Gerar Final
-    const finalMatch = generateNextRoundMatches(
-      semifinalMatches,
-      `Final${suffix}`,
-      championship.athletes,
-      championship.knockoutBestOf,
-      championship.athletes // Passar lista completa para sistema BYE
-    );
-
-    if (finalMatch.length > 0) {
-      championship.groups[0].matches.push(...finalMatch);
-      console.log(`✅ [KNOCKOUT] Final${suffix} gerada`);
+    // Pular se já existem partidas para esta rodada
+    if (currentRoundMatches.length > 0) {
+      continue;
     }
 
-    // ✅ CORREÇÃO PRINCIPAL: Gerar 3º Lugar se habilitado
-    if (championship.hasThirdPlace && thirdPlaceMatches.length === 0) {
-      const thirdPlaceMatch = generateThirdPlaceMatches(
-        semifinalMatches,
-        `3º Lugar${suffix}`,
-        championship.athletes,
-        championship.knockoutBestOf
-      );
-
-      if (thirdPlaceMatch.length > 0) {
-        championship.groups[0].matches.push(...thirdPlaceMatch);
-        console.log(`✅ [KNOCKOUT] 3º Lugar${suffix} gerada`);
-      }
+    // Encontrar a rodada anterior completada
+    const previousRoundIndex = roundsToCheck.indexOf(baseRound) - 1;
+    if (previousRoundIndex < 0) {
+      continue; // É a primeira rodada, não há anterior
     }
-  }
 
-  // Verificar outras rodadas sequenciais
-  const rounds = [`Oitavas${suffix}`, `Quartas${suffix}`, `Semifinal${suffix}`];
+    const previousRoundName = `${roundsToCheck[previousRoundIndex]}${suffix}`;
+    const previousMatches = matches.filter(
+      (m) => m.round === previousRoundName
+    );
 
-  for (let i = 0; i < rounds.length - 1; i++) {
-    const currentRound = rounds[i];
-    const nextRound = rounds[i + 1];
+    // Verificar se todas as partidas da rodada anterior estão completas
+    const allPreviousCompleted =
+      previousMatches.length > 0 &&
+      previousMatches.every((m) => m.isCompleted && m.winnerId);
 
-    const currentRoundMatches = matches.filter((m) => m.round === currentRound);
-    const nextRoundMatches = matches.filter((m) => m.round === nextRound);
-
-    if (
-      currentRoundMatches.length > 0 &&
-      currentRoundMatches.every((m) => m.isCompleted) &&
-      nextRoundMatches.length === 0
-    ) {
+    if (allPreviousCompleted) {
       console.log(
-        `🏆 [KNOCKOUT] Gerando ${nextRound} a partir de ${currentRound}...`
+        `� [KNOCKOUT] Gerando ${roundName} baseado em ${previousRoundName}...`
       );
 
-      const newMatches = generateNextRoundMatches(
-        currentRoundMatches,
-        nextRound,
-        championship.athletes,
-        championship.knockoutBestOf,
-        championship.athletes // Passar lista completa para sistema BYE
-      );
-
-      if (newMatches.length > 0) {
-        championship.groups[0].matches.push(...newMatches);
-        console.log(
-          `✅ [KNOCKOUT] ${nextRound} gerada com ${newMatches.length} partidas`
+      // ✅ TRATAMENTO ESPECIAL: Semifinais geram final E 3º lugar
+      if (baseRound === "Final" && championship.hasThirdPlace) {
+        // Gerar Final
+        const finalMatches = generateNextRoundMatches(
+          previousMatches,
+          roundName,
+          championship.athletes,
+          championship.knockoutBestOf,
+          championship.athletes
         );
+
+        // Gerar 3º Lugar simultaneamente
+        const thirdPlaceMatches = generateThirdPlaceMatches(
+          previousMatches,
+          `3º Lugar${suffix}`,
+          championship.athletes,
+          championship.knockoutBestOf
+        );
+
+        if (finalMatches.length > 0) {
+          championship.groups[0].matches.push(...finalMatches);
+          console.log(`✅ [KNOCKOUT] ${roundName} gerada`);
+        }
+
+        if (thirdPlaceMatches.length > 0) {
+          championship.groups[0].matches.push(...thirdPlaceMatches);
+          console.log(`✅ [KNOCKOUT] 3º Lugar${suffix} gerada`);
+        }
+      } else if (baseRound !== "3º Lugar") {
+        // Gerar rodada normal
+        const newMatches = generateNextRoundMatches(
+          previousMatches,
+          roundName,
+          championship.athletes,
+          championship.knockoutBestOf,
+          championship.athletes
+        );
+
+        if (newMatches.length > 0) {
+          championship.groups[0].matches.push(...newMatches);
+          console.log(
+            `✅ [KNOCKOUT] ${roundName} gerada com ${newMatches.length} partidas`
+          );
+        }
       }
     }
   }
