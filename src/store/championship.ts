@@ -15,7 +15,6 @@ import {
   generateNextRoundMatches,
   getMatchWinner,
   generateTestMatchResult,
-  validateAndFixBracket,
 } from "../utils";
 import { v4 as uuidv4 } from "uuid";
 
@@ -64,6 +63,36 @@ interface ChampionshipActions {
   // ✅ NOVO: Validação e correção CBTM/ITTF
   validateChampionshipCBTM: () => void;
   fixChampionshipCBTM: () => Promise<void>;
+
+  // ✅ NOVAS FUNCIONALIDADES: Monitoramento e relatórios da segunda divisão
+  monitorAndFixSecondDivision: () => Promise<null | {
+    progress: any;
+    analysis: any;
+    autoFixResult: any;
+  }>;
+  generateSecondDivisionReport: () => null | {
+    overview: {
+      isEnabled: boolean;
+      totalMatches: number;
+      completedMatches: number;
+      progressPercentage: number;
+      eliminatedCount: number;
+      activeAthletes: number;
+    };
+    rounds: {
+      [key: string]: { total: number; completed: number };
+    };
+    medalists: {
+      champion: string | null;
+      runnerUp: string | null;
+      thirdPlace: string | null;
+    };
+    structure: {
+      rounds: string[];
+      hasThirdPlace: boolean;
+      isComplete: boolean;
+    };
+  };
 }
 
 export const useChampionshipStore = create<
@@ -683,14 +712,6 @@ export const useChampionshipStore = create<
             allKnockoutMatches: allKnockoutMatches.length,
           });
 
-          // ✅ NOVA FUNCIONALIDADE: Validar e corrigir problemas de bracket
-          const isValid = validateAndFixBracket(updatedChampionship);
-          if (!isValid) {
-            console.log(
-              "⚠️ [KNOCKOUT] Problemas de bracket detectados e corrigidos"
-            );
-          }
-
           await get().updateChampionship(updatedChampionship);
           console.log("🎉 [KNOCKOUT] MATA-MATA GERADO COM SUCESSO!");
         },
@@ -997,6 +1018,181 @@ export const useChampionshipStore = create<
             console.error("❌ [CBTM-FIXES] Erro ao aplicar correções:", error);
           }
         },
+
+        // ✅ NOVA FUNCIONALIDADE: Monitor e auto-correção da segunda divisão
+        monitorAndFixSecondDivision: async () => {
+          const state = get();
+          if (!state.currentChampionship) return null;
+
+          console.log(
+            "🔍 [MONITOR] Iniciando monitoramento da segunda divisão..."
+          );
+
+          const eliminatedAthletes = get().getEliminatedAthletes();
+          const allKnockoutMatches = state.currentChampionship.groups
+            .flatMap((group) => group.matches)
+            .filter((match) => match.phase === "knockout");
+
+          // Importar funções avançadas
+          const {
+            monitorSecondDivisionProgress,
+            analyzeSecondDivisionPerformance,
+            autoFixSecondDivision,
+          } = await import("../utils/index");
+
+          // Monitorar progresso
+          const progress = monitorSecondDivisionProgress(allKnockoutMatches);
+          console.log("📊 [MONITOR] Progresso segunda divisão:", progress);
+
+          // Analisar performance
+          const secondDivMatches = allKnockoutMatches.filter((m) =>
+            m.round?.includes("2ª Div")
+          );
+          const analysis = analyzeSecondDivisionPerformance(
+            secondDivMatches,
+            eliminatedAthletes
+          );
+          console.log("📈 [ANALYSIS] Análise de performance:", analysis);
+
+          // Auto-correção se necessário
+          let autoFixResult = null;
+          if (!analysis.bracketHealth.isValid) {
+            console.log(
+              "🔧 [AUTO-FIX] Problemas detectados, iniciando auto-correção..."
+            );
+            autoFixResult = autoFixSecondDivision(
+              state.currentChampionship,
+              eliminatedAthletes
+            );
+
+            if (autoFixResult.fixed && autoFixResult.newMatches.length > 0) {
+              // Aplicar correções
+              const updatedGroups = state.currentChampionship.groups.map(
+                (group, index) =>
+                  index === 0
+                    ? {
+                        ...group,
+                        matches: [
+                          ...group.matches,
+                          ...autoFixResult.newMatches,
+                        ],
+                      }
+                    : group
+              );
+
+              const updatedChampionship = {
+                ...state.currentChampionship,
+                groups: updatedGroups,
+                updatedAt: new Date(),
+              };
+
+              await get().updateChampionship(updatedChampionship);
+              console.log("✅ [AUTO-FIX] Correções aplicadas com sucesso");
+            }
+          }
+
+          return {
+            progress,
+            analysis,
+            autoFixResult,
+          };
+        },
+
+        // ✅ NOVA FUNCIONALIDADE: Relatório detalhado da segunda divisão
+        generateSecondDivisionReport: () => {
+          const state = get();
+          if (!state.currentChampionship) return null;
+
+          const eliminatedAthletes = get().getEliminatedAthletes();
+          const allKnockoutMatches = state.currentChampionship.groups
+            .flatMap((group) => group.matches)
+            .filter((match) => match.phase === "knockout");
+
+          const secondDivMatches = allKnockoutMatches.filter((m) =>
+            m.round?.includes("2ª Div")
+          );
+
+          // Estatísticas básicas
+          const totalMatches = secondDivMatches.length;
+          const completedMatches = secondDivMatches.filter(
+            (m) => m.isCompleted
+          ).length;
+          const progressPercentage =
+            totalMatches > 0 ? (completedMatches / totalMatches) * 100 : 0;
+
+          // Atletas por status
+          const athletesInMatches = new Set(
+            secondDivMatches.flatMap((m) => [m.player1Id, m.player2Id])
+          );
+          const activeAthletes = eliminatedAthletes.filter((a) =>
+            athletesInMatches.has(a.id)
+          );
+          const eliminatedCount = eliminatedAthletes.length;
+
+          // Rodadas e estrutura
+          const roundsData: {
+            [key: string]: { total: number; completed: number };
+          } = {};
+          secondDivMatches.forEach((match) => {
+            const round = match.round || "Indefinido";
+            if (!roundsData[round]) {
+              roundsData[round] = { total: 0, completed: 0 };
+            }
+            roundsData[round].total++;
+            if (match.isCompleted) {
+              roundsData[round].completed++;
+            }
+          });
+
+          // Identificar campeões da segunda divisão
+          const finalMatch = secondDivMatches.find(
+            (m) => m.round === "Final 2ª Div"
+          );
+          const champion = finalMatch?.isCompleted ? finalMatch.winnerId : null;
+          const runnerUp =
+            finalMatch?.isCompleted && finalMatch.winnerId
+              ? finalMatch.player1Id === finalMatch.winnerId
+                ? finalMatch.player2Id
+                : finalMatch.player1Id
+              : null;
+
+          const thirdPlaceMatch = secondDivMatches.find(
+            (m) => m.round === "3º Lugar 2ª Div"
+          );
+          const thirdPlace = thirdPlaceMatch?.isCompleted
+            ? thirdPlaceMatch.winnerId
+            : null;
+
+          return {
+            overview: {
+              isEnabled: state.currentChampionship.hasRepechage,
+              totalMatches,
+              completedMatches,
+              progressPercentage,
+              eliminatedCount,
+              activeAthletes: activeAthletes.length,
+            },
+            rounds: roundsData,
+            medalists: {
+              champion: champion
+                ? eliminatedAthletes.find((a) => a.id === champion)?.name
+                : null,
+              runnerUp: runnerUp
+                ? eliminatedAthletes.find((a) => a.id === runnerUp)?.name
+                : null,
+              thirdPlace: thirdPlace
+                ? eliminatedAthletes.find((a) => a.id === thirdPlace)?.name
+                : null,
+            },
+            structure: {
+              rounds: Object.keys(roundsData),
+              hasThirdPlace: state.currentChampionship.hasThirdPlace,
+              isComplete: progressPercentage === 100,
+            },
+          };
+        },
+
+        // ...existing code...
       }),
       {
         name: "championship-storage",

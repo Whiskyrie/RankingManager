@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Trophy, Crown, Medal, Target, Award } from "lucide-react";
 import { Match } from "../../types";
 import { getAthleteDisplayName, isRealAthlete, matchHasBye } from "../../utils";
+import { SecondDivisionStatus } from "./SecondDivisionStatus";
 
 interface BracketVisualizationProps {
   onMatchClick?: (match: Match) => void;
@@ -323,7 +324,7 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
   ({ onMatchClick }) => {
     // ✅ CORREÇÃO: Desestruturação mais segura com fallbacks
     const store = useChampionshipStore();
-    const { currentChampionship } = store;
+    const { currentChampionship, getEliminatedAthletes } = store;
 
     // ✅ CORREÇÃO: Memoizar funções do store para evitar recriação
     const getCachedBracket = useMemo(
@@ -531,11 +532,17 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
                   Chave de Repescagem - Segunda Divisão
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent className="p-6 space-y-6">
                 <BracketDisplay
                   bracket={secondBracket}
                   isSecondDivision={true}
                   onMatchClick={handleMatchClick}
+                />
+
+                {/* Status das correções da segunda divisão */}
+                <SecondDivisionStatus
+                  eliminatedAthletes={getEliminatedAthletes()}
+                  secondDivMatches={secondDivMatches}
                 />
               </CardContent>
             </Card>

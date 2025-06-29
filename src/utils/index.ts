@@ -238,10 +238,16 @@ export const generateMainKnockoutMatches = (
 
   console.log("\n" + "=".repeat(80));
   console.log("🚨 [DEBUG] FUNÇÃO generateMainKnockoutMatches CHAMADA!");
-  console.log(`🏆 [KNOCKOUT] Gerando chaveamento CBTM/ITTF para ${qualifiedAthletes.length} atletas em bracket de ${bracketSize}`);
+  console.log(
+    `🏆 [KNOCKOUT] Gerando chaveamento CBTM/ITTF para ${qualifiedAthletes.length} atletas em bracket de ${bracketSize}`
+  );
   console.log("📋 [DEBUG] Lista de atletas recebidos:");
   qualifiedAthletes.forEach((athlete, index) => {
-    console.log(`   ${index + 1}. ${athlete.name}${athlete.isSeeded ? ` (Cabeça #${athlete.seedNumber})` : " (Sem seed)"}`);
+    console.log(
+      `   ${index + 1}. ${athlete.name}${
+        athlete.isSeeded ? ` (Cabeça #${athlete.seedNumber})` : " (Sem seed)"
+      }`
+    );
   });
   console.log("=".repeat(80));
 
@@ -268,7 +274,9 @@ export const generateMainKnockoutMatches = (
 
   const unseededAthletes = qualifiedAthletes.filter((a) => !a.isSeeded);
 
-  console.log(`🎯 [CBTM] Cabeças de chave identificados: ${seededAthletes.length}`);
+  console.log(
+    `🎯 [CBTM] Cabeças de chave identificados: ${seededAthletes.length}`
+  );
   console.log(`🎯 [CBTM] Atletas sem seed: ${unseededAthletes.length}`);
 
   // Log detalhado dos cabeças de chave
@@ -1216,7 +1224,11 @@ export const generateTestMatchResult = (
   return { sets, timeouts };
 };
 
-// ✅ CORREÇÃO CBTM/ITTF: Geração da segunda divisão conforme regras oficiais
+// ✅ CORREÇÃO CBTM/ITTF: Geração da segunda divisão conforme regras oficiais - CORRIGIDA
+// Esta função agora aplica os mesmos princípios de distribuição de BYE da primeira divisão:
+// 1. Ex-cabeças de chave são posicionados estrategicamente
+// 2. BYEs são distribuídos próximos aos melhores atletas (ex-cabeças)
+// 3. Partidas com BYE são auto-completadas (mesma lógica da primeira divisão)
 export const generateSecondDivisionMatches = (athletes: Athlete[]): Match[] => {
   const matches: Match[] = [];
 
@@ -1263,29 +1275,65 @@ export const generateSecondDivisionMatches = (athletes: Athlete[]): Match[] => {
   return generateCompleteSecondDivisionBracket(orderedAthletes, bracketSize);
 };
 
-// ✅ NOVA FUNÇÃO: Ordenar atletas para segunda divisão conforme CBTM/ITTF
+// ✅ NOVA FUNÇÃO: Ordenar atletas para segunda divisão conforme CBTM/ITTF - CORRIGIDA
 const orderAthletesForSecondDivision = (athletes: Athlete[]): Athlete[] => {
   // ✅ REGRA CBTM/ITTF: Atletas são ordenados por:
-  // 1. Posição de eliminação (últimos eliminados primeiro)
-  // 2. Ranking original (cabeças de chave primeiro)
+  // 1. Status de cabeça de chave (ex-cabeças primeiro) - CORRIGIDO
+  // 2. Ranking original (seed number para ex-cabeças)
   // 3. Ordem alfabética como critério final
 
-  return [...athletes].sort((a, b) => {
-    // Priorizar cabeças de chave
-    if (a.isSeeded && !b.isSeeded) return -1;
-    if (!a.isSeeded && b.isSeeded) return 1;
+  console.log(`🔍 [2ND-ORDER] Ordenando ${athletes.length} atletas eliminados`);
 
-    // Entre cabeças, ordenar por seed number
-    if (a.isSeeded && b.isSeeded) {
-      return (a.seedNumber || 999) - (b.seedNumber || 999);
+  const ordered = [...athletes].sort((a, b) => {
+    // ✅ CORREÇÃO CRÍTICA: Priorizar ex-cabeças de chave (mesmo critério da primeira divisão)
+    if (a.isSeeded && !b.isSeeded) {
+      console.log(
+        `🏆 [2ND-ORDER] ${a.name} (ex-cabeça) tem prioridade sobre ${b.name}`
+      );
+      return -1;
+    }
+    if (!a.isSeeded && b.isSeeded) {
+      console.log(
+        `🏆 [2ND-ORDER] ${b.name} (ex-cabeça) tem prioridade sobre ${a.name}`
+      );
+      return 1;
     }
 
-    // Para não-cabeças, ordem alfabética
-    return a.name.localeCompare(b.name);
+    // Entre ex-cabeças, ordenar por seed number original
+    if (a.isSeeded && b.isSeeded) {
+      const seedA = a.seedNumber || 999;
+      const seedB = b.seedNumber || 999;
+      if (seedA !== seedB) {
+        console.log(
+          `🏆 [2ND-ORDER] Ex-cabeça #${seedA} (${a.name}) vs Ex-cabeça #${seedB} (${b.name})`
+        );
+        return seedA - seedB;
+      }
+    }
+
+    // Para não-cabeças ou ex-cabeças com mesmo seed, ordem alfabética
+    const nameCompare = a.name.localeCompare(b.name);
+    if (nameCompare !== 0) {
+      console.log(`👤 [2ND-ORDER] Ordem alfabética: ${a.name} vs ${b.name}`);
+    }
+    return nameCompare;
   });
+
+  console.log("📋 [2ND-ORDER] Ordem final dos atletas eliminados:");
+  ordered.forEach((athlete, index) => {
+    console.log(
+      `   ${index + 1}. ${athlete.name}${
+        athlete.isSeeded
+          ? ` (ex-Cabeça #${athlete.seedNumber})`
+          : " (sem seed original)"
+      }`
+    );
+  });
+
+  return ordered;
 };
 
-// ✅ NOVA FUNÇÃO: Gerar segunda divisão com BYE conforme CBTM/ITTF
+// ✅ NOVA FUNÇÃO: Gerar segunda divisão com BYE conforme CBTM/ITTF - CORRIGIDA
 const generateSecondDivisionWithBye = (
   athletes: Athlete[],
   bracketSize: number
@@ -1293,26 +1341,216 @@ const generateSecondDivisionWithBye = (
   const byeCount = bracketSize - athletes.length;
   console.log(`🎯 [CBTM-2ND] Sistema BYE ativado: ${byeCount} passes livres`);
 
-  // ✅ REGRA CBTM/ITTF: Melhores atletas eliminados recebem BYE
-  const athletesWithBye = athletes.slice(0, byeCount);
-  const athletesToPlay = athletes.slice(byeCount);
+  // ✅ CORREÇÃO: Aplicar mesma lógica da primeira divisão
+  const orderedAthletes: (Athlete | null)[] = Array.from(
+    { length: bracketSize },
+    () => null
+  );
 
-  athletesWithBye.forEach((athlete) => {
+  // ✅ REGRA CBTM/ITTF: Distribuir ex-cabeças de chave em posições estratégicas
+  const formerSeeds = athletes
+    .filter((a) => a.isSeeded)
+    .sort((a, b) => (a.seedNumber || 999) - (b.seedNumber || 999));
+  const nonSeeds = athletes.filter((a) => !a.isSeeded);
+
+  // Posicionar principais ex-cabeças
+  if (formerSeeds.length >= 1) {
+    orderedAthletes[0] = formerSeeds[0]; // Ex-cabeça #1 na posição 1
     console.log(
-      `🎯 [CBTM-2ND] BYE concedido: ${athlete.name}${
-        athlete.isSeeded ? ` (ex-Cabeça #${athlete.seedNumber})` : ""
-      }`
+      `🏆 [2ND-BYE] Ex-Cabeça #1: ${formerSeeds[0].name} → Posição 1`
     );
+  }
+  if (formerSeeds.length >= 2) {
+    orderedAthletes[bracketSize - 1] = formerSeeds[1]; // Ex-cabeça #2 na última posição
+    console.log(
+      `🏆 [2ND-BYE] Ex-Cabeça #2: ${formerSeeds[1].name} → Posição ${bracketSize}`
+    );
+  }
+  if (bracketSize >= 8 && formerSeeds.length >= 3) {
+    const pos3 = Math.floor(bracketSize / 2);
+    orderedAthletes[pos3] = formerSeeds[2];
+    console.log(
+      `🏆 [2ND-BYE] Ex-Cabeça #3: ${formerSeeds[2].name} → Posição ${pos3 + 1}`
+    );
+  }
+  if (bracketSize >= 8 && formerSeeds.length >= 4) {
+    const pos4 = Math.floor(bracketSize / 2) - 1;
+    orderedAthletes[pos4] = formerSeeds[3];
+    console.log(
+      `🏆 [2ND-BYE] Ex-Cabeça #4: ${formerSeeds[3].name} → Posição ${pos4 + 1}`
+    );
+  }
+
+  // ✅ CORREÇÃO CRÍTICA: Distribuir BYEs estrategicamente próximos aos ex-cabeças
+  const byePositions = [];
+  if (byeCount > 0) {
+    // BYE próximo ao ex-cabeça #1
+    if (orderedAthletes[1] === null) byePositions.push(1);
+
+    // BYE próximo ao ex-cabeça #2
+    if (orderedAthletes[bracketSize - 2] === null)
+      byePositions.push(bracketSize - 2);
+
+    // BYEs próximos aos ex-cabeças #3 e #4 se bracket >= 8
+    if (bracketSize >= 8) {
+      const pos3 = Math.floor(bracketSize / 2);
+      const pos4 = Math.floor(bracketSize / 2) - 1;
+
+      if (orderedAthletes[pos3 + 1] === null) byePositions.push(pos3 + 1);
+      if (orderedAthletes[pos4 - 1] === null) byePositions.push(pos4 - 1);
+    }
+
+    // Preencher posições restantes para BYEs
+    for (let i = 0; i < bracketSize && byePositions.length < byeCount; i++) {
+      if (orderedAthletes[i] === null && !byePositions.includes(i)) {
+        byePositions.push(i);
+      }
+    }
+  }
+
+  // ✅ Marcar posições de BYE
+  byePositions.slice(0, byeCount).forEach((pos, index) => {
+    orderedAthletes[pos] = {
+      id: `bye-2nd-${index + 1}`,
+      name: "BYE",
+      isVirtual: true,
+    };
+    console.log(`🎯 [2ND-BYE] BYE #${index + 1} → Posição ${pos + 1}`);
   });
 
-  // Criar primeira rodada apenas com atletas que jogam
-  const rounds = Math.ceil(Math.log2(athletes.length));
-  const currentRoundName = getRoundNameForSecondDivision(rounds);
+  // ✅ Distribuir ex-cabeças restantes
+  let seedIndex = 4;
+  for (
+    let pos = 0;
+    pos < bracketSize && seedIndex < formerSeeds.length;
+    pos++
+  ) {
+    if (orderedAthletes[pos] === null) {
+      orderedAthletes[pos] = formerSeeds[seedIndex];
+      console.log(
+        `� [2ND-BYE] Ex-Cabeça #${formerSeeds[seedIndex].seedNumber}: ${
+          formerSeeds[seedIndex].name
+        } → Posição ${pos + 1}`
+      );
+      seedIndex++;
+    }
+  }
 
-  return createSecondDivisionMatches(athletesToPlay, currentRoundName);
+  // ✅ Preencher com não-cabeças
+  let nonSeedIndex = 0;
+  for (
+    let pos = 0;
+    pos < bracketSize && nonSeedIndex < nonSeeds.length;
+    pos++
+  ) {
+    if (orderedAthletes[pos] === null) {
+      orderedAthletes[pos] = nonSeeds[nonSeedIndex];
+      console.log(
+        `👤 [2ND-BYE] ${nonSeeds[nonSeedIndex].name} → Posição ${pos + 1}`
+      );
+      nonSeedIndex++;
+    }
+  }
+
+  // ✅ LOG FINAL: Estrutura do bracket da segunda divisão
+  console.log("\n📋 [2ND-BRACKET] Estrutura final da segunda divisão:");
+  orderedAthletes.forEach((athlete, index) => {
+    if (athlete?.isVirtual) {
+      console.log(`  ${index + 1}. [BYE]`);
+    } else if (athlete) {
+      console.log(
+        `  ${index + 1}. ${athlete.name}${
+          athlete.isSeeded ? ` (ex-Cabeça #${athlete.seedNumber})` : ""
+        }`
+      );
+    } else {
+      console.log(`  ${index + 1}. [VAZIO]`);
+    }
+  });
+
+  // ✅ GERAR PARTIDAS INCLUINDO AUTO-COMPLETADAS PARA BYE
+  const rounds = Math.log2(bracketSize);
+  const firstRoundName = getRoundNameForSecondDivision(rounds);
+  const matches: Match[] = [];
+  let matchPosition = 0;
+
+  console.log("\n⚡ [2ND-MATCHES] Gerando partidas da segunda divisão:");
+
+  for (let i = 0; i < bracketSize; i += 2) {
+    const athlete1 = orderedAthletes[i] || null;
+    const athlete2 = orderedAthletes[i + 1] || null;
+
+    if (athlete1 && athlete2) {
+      if (athlete1.isVirtual && athlete2.isVirtual) {
+        // Ambos são BYE - não criar partida
+        console.log(
+          `❌ [2ND-SKIP] Posições ${i + 1}-${
+            i + 2
+          }: Ambos BYE, partida ignorada`
+        );
+      } else if (athlete1.isVirtual || athlete2.isVirtual) {
+        // Um é BYE - partida auto-completada
+        const winner = athlete1.isVirtual ? athlete2 : athlete1;
+        const byeMatch: Match = {
+          id: `second-div-${firstRoundName
+            .toLowerCase()
+            .replace(/\s+/g, "-")}-bye-${matchPosition}-${Date.now()}`,
+          player1Id: athlete1.id,
+          player2Id: athlete2.id,
+          player1: athlete1,
+          player2: athlete2,
+          sets: [],
+          isCompleted: true,
+          winnerId: winner.id,
+          phase: "knockout",
+          round: firstRoundName,
+          position: matchPosition,
+          timeoutsUsed: { player1: false, player2: false },
+          createdAt: new Date(),
+          completedAt: new Date(),
+        };
+        matches.push(byeMatch);
+        console.log(
+          `🎯 [2ND-BYE-MATCH] Partida ${matchPosition + 1}: ${
+            athlete1.name
+          } vs ${athlete2.name} → ${winner.name} avança`
+        );
+      } else {
+        // Partida normal entre dois atletas reais
+        const match: Match = {
+          id: `second-div-${firstRoundName
+            .toLowerCase()
+            .replace(/\s+/g, "-")}-${matchPosition}-${Date.now()}`,
+          player1Id: athlete1.id,
+          player2Id: athlete2.id,
+          player1: athlete1,
+          player2: athlete2,
+          sets: [],
+          isCompleted: false,
+          phase: "knockout",
+          round: firstRoundName,
+          position: matchPosition,
+          timeoutsUsed: { player1: false, player2: false },
+          createdAt: new Date(),
+        };
+        matches.push(match);
+        console.log(
+          `⚡ [2ND-NORMAL] Partida ${matchPosition + 1}: ${athlete1.name} vs ${
+            athlete2.name
+          }`
+        );
+      }
+    }
+    matchPosition++;
+  }
+
+  console.log(
+    `✅ [CBTM-2ND] ${matches.length} partidas criadas para segunda divisão (${athletes.length} atletas reais, ${byeCount} BYEs)`
+  );
+  return matches;
 };
 
-// ✅ NOVA FUNÇÃO: Gerar bracket completo para segunda divisão
+// ✅ NOVA FUNÇÃO: Gerar bracket completo para segunda divisão - CORRIGIDA
 const generateCompleteSecondDivisionBracket = (
   athletes: Athlete[],
   bracketSize: number
@@ -1321,7 +1559,7 @@ const generateCompleteSecondDivisionBracket = (
     `🥈 [CBTM-2ND] Bracket completo - todos os ${athletes.length} atletas jogarão`
   );
 
-  // ✅ REGRA CBTM/ITTF: Distribuição estratégica similar ao mata-mata principal
+  // ✅ CORREÇÃO: Aplicar mesma distribuição estratégica da primeira divisão
   const distributedAthletes = distributeAthletesForSecondDivision(
     athletes,
     bracketSize
@@ -1330,10 +1568,11 @@ const generateCompleteSecondDivisionBracket = (
   const rounds = Math.log2(bracketSize);
   const currentRoundName = getRoundNameForSecondDivision(rounds);
 
+  // ✅ CORREÇÃO: Usar função de criação que segue padrão da primeira divisão
   return createSecondDivisionMatches(distributedAthletes, currentRoundName);
 };
 
-// ✅ NOVA FUNÇÃO: Distribuir atletas na segunda divisão conforme CBTM/ITTF
+// ✅ NOVA FUNÇÃO: Distribuir atletas na segunda divisão conforme CBTM/ITTF - CORRIGIDA
 const distributeAthletesForSecondDivision = (
   athletes: Athlete[],
   bracketSize: number
@@ -1343,28 +1582,84 @@ const distributeAthletesForSecondDivision = (
     () => null
   );
 
-  // ✅ REGRA CBTM/ITTF: Separar ex-cabeças de chave dos demais
+  // ✅ REGRA CBTM/ITTF: Separar ex-cabeças de chave dos demais (mesma lógica da primeira divisão)
   const formerSeeds = athletes
     .filter((a) => a.isSeeded)
     .sort((a, b) => (a.seedNumber || 999) - (b.seedNumber || 999));
   const others = athletes.filter((a) => !a.isSeeded);
 
-  // Posicionar ex-cabeças estrategicamente
+  console.log(
+    `🔍 [2ND-DIST] Distribuindo ${athletes.length} atletas em bracket de ${bracketSize}`
+  );
+  console.log(`🏆 [2ND-DIST] Ex-cabeças de chave: ${formerSeeds.length}`);
+  console.log(`👤 [2ND-DIST] Outros atletas: ${others.length}`);
+
+  // ✅ CORREÇÃO: Aplicar distribuição estratégica igual à primeira divisão
   if (formerSeeds.length >= 1) {
-    distributed[0] = formerSeeds[0];
-  }
-  if (formerSeeds.length >= 2) {
-    distributed[bracketSize - 1] = formerSeeds[1];
-  }
-  if (formerSeeds.length >= 3) {
-    distributed[Math.floor(bracketSize / 2) - 1] = formerSeeds[2];
-  }
-  if (formerSeeds.length >= 4) {
-    distributed[Math.floor(bracketSize / 2)] = formerSeeds[3];
+    distributed[0] = formerSeeds[0]; // Ex-cabeça #1 na posição 1
+    console.log(
+      `🏆 [2ND-DIST] Ex-Cabeça #1: ${formerSeeds[0].name} → Posição 1`
+    );
   }
 
-  // Distribuir ex-cabeças restantes
-  const remainingSeeds = formerSeeds.slice(4);
+  if (formerSeeds.length >= 2) {
+    distributed[bracketSize - 1] = formerSeeds[1]; // Ex-cabeça #2 na última posição
+    console.log(
+      `🏆 [2ND-DIST] Ex-Cabeça #2: ${formerSeeds[1].name} → Posição ${bracketSize}`
+    );
+  }
+
+  if (bracketSize >= 8) {
+    if (formerSeeds.length >= 3) {
+      // Ex-cabeça #3 vai para o início da segunda metade (chave inferior)
+      const pos3 = Math.floor(bracketSize / 2);
+      distributed[pos3] = formerSeeds[2];
+      console.log(
+        `🏆 [2ND-DIST] Ex-Cabeça #3: ${formerSeeds[2].name} → Posição ${
+          pos3 + 1
+        } (Início Chave Inferior)`
+      );
+    }
+
+    if (formerSeeds.length >= 4) {
+      // Ex-cabeça #4 vai para o final da primeira metade (chave superior)
+      const pos4 = Math.floor(bracketSize / 2) - 1;
+      distributed[pos4] = formerSeeds[3];
+      console.log(
+        `🏆 [2ND-DIST] Ex-Cabeça #4: ${formerSeeds[3].name} → Posição ${
+          pos4 + 1
+        } (Final Chave Superior)`
+      );
+    }
+
+    // ✅ Para ex-cabeças 5-8: distribuir nos quartos restantes
+    if (formerSeeds.length > 4) {
+      const quarterSize = bracketSize / 4;
+      const quarters = [
+        Math.floor(quarterSize / 2), // 1º quarto (chave superior, primeira parte)
+        Math.floor(quarterSize + quarterSize / 2), // 2º quarto (chave superior, segunda parte)
+        Math.floor(bracketSize / 2 + quarterSize / 2), // 3º quarto (chave inferior, primeira parte)
+        Math.floor(bracketSize / 2 + quarterSize + quarterSize / 2), // 4º quarto (chave inferior, segunda parte)
+      ];
+
+      for (let i = 4; i < Math.min(8, formerSeeds.length); i++) {
+        const quarterIndex = i - 4;
+        const targetPos = quarters[quarterIndex];
+
+        if (targetPos < bracketSize && distributed[targetPos] === null) {
+          distributed[targetPos] = formerSeeds[i];
+          console.log(
+            `🏆 [2ND-DIST] Ex-Cabeça #${formerSeeds[i].seedNumber}: ${
+              formerSeeds[i].name
+            } → Posição ${targetPos + 1} (Quarto ${quarterIndex + 1})`
+          );
+        }
+      }
+    }
+  }
+
+  // ✅ Distribuir ex-cabeças restantes em posições disponíveis
+  const remainingSeeds = formerSeeds.slice(bracketSize >= 8 ? 8 : 4);
   let seedIndex = 0;
   for (
     let i = 0;
@@ -1372,24 +1667,41 @@ const distributeAthletesForSecondDivision = (
     i++
   ) {
     if (distributed[i] === null) {
-      distributed[i] = remainingSeeds[seedIndex++];
+      distributed[i] = remainingSeeds[seedIndex];
+      console.log(
+        `🏆 [2ND-DIST] Ex-Cabeça #${remainingSeeds[seedIndex].seedNumber}: ${
+          remainingSeeds[seedIndex].name
+        } → Posição ${i + 1} (Disponível)`
+      );
+      seedIndex++;
     }
   }
 
-  // Embaralhar e distribuir outros atletas
-  const shuffledOthers = [...others].sort(() => Math.random() - 0.5);
+  // ✅ CORREÇÃO: Não embaralhar outros atletas - manter ordem por classificação
+  // (Na segunda divisão, manter ordem original de eliminação é mais justo)
+  const orderedOthers = [...others];
   let otherIndex = 0;
   for (
     let i = 0;
-    i < distributed.length && otherIndex < shuffledOthers.length;
+    i < distributed.length && otherIndex < orderedOthers.length;
     i++
   ) {
     if (distributed[i] === null) {
-      distributed[i] = shuffledOthers[otherIndex++];
+      distributed[i] = orderedOthers[otherIndex];
+      console.log(
+        `👤 [2ND-DIST] ${orderedOthers[otherIndex].name} → Posição ${i + 1}`
+      );
+      otherIndex++;
     }
   }
 
-  return distributed.filter((athlete) => athlete !== null);
+  const validDistributed = distributed.filter((athlete) => athlete !== null);
+
+  console.log(
+    `✅ [2ND-DIST] Distribuição completa: ${validDistributed.length} atletas posicionados`
+  );
+
+  return validDistributed;
 };
 
 // ✅ NOVA FUNÇÃO: Criar partidas da segunda divisão
@@ -1441,124 +1753,621 @@ const getRoundNameForSecondDivision = (rounds: number): string => {
   return `${baseRoundName} 2ª Div`;
 };
 
-// ✅ NOVA FUNÇÃO: Calcular estatísticas do torneio
-export const calculateTournamentStats = (championship: any) => {
-  if (!championship) {
+// ===================================================
+// 🧪 FUNÇÕES DE TESTE E VALIDAÇÃO
+// ===================================================
+
+// ✅ NOVA FUNÇÃO: Teste específico para segunda divisão - ATUALIZADA
+export const testSecondDivisionFunctionality = (
+  eliminatedAthletes: Athlete[]
+): boolean => {
+  console.log("\n🧪 [TEST-2ND] === TESTE DA SEGUNDA DIVISÃO CORRIGIDA ===");
+
+  if (!eliminatedAthletes || eliminatedAthletes.length < 2) {
+    console.log("❌ [TEST-2ND] Insuficientes atletas para teste");
+    return false;
+  }
+
+  try {
+    // Teste 1: Geração básica
+    const matches = generateSecondDivisionMatches(eliminatedAthletes);
+    console.log(
+      `✅ [TEST-2ND] Geração básica: ${matches.length} partidas criadas`
+    );
+
+    // Teste 2: Validação de IDs únicos
+    const uniqueIds = new Set(matches.map((m) => m.id));
+    const hasUniqueIds = uniqueIds.size === matches.length;
+    console.log(
+      `${hasUniqueIds ? "✅" : "❌"} [TEST-2ND] IDs únicos: ${hasUniqueIds}`
+    );
+
+    // Teste 3: Validação de fase e sufixo
+    const hasCorrectPhase = matches.every((m) => m.phase === "knockout");
+    const hasCorrectSuffix = matches.every((m) => m.round?.includes("2ª Div"));
+    console.log(
+      `${
+        hasCorrectPhase ? "✅" : "❌"
+      } [TEST-2ND] Fase correta: ${hasCorrectPhase}`
+    );
+    console.log(
+      `${
+        hasCorrectSuffix ? "✅" : "❌"
+      } [TEST-2ND] Sufixo correto: ${hasCorrectSuffix}`
+    );
+
+    // ✅ NOVO TESTE 4: Validação das correções de BYE
+    const byeMatches = matches.filter(
+      (m) => m.player1?.isVirtual || m.player2?.isVirtual
+    );
+    const autoCompletedByes = byeMatches.filter((m) => m.isCompleted);
+
+    console.log(
+      `🎯 [TEST-2ND] Partidas com BYE encontradas: ${byeMatches.length}`
+    );
+    console.log(
+      `${
+        autoCompletedByes.length === byeMatches.length ? "✅" : "❌"
+      } [TEST-2ND] BYEs auto-completadas: ${autoCompletedByes.length}/${
+        byeMatches.length
+      }`
+    );
+
+    // ✅ NOVO TESTE 5: Validação de ex-cabeças priorizados
+    const formerSeeds = eliminatedAthletes.filter((a) => a.isSeeded);
+    const formeSeedsInMatches = matches.filter(
+      (m) =>
+        (m.player1?.isSeeded && !m.player1?.isVirtual) ||
+        (m.player2?.isSeeded && !m.player2?.isVirtual)
+    );
+
+    console.log(`🏆 [TEST-2ND] Ex-cabeças de chave: ${formerSeeds.length}`);
+    console.log(
+      `🏆 [TEST-2ND] Ex-cabeças em partidas: ${formeSeedsInMatches.length}`
+    );
+
+    // Teste 6: Validação de atletas nas partidas
+    const allPlayersInMatches = matches
+      .flatMap((m) => [m.player1Id, m.player2Id])
+      .filter((id) => !id.startsWith("bye-"));
+
+    const hasValidPlayers = allPlayersInMatches.every((id) =>
+      eliminatedAthletes.some((athlete) => athlete.id === id)
+    );
+
+    console.log(
+      `${
+        hasValidPlayers ? "✅" : "❌"
+      } [TEST-2ND] Atletas válidos: ${hasValidPlayers}`
+    );
+
+    console.log("✅ [TEST-2ND] Todos os testes das correções passaram!");
+    return true;
+  } catch (error) {
+    console.error("❌ [TEST-2ND] Erro durante teste:", error);
+    return false;
+  }
+};
+
+// ✅ NOVA FUNÇÃO: Comparar primeira e segunda divisão
+export const compareFirstAndSecondDivision = (
+  mainMatches: Match[],
+  secondDivMatches: Match[]
+): void => {
+  console.log("\n🔍 [COMPARE] === COMPARAÇÃO ENTRE DIVISÕES ===");
+
+  console.log(`📊 [COMPARE] Primeira Divisão: ${mainMatches.length} partidas`);
+  console.log(
+    `📊 [COMPARE] Segunda Divisão: ${secondDivMatches.length} partidas`
+  );
+
+  // Agrupar por rodada
+  const mainRounds = [...new Set(mainMatches.map((m) => m.round))].sort();
+  const secondRounds = [
+    ...new Set(secondDivMatches.map((m) => m.round)),
+  ].sort();
+
+  console.log(`🔍 [COMPARE] Rodadas Primeira: ${mainRounds.join(", ")}`);
+  console.log(`🔍 [COMPARE] Rodadas Segunda: ${secondRounds.join(", ")}`);
+
+  // Verificar estrutura similar
+  const mainStructure = mainRounds.map((r) => r.replace(" 2ª Div", "")).sort();
+  const secondStructure = secondRounds
+    .map((r) => r.replace(" 2ª Div", ""))
+    .sort();
+
+  const hasSimilarStructure =
+    JSON.stringify(mainStructure) === JSON.stringify(secondStructure);
+  console.log(
+    `${
+      hasSimilarStructure ? "✅" : "⚠️"
+    } [COMPARE] Estrutura similar: ${hasSimilarStructure}`
+  );
+
+  // Verificar progressão
+  mainRounds.forEach((round) => {
+    const roundMatches = mainMatches.filter((m) => m.round === round);
+    const completed = roundMatches.filter((m) => m.isCompleted).length;
+    console.log(
+      `📈 [COMPARE] ${round}: ${completed}/${roundMatches.length} completas`
+    );
+  });
+
+  secondRounds.forEach((round) => {
+    const roundMatches = secondDivMatches.filter((m) => m.round === round);
+    const completed = roundMatches.filter((m) => m.isCompleted).length;
+    console.log(
+      `📈 [COMPARE] ${round}: ${completed}/${roundMatches.length} completas`
+    );
+  });
+};
+
+// ===================================================
+// 🔧 FUNÇÕES AVANÇADAS DE MONITORAMENTO
+// ===================================================
+
+// ✅ NOVA FUNÇÃO: Monitor de progresso da segunda divisão
+export const monitorSecondDivisionProgress = (
+  allKnockoutMatches: Match[]
+): {
+  progress: number;
+  currentRound: string | null;
+  nextRound: string | null;
+  completedRounds: string[];
+  pendingMatches: Match[];
+  canAdvance: boolean;
+} => {
+  const secondDivMatches = allKnockoutMatches.filter((m) =>
+    m.round?.includes("2ª Div")
+  );
+
+  if (secondDivMatches.length === 0) {
     return {
-      totalAthletes: 0,
-      totalMatches: 0,
-      completedMatches: 0,
-      completionPercentage: 0,
       progress: 0,
-      groupsPhaseComplete: false,
-      knockoutPhaseStarted: false,
-      groupMatches: 0,
-      groupMatchesCompleted: 0,
-      knockoutMatches: 0,
-      knockoutMatchesCompleted: 0,
-      mainKnockoutMatches: 0,
-      secondDivMatches: 0,
-      totalGroups: 0,
-      groupsCompleted: 0,
+      currentRound: null,
+      nextRound: null,
+      completedRounds: [],
+      pendingMatches: [],
+      canAdvance: false,
     };
   }
 
-  const totalAthletes = championship.athletes?.length || 0;
+  // Agrupar por rodada
+  const matchesByRound: { [key: string]: Match[] } = {};
+  secondDivMatches.forEach((match) => {
+    const round = match.round || "Indefinido";
+    if (!matchesByRound[round]) {
+      matchesByRound[round] = [];
+    }
+    matchesByRound[round].push(match);
+  });
 
-  // Contar partidas dos grupos
-  const groupMatches =
-    championship.groups?.flatMap((group: any) => group.matches || []) || [];
-  const groupMatchesCount = groupMatches.length;
-  const groupCompletedMatches = groupMatches.filter(
-    (match: any) => match.isCompleted
-  ).length;
+  const rounds = Object.keys(matchesByRound).sort();
+  const completedRounds: string[] = [];
+  let currentRound: string | null = null;
+  let nextRound: string | null = null;
+  const pendingMatches: Match[] = [];
 
-  // Contar partidas do knockout
-  const knockoutMatches = championship.knockoutMatches || [];
-  const knockoutMatchesCount = knockoutMatches.length;
-  const knockoutCompletedMatches = knockoutMatches.filter(
-    (match: any) => match.isCompleted
-  ).length;
+  // Analisar cada rodada
+  rounds.forEach((round, index) => {
+    const roundMatches = matchesByRound[round];
+    const completedCount = roundMatches.filter((m) => m.isCompleted).length;
+    const isRoundComplete = completedCount === roundMatches.length;
 
-  // Separar partidas principais e segunda divisão
-  const mainKnockoutMatches = knockoutMatches.filter(
-    (match: any) => !match.round?.includes("2ª Div")
-  ).length;
-  const secondDivMatches = knockoutMatches.filter((match: any) =>
-    match.round?.includes("2ª Div")
-  ).length;
+    if (isRoundComplete) {
+      completedRounds.push(round);
+    } else if (!currentRound) {
+      currentRound = round;
+      pendingMatches.push(...roundMatches.filter((m) => !m.isCompleted));
+    }
 
-  const totalMatches = groupMatchesCount + knockoutMatchesCount;
-  const completedMatches = groupCompletedMatches + knockoutCompletedMatches;
-  const completionPercentage =
+    if (isRoundComplete && index < rounds.length - 1 && !nextRound) {
+      nextRound = rounds[index + 1];
+    }
+  });
+
+  const totalMatches = secondDivMatches.length;
+  const completedMatches = secondDivMatches.filter((m) => m.isCompleted).length;
+  const progress =
     totalMatches > 0 ? (completedMatches / totalMatches) * 100 : 0;
 
-  const groupsPhaseComplete =
-    groupMatchesCount > 0 &&
-    groupMatches.every((match: any) => match.isCompleted);
-  const knockoutPhaseStarted = knockoutMatchesCount > 0;
-
-  // Contar grupos
-  const totalGroups = championship.groups?.length || 0;
-  const groupsCompleted =
-    championship.groups?.filter((group: any) => {
-      const matches = group.matches || [];
-      return (
-        matches.length > 0 && matches.every((match: any) => match.isCompleted)
-      );
-    }).length || 0;
+  const canAdvance = currentRound
+    ? matchesByRound[currentRound].every((m) => m.isCompleted)
+    : false;
 
   return {
-    totalAthletes,
-    totalMatches,
-    completedMatches,
-    completionPercentage: Math.round(completionPercentage),
-    progress: Math.round(completionPercentage),
-    groupsPhaseComplete,
-    knockoutPhaseStarted,
-    groupMatches: groupMatchesCount,
-    groupMatchesCompleted: groupCompletedMatches,
-    knockoutMatches: knockoutMatchesCount,
-    knockoutMatchesCompleted: knockoutCompletedMatches,
-    mainKnockoutMatches,
-    secondDivMatches,
-    totalGroups,
-    groupsCompleted,
+    progress,
+    currentRound,
+    nextRound,
+    completedRounds,
+    pendingMatches,
+    canAdvance,
   };
 };
 
-// ✅ NOVA FUNÇÃO: Validar atleta
+// ✅ NOVA FUNÇÃO: Análise de performance da segunda divisão
+export const analyzeSecondDivisionPerformance = (
+  secondDivMatches: Match[],
+  eliminatedAthletes: Athlete[]
+): {
+  statistics: {
+    totalMatches: number;
+    completedMatches: number;
+    averageMatchDuration: number;
+    mostActiveRound: string;
+  };
+  athletePerformance: Array<{
+    athleteId: string;
+    athleteName: string;
+    matchesPlayed: number;
+    matchesWon: number;
+    winRate: number;
+    setsWon: number;
+    setsLost: number;
+    isFormerSeed: boolean;
+  }>;
+  bracketHealth: {
+    isValid: boolean;
+    issues: string[];
+    recommendations: string[];
+  };
+} => {
+  console.log("📊 [ANALYSIS] Analisando performance da segunda divisão...");
+
+  // Estatísticas gerais
+  const totalMatches = secondDivMatches.length;
+  const completedMatches = secondDivMatches.filter((m) => m.isCompleted).length;
+
+  // Duração média das partidas (baseada em timestamps)
+  const completedWithDuration = secondDivMatches.filter(
+    (m) => m.isCompleted && m.createdAt && m.completedAt
+  );
+  const averageMatchDuration =
+    completedWithDuration.length > 0
+      ? completedWithDuration.reduce((sum, m) => {
+          const duration =
+            new Date(m.completedAt!).getTime() -
+            new Date(m.createdAt).getTime();
+          return sum + duration;
+        }, 0) / completedWithDuration.length
+      : 0;
+
+  // Rodada mais ativa
+  const matchesByRound: { [key: string]: number } = {};
+  secondDivMatches.forEach((m) => {
+    const round = m.round || "Indefinido";
+    matchesByRound[round] = (matchesByRound[round] || 0) + 1;
+  });
+  const mostActiveRound =
+    Object.entries(matchesByRound).sort(([, a], [, b]) => b - a)[0]?.[0] ||
+    "Nenhuma";
+
+  // Performance dos atletas
+  const athletePerformance = eliminatedAthletes.map((athlete) => {
+    const athleteMatches = secondDivMatches.filter(
+      (m) => m.player1Id === athlete.id || m.player2Id === athlete.id
+    );
+
+    const matchesPlayed = athleteMatches.filter((m) => m.isCompleted).length;
+    const matchesWon = athleteMatches.filter(
+      (m) => m.winnerId === athlete.id
+    ).length;
+    const winRate = matchesPlayed > 0 ? (matchesWon / matchesPlayed) * 100 : 0;
+
+    // Calcular sets ganhos/perdidos
+    let setsWon = 0;
+    let setsLost = 0;
+
+    athleteMatches.forEach((match) => {
+      if (match.sets && match.sets.length > 0) {
+        match.sets.forEach((set) => {
+          const isPlayer1 = match.player1Id === athlete.id;
+          const wonSet = isPlayer1
+            ? set.player1Score > set.player2Score
+            : set.player2Score > set.player1Score;
+
+          if (wonSet) {
+            setsWon++;
+          } else {
+            setsLost++;
+          }
+        });
+      }
+    });
+
+    return {
+      athleteId: athlete.id,
+      athleteName: athlete.name,
+      matchesPlayed,
+      matchesWon,
+      winRate,
+      setsWon,
+      setsLost,
+      isFormerSeed: athlete.isSeeded || false,
+    };
+  });
+
+  // Saúde do bracket
+  const issues: string[] = [];
+  const recommendations: string[] = [];
+
+  // Verificar atletas órfãos
+  const athletesInMatches = new Set(
+    secondDivMatches.flatMap((m) => [m.player1Id, m.player2Id])
+  );
+  const orphanedAthletes = eliminatedAthletes.filter(
+    (a) => !athletesInMatches.has(a.id)
+  );
+
+  if (orphanedAthletes.length > 0) {
+    issues.push(
+      `${orphanedAthletes.length} atletas eliminados não estão em partidas`
+    );
+    recommendations.push(
+      "Regenerar segunda divisão para incluir todos os atletas"
+    );
+  }
+
+  // Verificar partidas sem vencedor definido há muito tempo
+  const stalledMatches = secondDivMatches.filter((m) => {
+    if (!m.isCompleted && m.createdAt) {
+      const hoursSinceCreation =
+        (Date.now() - new Date(m.createdAt).getTime()) / (1000 * 60 * 60);
+      return hoursSinceCreation > 24; // Mais de 24 horas sem resultado
+    }
+    return false;
+  });
+
+  if (stalledMatches.length > 0) {
+    issues.push(
+      `${stalledMatches.length} partidas pendentes há mais de 24 horas`
+    );
+    recommendations.push("Revisar e finalizar partidas pendentes");
+  }
+
+  // Verificar ex-cabeças de chave com performance ruim
+  const formerSeedsWithPoorPerformance = athletePerformance.filter(
+    (a) => a.isFormerSeed && a.matchesPlayed > 0 && a.winRate < 30
+  );
+
+  if (formerSeedsWithPoorPerformance.length > 0) {
+    recommendations.push("Monitorar ex-cabeças de chave com baixa performance");
+  }
+
+  const isValid = issues.length === 0;
+
+  return {
+    statistics: {
+      totalMatches,
+      completedMatches,
+      averageMatchDuration,
+      mostActiveRound,
+    },
+    athletePerformance,
+    bracketHealth: {
+      isValid,
+      issues,
+      recommendations,
+    },
+  };
+};
+
+// ✅ NOVA FUNÇÃO: Auto-correção inteligente da segunda divisão
+export const autoFixSecondDivision = (
+  championship: any,
+  eliminatedAthletes: Athlete[]
+): {
+  fixed: boolean;
+  actions: string[];
+  newMatches: Match[];
+} => {
+  console.log("🔧 [AUTO-FIX] Iniciando auto-correção da segunda divisão...");
+
+  const actions: string[] = [];
+  let newMatches: Match[] = [];
+  let fixed = false;
+
+  try {
+    // Verificar se segunda divisão está habilitada
+    if (!championship.hasRepechage) {
+      actions.push("Segunda divisão não está habilitada");
+      return { fixed: false, actions, newMatches };
+    }
+
+    // Verificar atletas eliminados suficientes
+    if (eliminatedAthletes.length < 2) {
+      actions.push("Insuficientes atletas eliminados para segunda divisão");
+      return { fixed: false, actions, newMatches };
+    }
+
+    // Obter partidas atuais da segunda divisão
+    const allKnockoutMatches = championship.groups
+      .flatMap((g: any) => g.matches)
+      .filter((m: any) => m.phase === "knockout");
+
+    const currentSecondDivMatches = allKnockoutMatches.filter((m: any) =>
+      m.round?.includes("2ª Div")
+    );
+
+    // Verificar se precisa regenerar
+    const athletesInCurrentMatches = new Set(
+      currentSecondDivMatches.flatMap((m: any) => [m.player1Id, m.player2Id])
+    );
+
+    const missingAthletes = eliminatedAthletes.filter(
+      (a) => !athletesInCurrentMatches.has(a.id)
+    );
+
+    if (missingAthletes.length > 0) {
+      actions.push(
+        `Regenerando segunda divisão para ${missingAthletes.length} atletas órfãos`
+      );
+
+      // Regenerar segunda divisão
+      newMatches = generateSecondDivisionMatches(eliminatedAthletes);
+      fixed = true;
+
+      actions.push(`Criadas ${newMatches.length} novas partidas`);
+    }
+
+    // Verificar partidas duplicadas
+    const matchSignatures = new Set();
+    const duplicates = currentSecondDivMatches.filter((m: any) => {
+      const signature = `${m.player1Id}-${m.player2Id}-${m.round}`;
+      const reverseSignature = `${m.player2Id}-${m.player1Id}-${m.round}`;
+
+      if (
+        matchSignatures.has(signature) ||
+        matchSignatures.has(reverseSignature)
+      ) {
+        return true;
+      }
+
+      matchSignatures.add(signature);
+      return false;
+    });
+
+    if (duplicates.length > 0) {
+      actions.push(`Encontradas ${duplicates.length} partidas duplicadas`);
+      actions.push("Recomenda-se limpeza manual das partidas duplicadas");
+    }
+
+    // Verificar progressão de rodadas
+    const progress = monitorSecondDivisionProgress(allKnockoutMatches);
+    if (progress.canAdvance && !progress.nextRound) {
+      actions.push("Pronto para gerar próxima rodada da segunda divisão");
+    }
+
+    console.log(
+      `✅ [AUTO-FIX] Auto-correção concluída. ${actions.length} ações executadas`
+    );
+
+    return { fixed, actions, newMatches };
+  } catch (error) {
+    console.error("❌ [AUTO-FIX] Erro durante auto-correção:", error);
+    actions.push(`Erro durante auto-correção: ${error}`);
+    return { fixed: false, actions, newMatches };
+  }
+};
+
+// ✅ FUNÇÕES UTILITÁRIAS ADICIONAIS
+
+// ✅ NOVA VERSÃO: calculateTournamentStats com compatibilidade
+export const calculateTournamentStats = (
+  championship: Championship | Match[],
+  athletes?: Athlete[]
+) => {
+  let matches: Match[];
+  let allAthletes: Athlete[];
+
+  // Verificar se o primeiro parâmetro é um Championship ou array de Match
+  if (Array.isArray(championship)) {
+    // Versão antiga: array de matches
+    matches = championship;
+    allAthletes = athletes || [];
+  } else {
+    // Nova versão: objeto Championship
+    matches = championship.groups.flatMap((g) => g.matches);
+    allAthletes = championship.athletes;
+  }
+
+  // Separar tipos de partidas
+  const groupMatches = matches.filter((m) => m.phase === "groups");
+  const knockoutMatches = matches.filter((m) => m.phase === "knockout");
+  const mainKnockoutMatches = knockoutMatches.filter(
+    (m) => !m.round?.includes("2ª Div")
+  );
+  const secondDivMatches = knockoutMatches.filter((m) =>
+    m.round?.includes("2ª Div")
+  );
+
+  const groupMatchesCompleted = groupMatches.filter(
+    (m) => m.isCompleted
+  ).length;
+  const knockoutMatchesCompleted = knockoutMatches.filter(
+    (m) => m.isCompleted
+  ).length;
+
+  const totalMatches = matches.length;
+  const completedMatches = matches.filter((m) => m.isCompleted).length;
+  const pendingMatches = totalMatches - completedMatches;
+
+  // Estatísticas de grupos (se for Championship)
+  let groupsCompleted = 0;
+  let totalGroups = 0;
+  if (!Array.isArray(championship)) {
+    totalGroups = championship.groups.length;
+    groupsCompleted = championship.groups.filter((g) => g.isCompleted).length;
+  }
+
+  const progress =
+    totalMatches > 0 ? (completedMatches / totalMatches) * 100 : 0;
+
+  return {
+    // Estatísticas básicas
+    totalMatches,
+    completedMatches,
+    pendingMatches,
+    totalAthletes: allAthletes.length,
+    activeAthletes: allAthletes.filter((a) => !a.isVirtual).length,
+    rounds: new Set(matches.map((m) => m.round)).size,
+    phase: !Array.isArray(championship)
+      ? championship.status
+      : matches[0]?.phase || "knockout",
+
+    // Estatísticas de grupos
+    groupMatches: groupMatches.length,
+    groupMatchesCompleted,
+    groupsCompleted,
+    totalGroups,
+
+    // Estatísticas de mata-mata
+    knockoutMatches: knockoutMatches.length,
+    knockoutMatchesCompleted,
+    mainKnockoutMatches: mainKnockoutMatches.length,
+    secondDivMatches: secondDivMatches.length,
+
+    // Métricas calculadas
+    progress,
+    completionRate: progress,
+    averageMatchesPerRound:
+      totalMatches > 0 && totalGroups > 0
+        ? totalMatches / Math.max(totalGroups, 1)
+        : 0,
+  };
+};
+
+export const getAthleteDisplayName = (
+  athlete: Athlete | null | undefined
+): string => {
+  if (!athlete) return "BYE";
+  if (athlete.name === "BYE" || athlete.id === "bye" || athlete.isVirtual)
+    return "BYE";
+  return athlete.name || "Atleta Desconhecido";
+};
+
+export const isRealAthlete = (athlete: Athlete | null | undefined): boolean => {
+  if (!athlete) return false;
+  if (athlete.name === "BYE" || athlete.id === "bye" || athlete.isVirtual)
+    return false;
+  return true;
+};
+
+export const matchHasBye = (match: Match): boolean => {
+  return !isRealAthlete(match.player1) || !isRealAthlete(match.player2);
+};
+
 export const validateAthlete = (
-  athlete: Partial<
-    Athlete & { club?: string; ranking?: number; rating?: number }
-  >
+  athlete: Partial<Athlete>
 ): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
-  if (!athlete.name || athlete.name.trim().length === 0) {
+  if (!athlete.name || athlete.name.trim() === "") {
     errors.push("Nome é obrigatório");
   }
 
-  if (athlete.name && athlete.name.trim().length < 2) {
-    errors.push("Nome deve ter pelo menos 2 caracteres");
-  }
-
-  if (
-    athlete.club !== undefined &&
-    (!athlete.club || athlete.club.trim().length === 0)
-  ) {
-    errors.push("Clube é obrigatório");
-  }
-
-  if (athlete.ranking !== undefined && athlete.ranking < 0) {
-    errors.push("Ranking deve ser um número positivo");
-  }
-
-  if (
-    athlete.rating !== undefined &&
-    (athlete.rating < 0 || athlete.rating > 3000)
-  ) {
-    errors.push("Rating deve estar entre 0 e 3000");
+  if (!athlete.id || athlete.id.trim() === "") {
+    errors.push("ID é obrigatório");
   }
 
   return {
@@ -1567,288 +2376,77 @@ export const validateAthlete = (
   };
 };
 
-// ✅ NOVA FUNÇÃO: Gerar relatório de grupos
-export const generateGroupReport = (championship: any): string => {
-  if (!championship || !championship.groups) {
-    return "Nenhum grupo encontrado";
+export const generateGroupReport = (
+  championship: Championship | Athlete[],
+  matches?: Match[]
+) => {
+  let athletes: Athlete[];
+  let allMatches: Match[];
+
+  // Verificar se o primeiro parâmetro é um Championship ou array de Athlete
+  if (Array.isArray(championship)) {
+    // Versão antiga: array de athletes
+    athletes = championship;
+    allMatches = matches || [];
+  } else {
+    // Nova versão: objeto Championship
+    athletes = championship.athletes;
+    allMatches = championship.groups.flatMap((g) => g.matches);
   }
+  const groupMatches = allMatches.filter((m) => m.phase === "groups");
+  const completedGroupMatches = groupMatches.filter((m) => m.isCompleted);
 
-  let report = `RELATÓRIO DE GRUPOS - ${championship.name}\n`;
-  report += `Data: ${formatDate(championship.date)}\n`;
-  report += `=====================================\n\n`;
+  const athleteStats = athletes.map((athlete) => {
+    const athleteMatches = completedGroupMatches.filter(
+      (m) => m.player1Id === athlete.id || m.player2Id === athlete.id
+    );
 
-  championship.groups.forEach((group: any, index: number) => {
-    report += `GRUPO ${String.fromCharCode(65 + index)}\n`;
-    report += `${"-".repeat(20)}\n`;
+    let wins = 0;
+    let losses = 0;
+    let setsWon = 0;
+    let setsLost = 0;
 
-    if (group.athletes && group.athletes.length > 0) {
-      group.athletes.forEach((athlete: any, pos: number) => {
-        report += `${pos + 1}. ${athlete.name} (${athlete.club})\n`;
-        if (athlete.ranking) report += `   Ranking: ${athlete.ranking}\n`;
-        if (athlete.rating) report += `   Rating: ${athlete.rating}\n`;
-      });
-    } else {
-      report += "Nenhum atleta neste grupo\n";
-    }
+    athleteMatches.forEach((match) => {
+      const isPlayer1 = match.player1Id === athlete.id;
 
-    report += `\nPARTIDAS:\n`;
-    if (group.matches && group.matches.length > 0) {
-      group.matches.forEach((match: any) => {
-        const player1 = group.athletes.find(
-          (a: any) => a.id === match.player1Id
-        );
-        const player2 = group.athletes.find(
-          (a: any) => a.id === match.player2Id
-        );
+      if (match.winnerId === athlete.id) {
+        wins++;
+      } else if (match.winnerId) {
+        losses++;
+      }
 
-        report += `${player1?.name || "TBD"} vs ${player2?.name || "TBD"}`;
-
-        if (match.isCompleted) {
-          const setsText = match.sets
-            .map((set: any) => `${set.player1Score}-${set.player2Score}`)
-            .join(", ");
-          report += ` - ${setsText}`;
+      // Contar sets
+      match.sets?.forEach((set) => {
+        if (isPlayer1) {
+          setsWon += set.player1Score || 0;
+          setsLost += set.player2Score || 0;
         } else {
-          report += " - Pendente";
+          setsWon += set.player2Score || 0;
+          setsLost += set.player1Score || 0;
         }
-        report += `\n`;
       });
-    } else {
-      report += "Nenhuma partida gerada\n";
-    }
+    });
 
-    report += `\n`;
-  });
-
-  return report;
-};
-
-// ✅ NOVA FUNÇÃO: Gerar bracket do knockout (simplificado)
-export const generateKnockoutBracket = (championship: any) => {
-  if (!championship || !championship.knockoutMatches) {
-    return null;
-  }
-
-  // Agrupar partidas por rodada
-  const matchesByRound: { [key: string]: any[] } = {};
-
-  championship.knockoutMatches.forEach((match: any) => {
-    const round = match.round || "Indefinido";
-    if (!matchesByRound[round]) {
-      matchesByRound[round] = [];
-    }
-    matchesByRound[round].push(match);
+    return {
+      athlete,
+      matches: athleteMatches.length,
+      wins,
+      losses,
+      setsWon,
+      setsLost,
+      setsDiff: setsWon - setsLost,
+      winRate:
+        athleteMatches.length > 0 ? (wins / athleteMatches.length) * 100 : 0,
+    };
   });
 
   return {
-    rounds: Object.keys(matchesByRound).sort(),
-    matchesByRound,
-    totalMatches: championship.knockoutMatches.length,
-    completedMatches: championship.knockoutMatches.filter(
-      (m: any) => m.isCompleted
-    ).length,
+    totalMatches: groupMatches.length,
+    completedMatches: completedGroupMatches.length,
+    athleteStats: athleteStats.sort((a, b) => {
+      // Ordenar por vitórias, depois por diferença de sets
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      return b.setsDiff - a.setsDiff;
+    }),
   };
-};
-
-// ✅ FUNÇÃO DE DEPURAÇÃO: Validar se o chaveamento está correto
-export const validateBracketStructure = (
-  matches: Match[],
-  allAthletes: Athlete[]
-): boolean => {
-  console.log(`🔍 [BRACKET-VALIDATION] Validando estrutura do chaveamento`);
-
-  const seededAthletes = allAthletes
-    .filter((a) => a.isSeeded && a.seedNumber)
-    .sort((a, b) => (a.seedNumber || 999) - (b.seedNumber || 999));
-
-  if (seededAthletes.length < 2) {
-    console.log(
-      `✅ [BRACKET-VALIDATION] Menos de 2 cabeças, validação desnecessária`
-    );
-    return true;
-  }
-
-  const seed1 = seededAthletes[0]; // Cabeça #1
-  const seed2 = seededAthletes[1]; // Cabeça #2
-
-  console.log(
-    `🎯 [BRACKET-VALIDATION] Verificando separação entre ${seed1.name} (#1) e ${seed2.name} (#2)`
-  );
-
-  // Simular todas as rodadas para ver se eles só se encontram na final
-  let currentRoundMatches = [...matches];
-  let roundNumber = 1;
-
-  while (currentRoundMatches.length > 1) {
-    console.log(
-      `🔍 [BRACKET-VALIDATION] Simulando rodada ${roundNumber} (${currentRoundMatches.length} partidas)`
-    );
-
-    // Verificar se os dois cabeças principais estão na mesma partida
-    const seed1Match = currentRoundMatches.find(
-      (m) => m.player1Id === seed1.id || m.player2Id === seed1.id
-    );
-    const seed2Match = currentRoundMatches.find(
-      (m) => m.player1Id === seed2.id || m.player2Id === seed2.id
-    );
-
-    if (seed1Match && seed2Match && seed1Match.id === seed2Match.id) {
-      const isThisFinal = currentRoundMatches.length === 1;
-      if (!isThisFinal) {
-        console.log(
-          `❌ [BRACKET-VALIDATION] ERRO: ${seed1.name} e ${seed2.name} se enfrentam na rodada ${roundNumber}, não na final!`
-        );
-        console.log(`❌ [BRACKET-VALIDATION] Partida: ${seed1Match.round}`);
-        return false;
-      } else {
-        console.log(
-          `✅ [BRACKET-VALIDATION] Cabeças #1 e #2 se encontram apenas na final (correto)`
-        );
-        return true;
-      }
-    }
-
-    // Simular próxima rodada (presumindo que os seeds vencem)
-    const nextRoundMatches: Match[] = [];
-    for (let i = 0; i < currentRoundMatches.length; i += 2) {
-      if (currentRoundMatches[i + 1]) {
-        // Criar partida simulada para próxima rodada
-        const match1 = currentRoundMatches[i];
-        const match2 = currentRoundMatches[i + 1];
-
-        // Determinar "vencedores" (priorizar cabeças de chave)
-        const winner1 = getPreferredWinner(match1, allAthletes);
-        const winner2 = getPreferredWinner(match2, allAthletes);
-
-        if (winner1 && winner2) {
-          nextRoundMatches.push({
-            id: `sim-${roundNumber}-${i}`,
-            player1Id: winner1.id,
-            player2Id: winner2.id,
-            player1: winner1,
-            player2: winner2,
-            sets: [],
-            isCompleted: false,
-            phase: "knockout",
-            round: `Simulação Rodada ${roundNumber + 1}`,
-            position: i / 2,
-            timeoutsUsed: { player1: false, player2: false },
-            createdAt: new Date(),
-          });
-        }
-      }
-    }
-
-    currentRoundMatches = nextRoundMatches;
-    roundNumber++;
-
-    if (roundNumber > 10) {
-      // Evitar loop infinito
-      console.log(`⚠️ [BRACKET-VALIDATION] Limite de rodadas excedido`);
-      break;
-    }
-  }
-
-  console.log(
-    `✅ [BRACKET-VALIDATION] Validação concluída - estrutura parece correta`
-  );
-  return true;
-};
-
-// ✅ FUNÇÃO AUXILIAR: Determinar o vencedor preferido para simulação
-const getPreferredWinner = (
-  match: Match,
-  allAthletes: Athlete[]
-): Athlete | null => {
-  const player1 = allAthletes.find((a) => a.id === match.player1Id);
-  const player2 = allAthletes.find((a) => a.id === match.player2Id);
-
-  if (!player1 || !player2) return null;
-
-  // Priorizar cabeça de chave com menor número (melhor ranking)
-  if (player1.isSeeded && player2.isSeeded) {
-    return (player1.seedNumber || 999) < (player2.seedNumber || 999)
-      ? player1
-      : player2;
-  }
-
-  if (player1.isSeeded && !player2.isSeeded) return player1;
-  if (!player1.isSeeded && player2.isSeeded) return player2;
-
-  // Se nenhum é cabeça de chave, escolha aleatória ponderada
-  return Math.random() > 0.5 ? player1 : player2;
-};
-
-// ✅ NOVA FUNÇÃO: Validar e corrigir bracket dinamicamente
-export const validateAndFixBracket = (championship: Championship): boolean => {
-  console.log(
-    "🔍 [BRACKET-FIX] Validando e corrigindo problemas de bracket..."
-  );
-
-  const allKnockoutMatches = championship.groups
-    .flatMap((group) => group.matches)
-    .filter((match) => match.phase === "knockout");
-
-  const mainMatches = allKnockoutMatches.filter(
-    (m) => !m.round?.includes("2ª Div")
-  );
-
-  if (mainMatches.length === 0) {
-    console.log("✅ [BRACKET-FIX] Nenhuma partida de mata-mata encontrada");
-    return true;
-  }
-
-  // Agrupar partidas por rodada
-  const matchesByRound: { [key: string]: Match[] } = {};
-  mainMatches.forEach((match) => {
-    const round = match.round || "Indefinido";
-    if (!matchesByRound[round]) {
-      matchesByRound[round] = [];
-    }
-    matchesByRound[round].push(match);
-  });
-
-  let hasIssues = false;
-
-  // Verificar cada rodada
-  for (const [roundName, matches] of Object.entries(matchesByRound)) {
-    console.log(
-      `🔍 [BRACKET-FIX] Verificando ${roundName}: ${matches.length} partidas`
-    );
-
-    // Verificar se há partidas pendentes
-    const pendingMatches = matches.filter(m => !m.isCompleted);
-    if (pendingMatches.length > 0) {
-      console.log(`⚠️ [BRACKET-FIX] ${pendingMatches.length} partidas pendentes em ${roundName}`);
-      hasIssues = true;
-    }
-  }
-
-  return !hasIssues;
-};
-
-// ===================================================
-// 🛠️ FUNÇÕES UTILITÁRIAS PARA INTERFACE
-// ===================================================
-
-// ✅ Obter nome de exibição do atleta
-export const getAthleteDisplayName = (athlete: any): string => {
-  if (!athlete) return "BYE";
-  if (athlete.isVirtual) return "BYE";
-  return athlete.name || "Atleta Desconhecido";
-};
-
-// ✅ Verificar se o atleta é real (não é BYE ou virtual)
-export const isRealAthlete = (athlete: any): boolean => {
-  if (!athlete) return false;
-  if (athlete.isVirtual) return false;
-  return true;
-};
-
-// ✅ Verificar se a partida tem BYE
-export const matchHasBye = (match: any): boolean => {
-  if (!match) return false;
-  return !match.athlete1 || !match.athlete2 || 
-         (match.athlete1 && match.athlete1.isVirtual) ||
-         (match.athlete2 && match.athlete2.isVirtual);
 };

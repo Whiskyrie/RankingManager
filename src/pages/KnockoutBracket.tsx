@@ -19,8 +19,14 @@ import {
   BarChart3,
   Crown,
 } from "lucide-react";
-import { generateKnockoutBracket } from "../utils";
 import { Match } from "../types";
+import { SecondDivisionMonitor } from "../components/championship/SecondDivisionMonitor";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../components/ui/tabs";
 
 export const KnockoutBracket: React.FC = () => {
   const { currentChampionship, updateMatchResult, setWalkover } =
@@ -117,7 +123,8 @@ export const KnockoutBracket: React.FC = () => {
   // ✅ Callback memoizado para download
   const handleDownloadBracket = useCallback(() => {
     if (currentChampionship) {
-      generateKnockoutBracket(currentChampionship);
+      console.log("Download do bracket solicitado");
+      // TODO: Implementar download
     }
   }, [currentChampionship]);
 
@@ -453,9 +460,31 @@ export const KnockoutBracket: React.FC = () => {
           </Card>
         </div>
 
-        {/* ✅ Visualização da Chave com Cache mas sem key que força reset */}
-        <div className="bracket-container">
-          <BracketVisualization onMatchClick={handleMatchClick} />
+        {/* ✅ NOVA SEÇÃO: Abas para Visualização e Monitoramento */}
+        <div className="mb-8">
+          <Tabs defaultValue="bracket" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="bracket" className="flex items-center gap-2">
+                <Trophy className="h-4 w-4" />
+                Visualização da Chave
+              </TabsTrigger>
+              <TabsTrigger value="monitor" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Monitor 2ª Divisão
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="bracket" className="mt-6">
+              {/* ✅ Visualização da Chave com Cache mas sem key que força reset */}
+              <div className="bracket-container">
+                <BracketVisualization onMatchClick={handleMatchClick} />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="monitor" className="mt-6">
+              <SecondDivisionMonitor />
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Modal para detalhes da partida */}
