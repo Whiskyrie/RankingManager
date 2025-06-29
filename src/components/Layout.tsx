@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useChampionshipStore } from "../store/championship";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -16,18 +17,29 @@ import { calculateTournamentStats } from "../utils";
 
 interface LayoutProps {
   children: React.ReactNode;
-  currentPage: "dashboard" | "groups" | "knockout" | "athletes" | "settings";
-  onNavigate: (
-    page: "dashboard" | "groups" | "knockout" | "athletes" | "settings"
-  ) => void;
 }
 
-export const Layout: React.FC<LayoutProps> = ({
-  children,
-  currentPage,
-  onNavigate,
-}) => {
+export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { currentChampionship } = useChampionshipStore();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Determinar página atual baseada na rota
+  const getCurrentPage = () => {
+    const path = location.pathname;
+    if (path === "/" || path === "/dashboard") return "dashboard";
+    if (path === "/athletes") return "athletes";
+    if (path === "/groups") return "groups";
+    if (path === "/knockout") return "knockout";
+    if (path === "/settings") return "settings";
+    return "dashboard";
+  };
+
+  const currentPage = getCurrentPage();
+  const onNavigate = (page: string) => {
+    if (page === "dashboard") navigate("/");
+    else navigate(`/${page}`);
+  };
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navigationItems = [

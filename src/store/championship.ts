@@ -1,6 +1,24 @@
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import {
+  validateData,
+  ChampionshipSchema,
+  CreateChampionshipSchema,
+  AthleteSchema,
+  CreateAthleteSchema,
+  UpdateAthleteSchema,
+  TournamentConfigSchema,
+  type Championship as ZodChampionship,
+  type CreateChampionship,
+  type Athlete as ZodAthlete,
+  type CreateAthlete,
+  type UpdateAthlete,
+  type TournamentConfig as ZodTournamentConfig,
+} from "../schemas/validation";
+import { generateId } from "../utils/id-generator";
+import { errorHandler, createError } from "../lib/error-handler";
+import { logger } from "../lib/logger";
+import {
   Championship,
   TournamentConfig,
   Athlete,
@@ -17,6 +35,21 @@ import {
   generateTestMatchResult,
 } from "../utils";
 import { v4 as uuidv4 } from "uuid";
+
+// Funções auxiliares para garantir IDs válidos
+function ensureAthleteId(athlete: Partial<Athlete>): Athlete {
+  return {
+    ...athlete,
+    id: athlete.id || generateId(),
+    name: athlete.name || "",
+    isSeeded: athlete.isSeeded || false,
+    isVirtual: athlete.isVirtual || false,
+  } as Athlete;
+}
+
+function ensureAthletesIds(athletes: Partial<Athlete>[]): Athlete[] {
+  return athletes.map(ensureAthleteId);
+}
 
 interface ChampionshipState {
   championships: Championship[];
@@ -143,28 +176,45 @@ export const useChampionshipStore = create<
         },
 
         createChampionship: async (config, athletes) => {
+          const timer = logger.startTimer("createChampionship");
           set({ isLoading: true, error: null });
 
           try {
-            const maxSeeds = Math.min(4, Math.ceil(athletes.length / 4));
-            const seededAthletes = athletes.map((athlete, index) => ({
+            // Validar configuração
+            const validConfig = validateData(TournamentConfigSchema, config);
+            logger.championship("Configuration validated", {
+              config: validConfig,
+            });
+
+            // Validar atletas e garantir IDs
+            const validAthletes = athletes.map((athlete) => {
+              const athleteWithId = ensureAthleteId(athlete);
+              return validateData(AthleteSchema, athleteWithId);
+            });
+            logger.championship("Athletes validated", {
+              count: validAthletes.length,
+            });
+
+            const maxSeeds = Math.min(4, Math.ceil(validAthletes.length / 4));
+            const seededAthletes = validAthletes.map((athlete, index) => ({
               ...athlete,
-              id: athlete.id || uuidv4(),
+              id: athlete.id || generateId(),
               isSeeded: index < maxSeeds,
               seedNumber: index < maxSeeds ? index + 1 : undefined,
             }));
 
-            const championship: Championship = {
-              id: uuidv4(),
-              name: config.name,
-              date: config.date,
-              status: "created",
-              groupSize: config.groupSize,
-              qualificationSpotsPerGroup: config.qualificationSpotsPerGroup,
-              groupsBestOf: config.groupsBestOf,
-              knockoutBestOf: config.knockoutBestOf,
-              hasThirdPlace: config.hasThirdPlace,
-              hasRepechage: config.hasRepechage,
+            const championshipData = {
+              id: generateId(),
+              name: validConfig.name,
+              date: validConfig.date,
+              status: "created" as const,
+              groupSize: validConfig.groupSize,
+              qualificationSpotsPerGroup:
+                validConfig.qualificationSpotsPerGroup,
+              groupsBestOf: validConfig.groupsBestOf,
+              knockoutBestOf: validConfig.knockoutBestOf,
+              hasThirdPlace: validConfig.hasThirdPlace,
+              hasRepechage: validConfig.hasRepechage,
               athletes: seededAthletes,
               totalAthletes: seededAthletes.length,
               groups: [],
@@ -175,11 +225,25 @@ export const useChampionshipStore = create<
               updatedAt: new Date(),
             };
 
+            // Validar campeonato completo e garantir tipos corretos
+            const validatedChampionship = validateData(
+              ChampionshipSchema,
+              championshipData
+            );
+            const championship: Championship =
+              validatedChampionship as Championship;
+
             set((state) => ({
               championships: [...state.championships, championship],
               currentChampionship: championship,
               isLoading: false,
             }));
+
+            logger.championship("Championship created successfully", {
+              id: championship.id,
+              name: championship.name,
+              athletesCount: championship.totalAthletes,
+            });
 
             // ✅ Invalidar cache ao criar campeonato
             get().invalidateCache();
@@ -187,8 +251,14 @@ export const useChampionshipStore = create<
             const errorMessage =
               error instanceof Error
                 ? error.message
-                : "Erro inesperado ao criar campeonato";
+                : "Erro ao criar campeonato";
+            logger.error("Failed to create championship", {
+              error: errorMessage,
+            });
+            errorHandler.handleError(error as Error);
             set({ error: errorMessage, isLoading: false });
+          } finally {
+            timer();
           }
         },
 
@@ -234,21 +304,50 @@ export const useChampionshipStore = create<
         },
 
         addAthlete: async (athleteData) => {
+          const timer = logger.startTimer("addAthlete");
           const state = get();
-          if (!state.currentChampionship) return;
+          if (!state.currentChampionship) {
+            const error = createError.businessLogic(
+              "Nenhum campeonato selecionado"
+            );
+            errorHandler.handleError(error);
+            return;
+          }
 
-          const athlete: Athlete = {
-            ...athleteData,
-            id: uuidv4(),
-          };
+          try {
+            // Validar dados de entrada sem ID (será gerado automaticamente)
+            const validAthleteData = validateData(CreateAthleteSchema, athleteData);
+            
+            // Criar atleta com ID gerado automaticamente
+            const athleteWithId = ensureAthleteId(validAthleteData);
+            const validAthlete = validateData(AthleteSchema, athleteWithId);
 
-          const updatedChampionship = {
-            ...state.currentChampionship,
-            athletes: [...state.currentChampionship.athletes, athlete],
-            totalAthletes: state.currentChampionship.totalAthletes + 1,
-          };
+            logger.athlete("Adding athlete", { name: validAthlete.name });
 
-          await get().updateChampionship(updatedChampionship);
+            const updatedAthletes = ensureAthletesIds([
+              ...state.currentChampionship.athletes,
+              validAthlete,
+            ]);
+            const updatedChampionship: Championship = {
+              ...state.currentChampionship,
+              athletes: updatedAthletes,
+              totalAthletes: state.currentChampionship.totalAthletes + 1,
+              updatedAt: new Date(),
+            };
+
+            await get().updateChampionship(updatedChampionship);
+            logger.athlete("Athlete added successfully", {
+              name: validAthlete.name,
+              totalAthletes: updatedChampionship.totalAthletes,
+            });
+          } catch (error) {
+            logger.error("Failed to add athlete", {
+              error: (error as Error).message,
+            });
+            errorHandler.handleError(error as Error);
+          } finally {
+            timer();
+          }
         },
 
         updateAthlete: async (athlete) => {
@@ -1190,6 +1289,21 @@ export const useChampionshipStore = create<
               isComplete: progressPercentage === 100,
             },
           };
+        },
+
+        // Funções auxiliares para garantir IDs válidos
+        ensureAthleteId: (athlete: Partial<Athlete>): Athlete => {
+          return {
+            ...athlete,
+            id: athlete.id || generateId(),
+            name: athlete.name || "",
+            isSeeded: athlete.isSeeded || false,
+            isVirtual: athlete.isVirtual || false,
+          } as Athlete;
+        },
+
+        ensureAthletesIds: (athletes: Partial<Athlete>[]): Athlete[] => {
+          return athletes.map(ensureAthleteId);
         },
 
         // ...existing code...

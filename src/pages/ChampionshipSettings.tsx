@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from "react";
-import { Layout } from "./components/Layout";
-import { Dashboard } from "./pages/Dashboard";
-import { GroupsManagement } from "./pages/GroupsManagement";
-import { KnockoutBracket } from "./pages/KnockoutBracket";
-import { AthletesManagement } from "./pages/AthletesManagement";
-import { useChampionshipStore } from "./store/championship";
-import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
-import { Badge } from "./components/ui/badge";
-import { Button } from "./components/ui/button";
+import React, { useState } from "react";
+import { useChampionshipStore } from "../store/championship";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { Alert, AlertDescription } from "../components/ui/alert";
 import {
   Settings,
   Trophy,
@@ -17,83 +18,31 @@ import {
   Award,
   Clock,
   CheckCircle,
+  AlertTriangle,
 } from "lucide-react";
-import { calculateTournamentStats, formatDate, getStatusColor } from "./utils";
-import "./App.css";
+import { calculateTournamentStats, formatDate, getStatusColor } from "../utils";
+import { useChampionshipData } from "../hooks/performance";
+import { useLogger } from "../lib/logger";
+import { useErrorHandler } from "../lib/error-handler";
 
-console.log('🎯 [APP] Componente App carregando...');
-
-type PageType = "dashboard" | "groups" | "knockout" | "athletes" | "settings";
-
-function App() {
-  console.log('🎯 [APP] Função App executando...');
-  
-  const [currentPage, setCurrentPage] = useState<PageType>("dashboard");
-  
-  console.log('🎯 [APP] Estado inicial definido, acessando store...');
-  const { currentChampionship } = useChampionshipStore();
-  
-  console.log('🎯 [APP] Store acessado, campeonato atual:', currentChampionship);
-
-  // Navegação baseada no estado do campeonato
-  useEffect(() => {
-    if (currentChampionship) {
-      // Se um campeonato foi selecionado, navegar para a página apropriada
-      if (currentChampionship.status === "groups") {
-        setCurrentPage("groups");
-      } else if (
-        currentChampionship.status === "knockout" ||
-        currentChampionship.status === "completed"
-      ) {
-        setCurrentPage("knockout");
-      }
-    }
-  }, [currentChampionship]);
-
-  const renderPage = () => {
-    switch (currentPage) {
-      case "dashboard":
-        return <Dashboard />;
-      case "groups":
-        return <GroupsManagement />;
-      case "knockout":
-        return <KnockoutBracket />;
-      case "athletes":
-        return <AthletesManagement />;
-      case "settings":
-        return <SettingsPage />;
-      default:
-        return <Dashboard />;
-    }
-  };
-
-  return (
-    <Layout currentPage={currentPage} onNavigate={setCurrentPage}>
-      {renderPage()}
-    </Layout>
-  );
-}
-
-// Página de configurações completa - CORRIGIDA
-const SettingsPage: React.FC = () => {
-  const { currentChampionship, updateChampionship, deleteChampionship } =
-    useChampionshipStore();
+export const ChampionshipSettings: React.FC = () => {
+  const { championship } = useChampionshipData();
+  const { updateChampionship, deleteChampionship } = useChampionshipStore();
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const logger = useLogger("settings");
+  const { handle: handleError } = useErrorHandler();
 
-  if (!currentChampionship) {
+  if (!championship) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-96">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <Settings className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Nenhum campeonato selecionado
-              </h3>
-              <p className="text-gray-500">
-                Selecione um campeonato para ver as configurações.
-              </p>
-            </div>
+        <Card className="max-w-md">
+          <CardContent className="pt-6 text-center">
+            <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+            <h2 className="text-lg font-semibold mb-2">Nenhum Campeonato</h2>
+            <p className="text-gray-600">
+              Selecione ou crie um campeonato para ver as configurações.
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -102,14 +51,21 @@ const SettingsPage: React.FC = () => {
 
   const handleResetChampionship = async () => {
     if (
-      confirm(
+      !confirm(
         "Tem certeza que deseja reiniciar o campeonato? Todos os resultados serão perdidos."
       )
-    ) {
+    )
+      return;
+
+    try {
+      logger.info("Resetting championship", {
+        championshipId: championship.id,
+      });
+
       const resetChampionship = {
-        ...currentChampionship,
+        ...championship,
         status: "created" as const,
-        groups: currentChampionship.groups.map((group) => ({
+        groups: championship.groups.map((group) => ({
           ...group,
           matches: [],
           standings: [],
@@ -121,20 +77,25 @@ const SettingsPage: React.FC = () => {
       };
 
       await updateChampionship(resetChampionship);
+      logger.info("Championship reset successfully");
+    } catch (error) {
+      handleError(error as Error);
     }
   };
 
-  // ✅ NOVA FUNÇÃO: Confirmar e excluir campeonato
   const handleDeleteChampionship = async () => {
-    if (!currentChampionship) return;
+    if (!championship) return;
 
+    setIsDeleting(true);
     try {
-      await deleteChampionship(currentChampionship.id);
-      console.log("✅ Campeonato excluído com sucesso");
-      // A navegação será automática pelo useEffect no App.tsx
+      logger.warn("Deleting championship", { championshipId: championship.id });
+      await deleteChampionship(championship.id);
+      logger.info("Championship deleted successfully");
     } catch (error) {
-      console.error("❌ Erro ao excluir campeonato:", error);
-      alert("Erro ao excluir campeonato. Tente novamente.");
+      handleError(error as Error);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirmation(false);
     }
   };
 
@@ -177,7 +138,7 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  const statusInfo = getStatusInfo(currentChampionship.status);
+  const statusInfo = getStatusInfo(championship.status);
   const StatusIcon = statusInfo.icon;
 
   return (
@@ -210,7 +171,7 @@ const SettingsPage: React.FC = () => {
                     Nome do Campeonato
                   </label>
                   <p className="text-lg text-gray-900 mt-1">
-                    {currentChampionship.name}
+                    {championship.name}
                   </p>
                 </div>
 
@@ -219,9 +180,7 @@ const SettingsPage: React.FC = () => {
                     Status
                   </label>
                   <div className="mt-1 flex items-center gap-2">
-                    <Badge
-                      className={getStatusColor(currentChampionship.status)}
-                    >
+                    <Badge className={getStatusColor(championship.status)}>
                       <StatusIcon className="h-3 w-3 mr-1" />
                       {statusInfo.label}
                     </Badge>
@@ -237,7 +196,7 @@ const SettingsPage: React.FC = () => {
                   </label>
                   <p className="text-lg text-gray-900 mt-1 flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
-                    {formatDate(currentChampionship.date)}
+                    {formatDate(championship.date)}
                   </p>
                 </div>
 
@@ -247,7 +206,7 @@ const SettingsPage: React.FC = () => {
                   </label>
                   <p className="text-lg text-gray-900 mt-1 flex items-center gap-1">
                     <Users className="h-4 w-4" />
-                    {currentChampionship.totalAthletes}
+                    {championship.totalAthletes}
                   </p>
                 </div>
               </div>
@@ -269,7 +228,7 @@ const SettingsPage: React.FC = () => {
                     Tamanho do Grupo
                   </label>
                   <p className="text-lg text-gray-900 mt-1">
-                    {currentChampionship.groupSize} atletas por grupo
+                    {championship.groupSize} atletas por grupo
                   </p>
                 </div>
 
@@ -278,8 +237,7 @@ const SettingsPage: React.FC = () => {
                     Classificados por Grupo
                   </label>
                   <p className="text-lg text-gray-900 mt-1">
-                    {currentChampionship.qualificationSpotsPerGroup}{" "}
-                    classificados
+                    {championship.qualificationSpotsPerGroup} classificados
                   </p>
                 </div>
 
@@ -288,7 +246,7 @@ const SettingsPage: React.FC = () => {
                     Total de Grupos
                   </label>
                   <p className="text-lg text-gray-900 mt-1">
-                    {currentChampionship.groups.length} grupos
+                    {championship.groups.length} grupos
                   </p>
                 </div>
 
@@ -297,7 +255,7 @@ const SettingsPage: React.FC = () => {
                     Grupos - Melhor de
                   </label>
                   <p className="text-lg text-gray-900 mt-1">
-                    {currentChampionship.groupsBestOf} sets
+                    {championship.groupsBestOf} sets
                   </p>
                 </div>
 
@@ -306,7 +264,7 @@ const SettingsPage: React.FC = () => {
                     Mata-mata - Melhor de
                   </label>
                   <p className="text-lg text-gray-900 mt-1">
-                    {currentChampionship.knockoutBestOf} sets
+                    {championship.knockoutBestOf} sets
                   </p>
                 </div>
 
@@ -315,12 +273,12 @@ const SettingsPage: React.FC = () => {
                     Disputa de 3º Lugar
                   </label>
                   <p className="text-lg text-gray-900 mt-1 flex items-center gap-1">
-                    {currentChampionship.hasThirdPlace ? (
+                    {championship.hasThirdPlace ? (
                       <CheckCircle className="h-4 w-4 text-green-500" />
                     ) : (
                       <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
                     )}
-                    {currentChampionship.hasThirdPlace ? "Sim" : "Não"}
+                    {championship.hasThirdPlace ? "Sim" : "Não"}
                   </p>
                 </div>
               </div>
@@ -342,10 +300,10 @@ const SettingsPage: React.FC = () => {
                     Total de Partidas
                   </label>
                   <p className="text-2xl font-bold text-gray-900 mt-1">
-                    {currentChampionship.totalMatches}
+                    {championship.totalMatches}
                   </p>
                   {(() => {
-                    const stats = calculateTournamentStats(currentChampionship);
+                    const stats = calculateTournamentStats(championship);
                     return (
                       <div className="text-xs text-gray-500 mt-1">
                         Grupos: {stats.groupMatches} | Mata-mata:{" "}
@@ -367,7 +325,7 @@ const SettingsPage: React.FC = () => {
                     Partidas Concluídas
                   </label>
                   <p className="text-2xl font-bold text-green-600 mt-1">
-                    {currentChampionship.completedMatches}
+                    {championship.completedMatches}
                   </p>
                 </div>
 
@@ -376,8 +334,7 @@ const SettingsPage: React.FC = () => {
                     Partidas Pendentes
                   </label>
                   <p className="text-2xl font-bold text-orange-600 mt-1">
-                    {currentChampionship.totalMatches -
-                      currentChampionship.completedMatches}
+                    {championship.totalMatches - championship.completedMatches}
                   </p>
                 </div>
 
@@ -386,10 +343,10 @@ const SettingsPage: React.FC = () => {
                     Progresso
                   </label>
                   <p className="text-2xl font-bold text-blue-600 mt-1">
-                    {currentChampionship.totalMatches > 0
+                    {championship.totalMatches > 0
                       ? Math.round(
-                          (currentChampionship.completedMatches /
-                            currentChampionship.totalMatches) *
+                          (championship.completedMatches /
+                            championship.totalMatches) *
                             100
                         )
                       : 0}
@@ -415,7 +372,7 @@ const SettingsPage: React.FC = () => {
                     Criado em
                   </label>
                   <p className="text-lg text-gray-900 mt-1">
-                    {formatDate(currentChampionship.createdAt)}
+                    {formatDate(championship.createdAt)}
                   </p>
                 </div>
 
@@ -424,14 +381,14 @@ const SettingsPage: React.FC = () => {
                     Última atualização
                   </label>
                   <p className="text-lg text-gray-900 mt-1">
-                    {formatDate(currentChampionship.updatedAt)}
+                    {formatDate(championship.updatedAt)}
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Ações de Administração - ✅ ATUALIZADO */}
+          {/* Ações de Administração */}
           <Card>
             <CardHeader>
               <CardTitle className="text-red-600">Zona de Perigo</CardTitle>
@@ -439,7 +396,7 @@ const SettingsPage: React.FC = () => {
             <CardContent>
               <div className="space-y-6">
                 {/* Reiniciar Campeonato */}
-                {currentChampionship.status !== "completed" && (
+                {championship.status !== "completed" && (
                   <div>
                     <h4 className="text-sm font-medium text-gray-900">
                       Reiniciar Campeonato
@@ -458,7 +415,7 @@ const SettingsPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* ✅ NOVO: Excluir Campeonato */}
+                {/* Excluir Campeonato */}
                 <div className="pt-4 border-t border-red-200">
                   <h4 className="text-sm font-medium text-red-900">
                     Excluir Campeonato Permanentemente
@@ -478,27 +435,37 @@ const SettingsPage: React.FC = () => {
                     </Button>
                   ) : (
                     <div className="mt-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-sm text-red-800 font-medium mb-3">
-                        ⚠️ Tem certeza absoluta que deseja excluir o campeonato
-                        "{currentChampionship.name}"?
-                      </p>
-                      <p className="text-xs text-red-600 mb-4">
-                        Esta ação não pode ser desfeita. Todos os atletas,
-                        grupos, partidas e resultados serão perdidos.
-                      </p>
-                      <div className="flex gap-3">
+                      <Alert>
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                          <p className="font-medium mb-3">
+                            ⚠️ Tem certeza absoluta que deseja excluir o
+                            campeonato "{championship.name}"?
+                          </p>
+                          <p className="text-xs text-red-600 mb-4">
+                            Esta ação não pode ser desfeita. Todos os atletas,
+                            grupos, partidas e resultados serão perdidos.
+                          </p>
+                        </AlertDescription>
+                      </Alert>
+
+                      <div className="flex gap-3 mt-4">
                         <Button
                           variant="destructive"
                           size="sm"
                           onClick={handleDeleteChampionship}
+                          disabled={isDeleting}
                           className="bg-red-700 hover:bg-red-800"
                         >
-                          ✅ Sim, Excluir Definitivamente
+                          {isDeleting
+                            ? "Excluindo..."
+                            : "✅ Sim, Excluir Definitivamente"}
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => setShowDeleteConfirmation(false)}
+                          disabled={isDeleting}
                           className="border-gray-300"
                         >
                           ❌ Cancelar
@@ -515,5 +482,3 @@ const SettingsPage: React.FC = () => {
     </div>
   );
 };
-
-export default App;

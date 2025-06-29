@@ -2366,9 +2366,7 @@ export const validateAthlete = (
     errors.push("Nome é obrigatório");
   }
 
-  if (!athlete.id || athlete.id.trim() === "") {
-    errors.push("ID é obrigatório");
-  }
+  // ID não é obrigatório na validação - será gerado automaticamente se não fornecido
 
   return {
     isValid: errors.length === 0,
