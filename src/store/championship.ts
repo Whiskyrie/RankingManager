@@ -316,8 +316,11 @@ export const useChampionshipStore = create<
 
           try {
             // Validar dados de entrada sem ID (será gerado automaticamente)
-            const validAthleteData = validateData(CreateAthleteSchema, athleteData);
-            
+            const validAthleteData = validateData(
+              CreateAthleteSchema,
+              athleteData
+            );
+
             // Criar atleta com ID gerado automaticamente
             const athleteWithId = ensureAthleteId(validAthleteData);
             const validAthlete = validateData(AthleteSchema, athleteWithId);
