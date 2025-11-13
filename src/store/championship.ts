@@ -34,22 +34,50 @@ import {
   getMatchWinner,
   generateTestMatchResult,
 } from "../utils";
+import { calculateGroupStandings } from "../utils/standings-utils";
+import {
+  generateGroupMatches,
+  ensureAthleteId,
+  ensureAthletesIds,
+} from "../utils/group-utils";
 import { v4 as uuidv4 } from "uuid";
 
-// Funções auxiliares para garantir IDs válidos
-function ensureAthleteId(athlete: Partial<Athlete>): Athlete {
-  return {
-    ...athlete,
-    id: athlete.id || generateId(),
-    name: athlete.name || "",
-    isSeeded: athlete.isSeeded || false,
-    isVirtual: athlete.isVirtual || false,
-  } as Athlete;
+// ✅ TIPOS: Definições de tipos para cache e análises
+interface BracketCacheEntry {
+  matches: Match[];
+  timestamp: number;
+  roundsCount: number;
 }
 
-function ensureAthletesIds(athletes: Partial<Athlete>[]): Athlete[] {
-  return athletes.map(ensureAthleteId);
+interface SecondDivisionProgress {
+  totalMatches: number;
+  completedMatches: number;
+  progressPercentage: number;
+  currentRound: string | null;
+  isComplete: boolean;
 }
+
+interface SecondDivisionAnalysis {
+  bracketHealth: {
+    isValid: boolean;
+    errors: string[];
+  };
+  athleteStats: {
+    total: number;
+    active: number;
+    eliminated: number;
+  };
+  roundsStatus: Record<string, { total: number; completed: number }>;
+}
+
+interface AutoFixResult {
+  fixed: boolean;
+  issues: string[];
+  newMatches: Match[];
+  updatedMatches: Match[];
+}
+
+// ✅ REFATORAÇÃO: Funções auxiliares movidas para utils/group-utils.ts
 
 interface ChampionshipState {
   championships: Championship[];
@@ -59,7 +87,7 @@ interface ChampionshipState {
 
   // ✅ CORREÇÃO: Sistema de cache simplificado sem Map
   _lastUpdateTimestamp: number;
-  _bracketCache: Record<string, any>;
+  _bracketCache: Record<string, BracketCacheEntry>;
 }
 
 interface ChampionshipActions {
@@ -90,8 +118,8 @@ interface ChampionshipActions {
 
   // ✅ Métodos de cache
   invalidateCache: () => void;
-  getCachedBracket: (key: string) => any;
-  setCachedBracket: (key: string, data: any) => void;
+  getCachedBracket: (key: string) => BracketCacheEntry | null;
+  setCachedBracket: (key: string, data: BracketCacheEntry) => void;
 
   // ✅ NOVO: Validação e correção CBTM/ITTF
   validateChampionshipCBTM: () => void;
@@ -99,9 +127,9 @@ interface ChampionshipActions {
 
   // ✅ NOVAS FUNCIONALIDADES: Monitoramento e relatórios da segunda divisão
   monitorAndFixSecondDivision: () => Promise<null | {
-    progress: any;
-    analysis: any;
-    autoFixResult: any;
+    progress: SecondDivisionProgress;
+    analysis: SecondDivisionAnalysis;
+    autoFixResult: AutoFixResult | null;
   }>;
   generateSecondDivisionReport: () => null | {
     overview: {
@@ -1633,10 +1661,5 @@ function compareStandings(a: GroupStanding, b: GroupStanding): number {
   return a.athlete.name.localeCompare(b.athlete.name);
 }
 
-// ✅ Expor store no console para debug (apenas em desenvolvimento)
-if (typeof window !== "undefined") {
-  (window as any).championshipStore = useChampionshipStore;
-  console.log(
-    "⚙️ [DEBUG] championshipStore disponível como window.championshipStore"
-  );
-}
+// ✅ REMOVIDO: Exposição do store removida por questões de segurança
+// Use Zustand DevTools para debugging em desenvolvimento

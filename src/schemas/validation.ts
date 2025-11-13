@@ -198,8 +198,8 @@ const GroupSchema = z
     path: ["qualificationSpots"],
   });
 
-// Schema para configuração do torneio
-const TournamentConfigSchema = z
+// Schema base para configuração do torneio (sem validação de data passada)
+const BaseTournamentConfigSchema = z
   .object({
     name: z
       .string()
@@ -227,11 +227,19 @@ const TournamentConfigSchema = z
   .refine((data) => data.qualificationSpotsPerGroup < data.groupSize, {
     message: "Número de classificados deve ser menor que o tamanho do grupo",
     path: ["qualificationSpotsPerGroup"],
-  })
-  .refine((data) => data.date >= new Date(new Date().toDateString()), {
+  });
+
+// Schema para criação (valida data no passado)
+const TournamentConfigSchema = BaseTournamentConfigSchema.refine(
+  (data) => data.date >= new Date(new Date().toDateString()),
+  {
     message: "Data do torneio não pode ser no passado",
     path: ["date"],
-  });
+  }
+);
+
+// Schema para edição (permite datas no passado)
+const UpdateTournamentConfigSchema = BaseTournamentConfigSchema;
 
 // Schema para campeonato completo
 const BaseChampionshipSchema = z.object({
@@ -332,6 +340,7 @@ export type SetResult = z.infer<typeof SetResultSchema>;
 export type Match = z.infer<typeof MatchSchema>;
 export type Group = z.infer<typeof GroupSchema>;
 export type TournamentConfig = z.infer<typeof TournamentConfigSchema>;
+export type UpdateTournamentConfig = z.infer<typeof UpdateTournamentConfigSchema>;
 export type Championship = z.infer<typeof ChampionshipSchema>;
 export type CreateChampionship = z.infer<typeof CreateChampionshipSchema>;
 export type MatchResult = z.infer<typeof MatchResultSchema>;
@@ -345,6 +354,7 @@ export {
   MatchSchema,
   GroupSchema,
   TournamentConfigSchema,
+  UpdateTournamentConfigSchema,
   ChampionshipSchema,
   CreateChampionshipSchema,
   MatchResultSchema,
