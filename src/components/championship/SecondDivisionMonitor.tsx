@@ -103,7 +103,7 @@ export const SecondDivisionMonitor: React.FC = () => {
       {report && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Overview */}
-          <Card className="border-blue-200 dark:border-blue-800">
+          <Card className="border-blue-200 dark:border-gray-700">
             <CardHeader className="pb-3">
               <CardTitle className="text-blue-700 dark:text-blue-300 flex items-center gap-2">
                 <Target className="h-5 w-5" />

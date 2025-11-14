@@ -552,7 +552,7 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
         {/* Resumo estatístico otimizado */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {mainMatches.length > 0 && (
-            <Card className="border-blue-200 dark:border-blue-700 bg-blue-50/50 dark:bg-gray-800/30">
+            <Card className="border-blue-200 dark:border-gray-700 bg-blue-50/50 dark:bg-gray-800/30">
               <CardHeader className="pb-3">
                 <CardTitle className="text-blue-700 dark:text-blue-400 flex items-center gap-2">
                   <Trophy className="h-5 w-5" />

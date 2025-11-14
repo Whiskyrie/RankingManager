@@ -115,8 +115,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="flex justify-between items-center h-16">
             {/* Logo e título */}
             <div className="flex items-center gap-3">
-              <div className="bg-blue-600 dark:bg-blue-500 p-2 rounded-lg">
-                <Trophy className="h-6 w-6 text-white" />
+              <div className="bg-blue-600 dark:bg-gray-700 p-2 rounded-lg">
+                <Trophy className="h-6 w-6 text-white dark:text-blue-400" />
               </div>
               <div>
                 <h1 className="text-lg font-bold text-primary">Ranking</h1>

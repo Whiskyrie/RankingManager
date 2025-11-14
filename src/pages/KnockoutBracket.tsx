@@ -329,7 +329,7 @@ export const KnockoutBracket: React.FC = () => {
 
         {/* Estatísticas melhoradas */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="hover:shadow-lg transition-shadow border-blue-200 dark:border-blue-700">
+          <Card className="hover:shadow-lg transition-shadow border-blue-200 dark:border-gray-700">
             <CardContent className="p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
@@ -350,7 +350,7 @@ export const KnockoutBracket: React.FC = () => {
                   </p>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-2">
                     <div
-                      className="bg-blue-600 dark:bg-blue-500 h-1.5 rounded-full transition-all duration-500"
+                      className="bg-blue-600 dark:bg-gray-500 h-1.5 rounded-full transition-all duration-500"
                       style={{
                         width: `${
                           bracketData.mainMatches.length > 0

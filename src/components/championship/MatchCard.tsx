@@ -557,7 +557,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                             className={`text-center border-x px-4 ${
                               isThirdPlace
                                 ? "border-yellow-200 dark:border-yellow-800"
-                                : "border-blue-200 dark:border-blue-800"
+                                : "border-blue-200 dark:border-gray-700"
                             }`}
                           >
                             <div

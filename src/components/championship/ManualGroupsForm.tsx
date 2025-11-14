@@ -257,12 +257,12 @@ export const ManualGroupsForm: React.FC<ManualGroupsFormProps> = ({
                 </div>
 
                 {canDistributeRemaining && (
-                  <div className="flex items-center gap-2 mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center gap-2 mt-3 p-3 bg-blue-50 dark:bg-gray-800/50 rounded-lg border border-blue-200 dark:border-gray-700">
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                      <p className="text-sm font-medium text-blue-800 dark:text-gray-200">
                         Sortear atletas restantes
                       </p>
-                      <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
+                      <p className="text-xs text-blue-600 dark:text-gray-300 mt-1">
                         Como restam menos de 3 atletas, eles podem ser
                         distribuídos aleatoriamente nos grupos existentes
                       </p>
