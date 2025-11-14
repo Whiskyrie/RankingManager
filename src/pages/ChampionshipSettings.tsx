@@ -35,12 +35,12 @@ export const ChampionshipSettings: React.FC = () => {
 
   if (!championship) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-surface flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="pt-6 text-center">
             <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
             <h2 className="text-lg font-semibold mb-2">Nenhum Campeonato</h2>
-            <p className="text-gray-600">
+            <p className="text-secondary">
               Selecione ou crie um campeonato para ver as configurações.
             </p>
           </CardContent>
@@ -142,15 +142,15 @@ export const ChampionshipSettings: React.FC = () => {
   const StatusIcon = statusInfo.icon;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-surface">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-primary mb-2 flex items-center gap-2">
             <Settings className="h-6 w-6" />
             Configurações do Campeonato
           </h1>
-          <p className="text-gray-600">
+          <p className="text-secondary">
             Visualize e gerencie as configurações do campeonato atual.
           </p>
         </div>
@@ -167,16 +167,16 @@ export const ChampionshipSettings: React.FC = () => {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-secondary">
                     Nome do Campeonato
                   </label>
-                  <p className="text-lg text-gray-900 mt-1">
+                  <p className="text-lg text-primary mt-1">
                     {championship.name}
                   </p>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-secondary">
                     Status
                   </label>
                   <div className="mt-1 flex items-center gap-2">
@@ -185,26 +185,26 @@ export const ChampionshipSettings: React.FC = () => {
                       {statusInfo.label}
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-secondary mt-1">
                     {statusInfo.description}
                   </p>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-secondary">
                     Data do Campeonato
                   </label>
-                  <p className="text-lg text-gray-900 mt-1 flex items-center gap-1">
+                  <p className="text-lg text-primary mt-1 flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
                     {formatDate(championship.date)}
                   </p>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-secondary">
                     Total de Atletas
                   </label>
-                  <p className="text-lg text-gray-900 mt-1 flex items-center gap-1">
+                  <p className="text-lg text-primary mt-1 flex items-center gap-1">
                     <Users className="h-4 w-4" />
                     {championship.totalAthletes}
                   </p>
@@ -224,59 +224,59 @@ export const ChampionshipSettings: React.FC = () => {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-secondary">
                     Tamanho do Grupo
                   </label>
-                  <p className="text-lg text-gray-900 mt-1">
+                  <p className="text-lg text-primary mt-1">
                     {championship.groupSize} atletas por grupo
                   </p>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-secondary">
                     Classificados por Grupo
                   </label>
-                  <p className="text-lg text-gray-900 mt-1">
+                  <p className="text-lg text-primary mt-1">
                     {championship.qualificationSpotsPerGroup} classificados
                   </p>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-secondary">
                     Total de Grupos
                   </label>
-                  <p className="text-lg text-gray-900 mt-1">
+                  <p className="text-lg text-primary mt-1">
                     {championship.groups.length} grupos
                   </p>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-secondary">
                     Grupos - Melhor de
                   </label>
-                  <p className="text-lg text-gray-900 mt-1">
+                  <p className="text-lg text-primary mt-1">
                     {championship.groupsBestOf} sets
                   </p>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-secondary">
                     Mata-mata - Melhor de
                   </label>
-                  <p className="text-lg text-gray-900 mt-1">
+                  <p className="text-lg text-primary mt-1">
                     {championship.knockoutBestOf} sets
                   </p>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-secondary">
                     Disputa de 3º Lugar
                   </label>
-                  <p className="text-lg text-gray-900 mt-1 flex items-center gap-1">
+                  <p className="text-lg text-primary mt-1 flex items-center gap-1">
                     {championship.hasThirdPlace ? (
                       <CheckCircle className="h-4 w-4 text-green-500" />
                     ) : (
-                      <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
+                      <div className="h-4 w-4 rounded-full border-2 border-gray-300 dark:border-gray-600" />
                     )}
                     {championship.hasThirdPlace ? "Sim" : "Não"}
                   </p>
@@ -296,16 +296,16 @@ export const ChampionshipSettings: React.FC = () => {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-secondary">
                     Total de Partidas
                   </label>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                  <p className="text-2xl font-bold text-primary mt-1">
                     {championship.totalMatches}
                   </p>
                   {(() => {
                     const stats = calculateTournamentStats(championship);
                     return (
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs text-secondary mt-1">
                         Grupos: {stats.groupMatches} | Mata-mata:{" "}
                         {stats.knockoutMatches}
                         {stats.secondDivMatches > 0 && (
@@ -321,7 +321,7 @@ export const ChampionshipSettings: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-secondary">
                     Partidas Concluídas
                   </label>
                   <p className="text-2xl font-bold text-green-600 mt-1">
@@ -330,7 +330,7 @@ export const ChampionshipSettings: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-secondary">
                     Partidas Pendentes
                   </label>
                   <p className="text-2xl font-bold text-orange-600 mt-1">
@@ -339,7 +339,7 @@ export const ChampionshipSettings: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-secondary">
                     Progresso
                   </label>
                   <p className="text-2xl font-bold text-blue-600 mt-1">
@@ -368,19 +368,19 @@ export const ChampionshipSettings: React.FC = () => {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-secondary">
                     Criado em
                   </label>
-                  <p className="text-lg text-gray-900 mt-1">
+                  <p className="text-lg text-primary mt-1">
                     {formatDate(championship.createdAt)}
                   </p>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-500">
+                  <label className="text-sm font-medium text-secondary">
                     Última atualização
                   </label>
-                  <p className="text-lg text-gray-900 mt-1">
+                  <p className="text-lg text-primary mt-1">
                     {formatDate(championship.updatedAt)}
                   </p>
                 </div>
@@ -398,10 +398,10 @@ export const ChampionshipSettings: React.FC = () => {
                 {/* Reiniciar Campeonato */}
                 {championship.status !== "completed" && (
                   <div>
-                    <h4 className="text-sm font-medium text-gray-900">
+                    <h4 className="text-sm font-medium text-primary">
                       Reiniciar Campeonato
                     </h4>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-secondary mt-1">
                       Remove todos os resultados e volta o campeonato para o
                       estado inicial.
                     </p>
@@ -416,11 +416,11 @@ export const ChampionshipSettings: React.FC = () => {
                 )}
 
                 {/* Excluir Campeonato */}
-                <div className="pt-4 border-t border-red-200">
-                  <h4 className="text-sm font-medium text-red-900">
+                <div className="pt-4 border-t border-red-200 dark:border-red-800">
+                  <h4 className="text-sm font-medium text-red-900 dark:text-red-400">
                     Excluir Campeonato Permanentemente
                   </h4>
-                  <p className="text-sm text-red-600 mt-1">
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
                     Esta ação é <strong>irreversível</strong>. O campeonato e
                     todos os seus dados serão perdidos para sempre.
                   </p>
@@ -434,7 +434,7 @@ export const ChampionshipSettings: React.FC = () => {
                       🗑️ Excluir Campeonato
                     </Button>
                   ) : (
-                    <div className="mt-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="mt-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
                       <Alert>
                         <AlertTriangle className="h-4 w-4" />
                         <AlertDescription>
@@ -442,7 +442,7 @@ export const ChampionshipSettings: React.FC = () => {
                             ⚠️ Tem certeza absoluta que deseja excluir o
                             campeonato "{championship.name}"?
                           </p>
-                          <p className="text-xs text-red-600 mb-4">
+                          <p className="text-xs text-red-600 dark:text-red-400 mb-4">
                             Esta ação não pode ser desfeita. Todos os atletas,
                             grupos, partidas e resultados serão perdidos.
                           </p>
@@ -466,7 +466,6 @@ export const ChampionshipSettings: React.FC = () => {
                           size="sm"
                           onClick={() => setShowDeleteConfirmation(false)}
                           disabled={isDeleting}
-                          className="border-gray-300"
                         >
                           ❌ Cancelar
                         </Button>

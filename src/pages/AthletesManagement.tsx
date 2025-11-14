@@ -56,14 +56,14 @@ export const AthletesManagement: React.FC = () => {
 
   if (!currentChampionship) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-surface flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="p-8 text-center">
-            <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            <Users className="h-16 w-16 text-tertiary mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-primary mb-2">
               Nenhum campeonato selecionado
             </h2>
-            <p className="text-gray-500">
+            <p className="text-secondary">
               Selecione um campeonato para gerenciar atletas
             </p>
           </CardContent>
@@ -331,12 +331,12 @@ export const AthletesManagement: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-surface">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-primary">
               Gerenciar Atletas
             </h1>
           </div>
@@ -441,8 +441,8 @@ Pedro Henrique"
               <div className="flex items-center">
                 <Users className="h-8 w-8 text-blue-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-secondary">Total</p>
+                  <p className="text-2xl font-bold text-primary">
                     {athletes.length}
                   </p>
                 </div>
@@ -455,10 +455,10 @@ Pedro Henrique"
               <div className="flex items-center">
                 <Trophy className="h-8 w-8 text-yellow-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">
+                  <p className="text-sm font-medium text-secondary">
                     Cabeças de Chave
                   </p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-2xl font-bold text-primary">
                     {seededAthletes}
                   </p>
                 </div>
@@ -471,8 +471,8 @@ Pedro Henrique"
               <div className="flex items-center">
                 <Users className="h-8 w-8 text-green-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Demais</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-secondary">Demais</p>
+                  <p className="text-2xl font-bold text-primary">
                     {unseededAthletes}
                   </p>
                 </div>
@@ -485,8 +485,8 @@ Pedro Henrique"
               <div className="flex items-center">
                 <Trophy className="h-8 w-8 text-purple-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Grupos</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-secondary">Grupos</p>
+                  <p className="text-2xl font-bold text-primary">
                     {currentChampionship.groups.length}
                   </p>
                 </div>
@@ -502,7 +502,7 @@ Pedro Henrique"
               <div className="flex-1">
                 <Label>Buscar</Label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-tertiary h-4 w-4" />
                   <Input
                     placeholder="Nome do atleta..."
                     value={searchTerm}
@@ -526,7 +526,7 @@ Pedro Henrique"
 
               {selectedAthletes.size > 0 && (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-secondary">
                     {selectedAthletes.size} selecionado(s)
                   </span>
                   <Button
@@ -576,7 +576,7 @@ Pedro Henrique"
                 </thead>
                 <tbody>
                   {filteredAthletes.map((athlete) => (
-                    <tr key={athlete.id} className="border-b hover:bg-gray-50">
+                    <tr key={athlete.id} className="border-b hover:bg-surface-elevated">
                       <td className="py-3 px-2">
                         <input
                           type="checkbox"
@@ -594,7 +594,7 @@ Pedro Henrique"
                             #{athlete.seedNumber}
                           </Badge>
                         ) : (
-                          <span className="text-gray-400">-</span>
+                          <span className="text-tertiary">-</span>
                         )}
                       </td>
                       <td className="py-3 px-2">
@@ -622,8 +622,8 @@ Pedro Henrique"
               </table>
 
               {filteredAthletes.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <div className="text-center py-8 text-secondary">
+                  <Users className="h-12 w-12 mx-auto mb-4 text-tertiary" />
                   <p>Nenhum atleta encontrado</p>
                   <p className="text-sm mt-2">
                     {athletes.length === 0
@@ -648,12 +648,12 @@ Pedro Henrique"
 
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-surface rounded-lg">
                   <div>
                     <h4 className="font-medium">
                       Gerar Grupos Automaticamente
                     </h4>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-secondary">
                       {canGenerateGroups
                         ? `Pronto para gerar grupos com ${athletes.length} atletas. Atletas restantes serão distribuídos automaticamente.`
                         : `Adicione pelo menos ${
@@ -680,10 +680,10 @@ Pedro Henrique"
                 </div>
 
                 {athletes.length >= 6 && (
-                  <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <div className="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-700">
                     <div>
                       <h4 className="font-medium">Criar Grupos Manualmente</h4>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-secondary">
                         Distribua os atletas nos grupos manualmente. Atletas que
                         não formam grupos completos podem ser sorteados
                         automaticamente.
@@ -733,7 +733,7 @@ Pedro Henrique"
                 )}
 
                 {athletes.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-secondary">
                     <div>
                       <strong>Configuração atual:</strong>
                       <br />• Tamanho do grupo: {
@@ -766,12 +766,12 @@ Pedro Henrique"
                 {/* Botão para testes - preencher resultados automaticamente */}
                 {currentChampionship.groups.length > 0 &&
                   !currentChampionship.groups.every((g) => g.isCompleted) && (
-                    <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200 mt-4">
+                    <div className="flex items-center justify-between p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-700 mt-4">
                       <div>
-                        <h4 className="font-medium text-orange-800">
+                        <h4 className="font-medium text-orange-800 dark:text-orange-300">
                           ⚡ Teste Rápido
                         </h4>
-                        <p className="text-sm text-orange-700">
+                        <p className="text-sm text-orange-700 dark:text-orange-400">
                           Preenche automaticamente os grupos com resultados
                           válidos para testar o mata-mata
                         </p>
@@ -779,7 +779,7 @@ Pedro Henrique"
                       <Button
                         onClick={handleFillGroupsWithResults}
                         variant="outline"
-                        className="border-orange-300 text-orange-700 hover:bg-orange-100"
+                        className="border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/40"
                       >
                         🎲 Completar Grupos
                       </Button>
