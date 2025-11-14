@@ -331,3 +331,17 @@ h6 {
 .dark .group-standings-table tr:hover {
   @apply bg-gray-800;
 }
+
+/* Dark mode para background principal */
+.dark {
+  color-scheme: dark;
+}
+
+.dark .championship-grid {
+  @apply gap-4;
+}
+
+/* Transição suave entre temas */
+* {
+  @apply transition-colors;
+}

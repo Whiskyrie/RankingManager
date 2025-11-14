@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useChampionshipStore } from "../store/championship";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
+import { ThemeToggle } from "./ThemeToggle";
 import {
   Trophy,
   Users,
@@ -107,22 +108,22 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-50">
+      <header className="bg-white dark:bg-gray-900 shadow-sm border-b dark:border-gray-800 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo e título */}
             <div className="flex items-center gap-3">
-              <div className="bg-blue-600 p-2 rounded-lg">
+              <div className="bg-blue-600 dark:bg-blue-700 p-2 rounded-lg">
                 <Trophy className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-900">
+                <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">
                   CBTM Manager
                 </h1>
                 {currentChampionship && (
-                  <p className="text-xs text-gray-500 hidden sm:block">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
                     {currentChampionship.name}
                   </p>
                 )}
@@ -130,21 +131,26 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
 
             {/* Informações do campeonato atual */}
-            {currentChampionship && (
-              <div className="hidden md:flex items-center gap-4">
-                <div className="text-right">
-                  <div className="text-sm font-medium text-gray-900">
-                    {currentChampionship.name}
+            <div className="flex items-center gap-4">
+              {currentChampionship && (
+                <div className="hidden md:flex items-center gap-4">
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {currentChampionship.name}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {new Date(currentChampionship.date).toLocaleDateString(
+                        "pt-BR"
+                      )}
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-500">
-                    {new Date(currentChampionship.date).toLocaleDateString(
-                      "pt-BR"
-                    )}
-                  </div>
+                  {getStatusBadge()}
                 </div>
-                {getStatusBadge()}
-              </div>
-            )}
+              )}
+
+              {/* Theme Toggle */}
+              <ThemeToggle />
+            </div>
 
             {/* Menu mobile */}
             <Button
@@ -164,14 +170,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         {/* Menu mobile expandido */}
         {isMobileMenuOpen && (
-          <div className="md:hidden bg-white border-t">
+          <div className="md:hidden bg-white dark:bg-gray-900 border-t dark:border-gray-800">
             <div className="px-4 py-2 space-y-1">
               {currentChampionship && (
-                <div className="py-2 border-b">
-                  <div className="text-sm font-medium text-gray-900">
+                <div className="py-2 border-b dark:border-gray-800">
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {currentChampionship.name}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
                     {new Date(currentChampionship.date).toLocaleDateString(
                       "pt-BR"
                     )}
@@ -206,7 +212,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div className="flex">
         {/* Sidebar - Desktop */}
         <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:pt-16">
-          <div className="flex-1 flex flex-col min-h-0 bg-white border-r">
+          <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-gray-900 border-r dark:border-gray-800">
             <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
               <nav className="mt-5 flex-1 px-2 space-y-1">
                 {navigationItems.map((item) => {
@@ -234,26 +240,26 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* Estatísticas rápidas */}
             {currentChampionship && (
-              <div className="flex-shrink-0 p-4 border-t bg-gray-50">
-                <div className="text-xs font-medium text-gray-500 mb-2">
+              <div className="flex-shrink-0 p-4 border-t dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+                <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
                   Estatísticas Rápidas
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-xs text-gray-600">Atletas:</span>
-                    <span className="text-xs font-medium">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Atletas:</span>
+                    <span className="text-xs font-medium dark:text-gray-200">
                       {currentChampionship.totalAthletes}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-xs text-gray-600">Grupos:</span>
-                    <span className="text-xs font-medium">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Grupos:</span>
+                    <span className="text-xs font-medium dark:text-gray-200">
                       {currentChampionship.groups.length}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-xs text-gray-600">Partidas:</span>
-                    <span className="text-xs font-medium">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Partidas:</span>
+                    <span className="text-xs font-medium dark:text-gray-200">
                       {currentChampionship.completedMatches}/
                       {currentChampionship.totalMatches}
                     </span>
@@ -262,21 +268,21 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                     const stats = calculateTournamentStats(currentChampionship);
                     if (stats.knockoutMatches > 0) {
                       return (
-                        <div className="pt-1 border-t border-gray-200">
+                        <div className="pt-1 border-t border-gray-200 dark:border-gray-700">
                           <div className="flex justify-between">
-                            <span className="text-xs text-gray-600">
+                            <span className="text-xs text-gray-600 dark:text-gray-400">
                               Principal:
                             </span>
-                            <span className="text-xs font-medium">
+                            <span className="text-xs font-medium dark:text-gray-200">
                               {stats.mainKnockoutMatches}
                             </span>
                           </div>
                           {stats.secondDivMatches > 0 && (
                             <div className="flex justify-between">
-                              <span className="text-xs text-gray-600">
+                              <span className="text-xs text-gray-600 dark:text-gray-400">
                                 2ª Div:
                               </span>
-                              <span className="text-xs font-medium">
+                              <span className="text-xs font-medium dark:text-gray-200">
                                 {stats.secondDivMatches}
                               </span>
                             </div>

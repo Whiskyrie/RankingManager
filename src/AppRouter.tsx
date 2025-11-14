@@ -6,6 +6,7 @@ import {
 } from "react-router-dom";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ThemeProvider } from "./components/ThemeProvider";
 import { Layout } from "./components/Layout";
 import { Dashboard } from "./pages/Dashboard";
 import { GroupsManagement } from "./pages/GroupsManagement";
@@ -30,10 +31,10 @@ function AppContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Carregando...</p>
         </div>
       </div>
     );
@@ -57,15 +58,17 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary>
-      <Router>
-        <AppContent />
-        <Toaster
-          position="top-right"
-          expand={true}
-          richColors={true}
-          closeButton={true}
-        />
-      </Router>
+      <ThemeProvider>
+        <Router>
+          <AppContent />
+          <Toaster
+            position="top-right"
+            expand={true}
+            richColors={true}
+            closeButton={true}
+          />
+        </Router>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }
