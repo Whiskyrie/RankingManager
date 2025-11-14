@@ -121,9 +121,6 @@ export const Dashboard: React.FC = () => {
           <div className="flex justify-between items-center py-6">
             <div>
               <h1 className="text-2xl font-bold text-primary">Ranking</h1>
-              <p className="text-secondary mt-1">
-                Gerenciamento completo de campeonatos de tênis de mesa
-              </p>
             </div>
 
             <Dialog

@@ -52,13 +52,13 @@ export const SecondDivisionMonitor: React.FC = () => {
 
   if (!currentChampionship?.hasRepechage) {
     return (
-      <Card className="border-orange-200">
+      <Card className="border-orange-200 dark:border-orange-800">
         <CardContent className="p-6 text-center">
-          <Award className="h-12 w-12 text-orange-300 mx-auto mb-3" />
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">
+          <Award className="h-12 w-12 text-orange-300 dark:text-orange-700 mx-auto mb-3" />
+          <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
             Segunda Divisão Desabilitada
           </h3>
-          <p className="text-gray-500">
+          <p className="text-gray-500 dark:text-gray-400">
             A segunda divisão não está habilitada para este campeonato.
           </p>
         </CardContent>
@@ -69,16 +69,16 @@ export const SecondDivisionMonitor: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header com ações */}
-      <Card className="border-orange-200 bg-orange-50/30">
+      <Card className="border-orange-200 dark:border-orange-800 bg-orange-50/30 dark:bg-orange-900/10">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Award className="h-6 w-6 text-orange-600" />
+              <Award className="h-6 w-6 text-orange-600 dark:text-orange-400" />
               <div>
-                <CardTitle className="text-orange-700">
+                <CardTitle className="text-orange-700 dark:text-orange-300">
                   Monitor da Segunda Divisão
                 </CardTitle>
-                <p className="text-sm text-orange-600 mt-1">
+                <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">
                   Monitoramento e análise avançada da repescagem
                 </p>
               </div>
@@ -103,9 +103,9 @@ export const SecondDivisionMonitor: React.FC = () => {
       {report && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Overview */}
-          <Card className="border-blue-200">
+          <Card className="border-blue-200 dark:border-blue-800">
             <CardHeader className="pb-3">
-              <CardTitle className="text-blue-700 flex items-center gap-2">
+              <CardTitle className="text-blue-700 dark:text-blue-300 flex items-center gap-2">
                 <Target className="h-5 w-5" />
                 Visão Geral
               </CardTitle>
@@ -113,8 +113,8 @@ export const SecondDivisionMonitor: React.FC = () => {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Progresso</span>
-                  <span className="text-sm font-medium">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Progresso</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {Math.round(report.overview.progressPercentage)}%
                   </span>
                 </div>
@@ -126,22 +126,22 @@ export const SecondDivisionMonitor: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                     {report.overview.completedMatches}
                   </div>
-                  <div className="text-xs text-gray-500">Completas</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Completas</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-700">
+                  <div className="text-2xl font-bold text-gray-700 dark:text-gray-300">
                     {report.overview.totalMatches}
                   </div>
-                  <div className="text-xs text-gray-500">Total</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Total</div>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-gray-500" />
-                <span className="text-sm">
+                <Users className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                <span className="text-sm text-gray-900 dark:text-gray-100">
                   {report.overview.activeAthletes} de{" "}
                   {report.overview.eliminatedCount} atletas
                 </span>
@@ -150,9 +150,9 @@ export const SecondDivisionMonitor: React.FC = () => {
           </Card>
 
           {/* Rodadas */}
-          <Card className="border-purple-200">
+          <Card className="border-purple-200 dark:border-purple-800">
             <CardHeader className="pb-3">
-              <CardTitle className="text-purple-700">Rodadas</CardTitle>
+              <CardTitle className="text-purple-700 dark:text-purple-300">Rodadas</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -162,9 +162,9 @@ export const SecondDivisionMonitor: React.FC = () => {
                       key={round}
                       className="flex items-center justify-between"
                     >
-                      <span className="text-sm font-medium">{round}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{round}</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
                           {data.completed}/{data.total}
                         </span>
                         {data.completed === data.total ? (
@@ -181,9 +181,9 @@ export const SecondDivisionMonitor: React.FC = () => {
           </Card>
 
           {/* Medalhistas */}
-          <Card className="border-amber-200">
+          <Card className="border-amber-200 dark:border-amber-800">
             <CardHeader className="pb-3">
-              <CardTitle className="text-amber-700 flex items-center gap-2">
+              <CardTitle className="text-amber-700 dark:text-amber-300 flex items-center gap-2">
                 <Trophy className="h-5 w-5" />
                 Pódium 2ª Divisão
               </CardTitle>
@@ -193,43 +193,43 @@ export const SecondDivisionMonitor: React.FC = () => {
                 <div className="flex items-center gap-3">
                   <Badge
                     variant="secondary"
-                    className="bg-yellow-100 text-yellow-800"
+                    className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200"
                   >
                     🥇 1º
                   </Badge>
-                  <span className="text-sm">
+                  <span className="text-sm text-gray-900 dark:text-gray-100">
                     {report.medalists.champion || "Pendente"}
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge
                     variant="secondary"
-                    className="bg-gray-100 text-gray-800"
+                    className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200"
                   >
                     🥈 2º
                   </Badge>
-                  <span className="text-sm">
+                  <span className="text-sm text-gray-900 dark:text-gray-100">
                     {report.medalists.runnerUp || "Pendente"}
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge
                     variant="secondary"
-                    className="bg-orange-100 text-orange-800"
+                    className="bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200"
                   >
                     🥉 3º
                   </Badge>
-                  <span className="text-sm">
+                  <span className="text-sm text-gray-900 dark:text-gray-100">
                     {report.medalists.thirdPlace || "Pendente"}
                   </span>
                 </div>
               </div>
 
               {report.structure.isComplete && (
-                <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <span className="text-sm text-green-700 font-medium">
+                    <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <span className="text-sm text-green-700 dark:text-green-300 font-medium">
                       Segunda Divisão Completa!
                     </span>
                   </div>
@@ -247,23 +247,23 @@ export const SecondDivisionMonitor: React.FC = () => {
           <Card
             className={`border-2 ${
               monitorData.analysis.bracketHealth.isValid
-                ? "border-green-200 bg-green-50/30"
-                : "border-red-200 bg-red-50/30"
+                ? "border-green-200 dark:border-green-800 bg-green-50/30 dark:bg-green-900/10"
+                : "border-red-200 dark:border-red-800 bg-red-50/30 dark:bg-red-900/10"
             }`}
           >
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
                 {monitorData.analysis.bracketHealth.isValid ? (
-                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
                 ) : (
-                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                  <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
                 )}
                 Saúde do Bracket
               </CardTitle>
             </CardHeader>
             <CardContent>
               {monitorData.analysis.bracketHealth.isValid ? (
-                <div className="text-green-700">
+                <div className="text-green-700 dark:text-green-300">
                   <p className="font-medium">✅ Bracket está saudável</p>
                   <p className="text-sm mt-1">
                     Todos os sistemas funcionando corretamente.
@@ -272,7 +272,7 @@ export const SecondDivisionMonitor: React.FC = () => {
               ) : (
                 <div className="space-y-4">
                   <div>
-                    <h4 className="font-medium text-red-700 mb-2">
+                    <h4 className="font-medium text-red-700 dark:text-red-300 mb-2">
                       Problemas Detectados:
                     </h4>
                     <ul className="space-y-1">
@@ -280,7 +280,7 @@ export const SecondDivisionMonitor: React.FC = () => {
                         (issue: string, index: number) => (
                           <li
                             key={index}
-                            className="text-sm text-red-600 flex items-start gap-2"
+                            className="text-sm text-red-600 dark:text-red-400 flex items-start gap-2"
                           >
                             <AlertTriangle className="h-3 w-3 mt-0.5 flex-shrink-0" />
                             {issue}

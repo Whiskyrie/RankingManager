@@ -123,7 +123,7 @@ export const ManualGroupsForm: React.FC<ManualGroupsFormProps> = ({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex justify-between items-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Distribua os {athletes.length} atletas em grupos de pelo menos 2
               pessoas. Atletas restantes podem ser sorteados automaticamente.
             </p>
@@ -160,7 +160,7 @@ export const ManualGroupsForm: React.FC<ManualGroupsFormProps> = ({
                 <CardContent className="space-y-3">
                   {group.athleteIds.length > 0 && (
                     <div className="space-y-2">
-                      <Label className="text-xs font-medium text-gray-500">
+                      <Label className="text-xs font-medium text-gray-500 dark:text-gray-400">
                         Atletas no grupo ({group.athleteIds.length})
                       </Label>
                       <div className="space-y-1">
@@ -171,9 +171,9 @@ export const ManualGroupsForm: React.FC<ManualGroupsFormProps> = ({
                           return (
                             <div
                               key={athleteId}
-                              className="flex items-center justify-between bg-gray-50 p-2 rounded"
+                              className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded"
                             >
-                              <span className="text-sm">{athlete?.name}</span>
+                              <span className="text-sm text-gray-900 dark:text-gray-100">{athlete?.name}</span>
                               <Button
                                 onClick={() =>
                                   removeAthleteFromGroup(groupIndex, athleteId)
@@ -193,7 +193,7 @@ export const ManualGroupsForm: React.FC<ManualGroupsFormProps> = ({
 
                   {availableAthletes.length > 0 && (
                     <div className="space-y-2">
-                      <Label className="text-xs font-medium text-gray-500">
+                      <Label className="text-xs font-medium text-gray-500 dark:text-gray-400">
                         Adicionar atleta
                       </Label>
                       <Select
@@ -223,10 +223,10 @@ export const ManualGroupsForm: React.FC<ManualGroupsFormProps> = ({
                     </div>
                   )}
 
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
                     Mínimo: 2 atletas | Atual: {group.athleteIds.length}
                     {group.athleteIds.length >= 2 && (
-                      <Check className="inline h-3 w-3 ml-1 text-green-500" />
+                      <Check className="inline h-3 w-3 ml-1 text-green-500 dark:text-green-400" />
                     )}
                   </div>
                 </CardContent>
@@ -235,11 +235,11 @@ export const ManualGroupsForm: React.FC<ManualGroupsFormProps> = ({
           </div>
 
           {availableAthletes.length > 0 && (
-            <Card className="border-yellow-200 bg-yellow-50">
+            <Card className="border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <Users className="h-4 w-4 text-yellow-600" />
-                  <span className="font-medium text-yellow-800">
+                  <Users className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                  <span className="font-medium text-yellow-800 dark:text-yellow-200">
                     Atletas não distribuídos ({availableAthletes.length})
                   </span>
                 </div>
@@ -248,7 +248,7 @@ export const ManualGroupsForm: React.FC<ManualGroupsFormProps> = ({
                     <Badge
                       key={athlete.id}
                       variant="outline"
-                      className="text-yellow-700"
+                      className="text-yellow-700 dark:text-yellow-300"
                     >
                       {athlete.name}
                       {athlete.isSeeded && ` (#${athlete.seedNumber})`}
@@ -257,12 +257,12 @@ export const ManualGroupsForm: React.FC<ManualGroupsFormProps> = ({
                 </div>
 
                 {canDistributeRemaining && (
-                  <div className="flex items-center gap-2 mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-2 mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-blue-800">
+                      <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
                         Sortear atletas restantes
                       </p>
-                      <p className="text-xs text-blue-600 mt-1">
+                      <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
                         Como restam menos de 3 atletas, eles podem ser
                         distribuídos aleatoriamente nos grupos existentes
                       </p>
@@ -280,10 +280,10 @@ export const ManualGroupsForm: React.FC<ManualGroupsFormProps> = ({
             </Card>
           )}
 
-          <div className="flex justify-between items-center pt-4 border-t">
-            <div className="text-sm text-gray-600">
+          <div className="flex justify-between items-center pt-4 border-t dark:border-gray-700">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
               {canCreate ? (
-                <span className="text-green-600 font-medium">
+                <span className="text-green-600 dark:text-green-400 font-medium">
                   ✓ Todos os atletas foram distribuídos nos grupos
                 </span>
               ) : (

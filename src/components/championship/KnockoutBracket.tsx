@@ -95,7 +95,7 @@ export const KnockoutBracket: React.FC<KnockoutBracketProps> = ({
       <div className="flex flex-col items-center">
         <h3
           className={`text-lg font-bold mb-4 ${
-            isSecondDivision ? "text-orange-600" : "text-blue-600"
+            isSecondDivision ? "text-orange-600 dark:text-orange-400" : "text-blue-600 dark:text-blue-400"
           }`}
         >
           {roundName}
@@ -122,11 +122,11 @@ export const KnockoutBracket: React.FC<KnockoutBracketProps> = ({
         <CardContent>
           {!canGenerateBracket ? (
             <div className="text-center py-8">
-              <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <Users className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                 Chave não disponível
               </h3>
-              <p className="text-gray-500 mb-4">
+              <p className="text-gray-500 dark:text-gray-400 mb-4">
                 {currentChampionship.status !== "groups"
                   ? "Complete a fase de grupos primeiro"
                   : !currentChampionship.groups.every((g) => g.isCompleted)
@@ -136,11 +136,11 @@ export const KnockoutBracket: React.FC<KnockoutBracketProps> = ({
             </div>
           ) : knockoutMatches.length === 0 ? (
             <div className="text-center py-8">
-              <Trophy className="h-16 w-16 text-blue-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <Trophy className="h-16 w-16 text-blue-300 dark:text-blue-700 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                 Pronto para gerar a chave!
               </h3>
-              <p className="text-gray-500 mb-4">
+              <p className="text-gray-500 dark:text-gray-400 mb-4">
                 {qualifiedAthletes.length} atletas classificados e{" "}
                 {eliminatedAthletes.length} eliminados
               </p>
@@ -156,7 +156,7 @@ export const KnockoutBracket: React.FC<KnockoutBracketProps> = ({
             <div className="space-y-6">
               {/* Divisão Principal */}
               <div>
-                <h2 className="text-xl font-bold text-blue-600 mb-4 text-center">
+                <h2 className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-4 text-center">
                   Divisão Principal
                 </h2>
                 <div className="flex justify-center gap-8 overflow-x-auto">
@@ -173,7 +173,7 @@ export const KnockoutBracket: React.FC<KnockoutBracketProps> = ({
               {/* Segunda Divisão */}
               {eliminatedAthletes.length > 0 && (
                 <div>
-                  <h2 className="text-xl font-bold text-orange-600 mb-4 text-center">
+                  <h2 className="text-xl font-bold text-orange-600 dark:text-orange-400 mb-4 text-center">
                     Segunda Divisão
                   </h2>
                   <div className="flex justify-center gap-8 overflow-x-auto">
@@ -200,7 +200,7 @@ export const KnockoutBracket: React.FC<KnockoutBracketProps> = ({
           {qualifiedAthletes.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-green-600">
+                <CardTitle className="flex items-center gap-2 text-green-600 dark:text-green-400">
                   <Trophy className="h-5 w-5" />
                   Classificados ({qualifiedAthletes.length})
                 </CardTitle>
@@ -210,10 +210,10 @@ export const KnockoutBracket: React.FC<KnockoutBracketProps> = ({
                   {qualifiedAthletes.map((athlete, index) => (
                     <div
                       key={athlete.id}
-                      className="flex items-center justify-between p-2 bg-green-50 rounded"
+                      className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded"
                     >
-                      <span className="font-medium">{athlete.name}</span>
-                      <Badge variant="outline" className="text-green-600">
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{athlete.name}</span>
+                      <Badge variant="outline" className="text-green-600 dark:text-green-400">
                         {index + 1}º classificado
                       </Badge>
                     </div>
@@ -227,7 +227,7 @@ export const KnockoutBracket: React.FC<KnockoutBracketProps> = ({
           {eliminatedAthletes.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-orange-600">
+                <CardTitle className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
                   <Users className="h-5 w-5" />
                   Segunda Divisão ({eliminatedAthletes.length})
                 </CardTitle>
@@ -237,10 +237,10 @@ export const KnockoutBracket: React.FC<KnockoutBracketProps> = ({
                   {eliminatedAthletes.map((athlete) => (
                     <div
                       key={athlete.id}
-                      className="flex items-center justify-between p-2 bg-orange-50 rounded"
+                      className="flex items-center justify-between p-2 bg-orange-50 dark:bg-orange-900/20 rounded"
                     >
-                      <span className="font-medium">{athlete.name}</span>
-                      <Badge variant="outline" className="text-orange-600">
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{athlete.name}</span>
+                      <Badge variant="outline" className="text-orange-600 dark:text-orange-400">
                         2ª Divisão
                       </Badge>
                     </div>

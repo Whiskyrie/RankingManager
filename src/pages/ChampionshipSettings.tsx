@@ -431,7 +431,7 @@ export const ChampionshipSettings: React.FC = () => {
                       className="mt-3 bg-red-600 hover:bg-red-700"
                       onClick={confirmDeleteChampionship}
                     >
-                      🗑️ Excluir Campeonato
+                      Excluir Campeonato
                     </Button>
                   ) : (
                     <div className="mt-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
@@ -459,7 +459,7 @@ export const ChampionshipSettings: React.FC = () => {
                         >
                           {isDeleting
                             ? "Excluindo..."
-                            : "✅ Sim, Excluir Definitivamente"}
+                            : "Sim, Excluir Definitivamente"}
                         </Button>
                         <Button
                           variant="outline"

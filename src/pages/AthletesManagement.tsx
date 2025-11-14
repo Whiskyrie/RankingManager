@@ -592,7 +592,10 @@ Pedro Henrique"
                 </thead>
                 <tbody>
                   {filteredAthletes.map((athlete) => (
-                    <tr key={athlete.id} className="border-b hover:bg-surface-elevated">
+                    <tr
+                      key={athlete.id}
+                      className="border-b hover:bg-surface-elevated"
+                    >
                       <td className="py-3 px-2">
                         <input
                           type="checkbox"
@@ -785,7 +788,7 @@ Pedro Henrique"
                     <div className="flex items-center justify-between p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-700 mt-4">
                       <div>
                         <h4 className="font-medium text-orange-800 dark:text-orange-300">
-                          ⚡ Teste Rápido
+                          Teste Rápido
                         </h4>
                         <p className="text-sm text-orange-700 dark:text-orange-400">
                           Preenche automaticamente os grupos com resultados
@@ -797,7 +800,7 @@ Pedro Henrique"
                         variant="outline"
                         className="border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/40"
                       >
-                        🎲 Completar Grupos
+                        Completar Grupos
                       </Button>
                     </div>
                   )}
