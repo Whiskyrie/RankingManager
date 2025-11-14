@@ -334,7 +334,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
       );
     }
     return (
-      <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+      <Badge variant="outline" className="bg-blue-100 dark:bg-gray-700/40 text-blue-800 dark:text-blue-300">
         <PlayCircle className="h-3 w-3 mr-1" />
         Pendente
       </Badge>
@@ -345,10 +345,10 @@ export const MatchCard: React.FC<MatchCardProps> = ({
     <Card
       className={`transition-all duration-200 hover:shadow-md ${
         isThirdPlace
-          ? "border-yellow-300 dark:border-yellow-700 bg-yellow-50/30 dark:bg-yellow-900/10"
+          ? "border-yellow-300 dark:border-yellow-600 bg-yellow-50/30 dark:bg-yellow-900/20"
           : match.isCompleted
-          ? "border-green-300 dark:border-green-700 bg-green-50/30 dark:bg-green-900/10"
-          : "border-blue-300 dark:border-blue-700 bg-blue-50/30 dark:bg-blue-900/10"
+          ? "border-green-300 dark:border-green-600 bg-green-50/30 dark:bg-green-900/20"
+          : "border-blue-300 dark:border-gray-600 bg-blue-50/30 dark:bg-gray-800/30"
       }`}
     >
       <CardHeader className="pb-3">
@@ -497,8 +497,8 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                       <div
                         className={`p-4 rounded-lg border ${
                           isThirdPlace
-                            ? "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
-                            : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+                            ? "bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700"
+                            : "bg-blue-50 dark:bg-gray-800/50 border-blue-200 dark:border-gray-700"
                         }`}
                       >
                         <div className="flex justify-between items-center mb-2">
@@ -892,7 +892,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                   </TabsContent>
 
                   <TabsContent value="quick" className="space-y-6">
-                    <div className="p-4 rounded-lg border bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+                    <div className="p-4 rounded-lg border bg-blue-50 dark:bg-gray-800/50 border-blue-200 dark:border-gray-700">
                       <div className="flex items-center gap-2 mb-4">
                         <Zap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                         <h4 className="font-medium text-blue-900 dark:text-blue-100">
