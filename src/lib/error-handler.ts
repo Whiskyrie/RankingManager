@@ -1,4 +1,4 @@
-import { toast } from "sonner";
+import { toast } from "./toast";
 
 export interface AppError extends Error {
   code?: string;
@@ -186,37 +186,37 @@ class ErrorHandlerService {
     // Toast de erro baseado no tipo
     switch (error.name) {
       case "ValidationError":
-        toast.error("Dados inválidos", {
-          description: error.message,
+        toast.error(`Dados inválidos: ${error.message}`, {
           duration: 5000,
+          logMessage: false, // Já logado pelo logError()
         });
         break;
 
       case "NetworkError":
-        toast.error("Erro de conexão", {
-          description: "Verifique sua conexão e tente novamente",
+        toast.error("Erro de conexão: Verifique sua conexão e tente novamente", {
           duration: 5000,
+          logMessage: false,
         });
         break;
 
       case "BusinessLogicError":
-        toast.error("Operação não permitida", {
-          description: error.message,
+        toast.error(`Operação não permitida: ${error.message}`, {
           duration: 5000,
+          logMessage: false,
         });
         break;
 
       case "DataIntegrityError":
-        toast.error("Erro de integridade", {
-          description: "Os dados estão inconsistentes. Recarregue a página.",
+        toast.error("Erro de integridade: Os dados estão inconsistentes. Recarregue a página.", {
           duration: 8000,
+          logMessage: false,
         });
         break;
 
       default:
-        toast.error("Erro inesperado", {
-          description: "Algo deu errado. Nossa equipe foi notificada.",
+        toast.error("Erro inesperado: Algo deu errado. Nossa equipe foi notificada.", {
           duration: 5000,
+          logMessage: false,
         });
     }
   }

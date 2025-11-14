@@ -1560,31 +1560,7 @@ function generateThirdPlaceMatches(
 }
 
 // Funções auxiliares mantidas
-function generateGroupMatches(group: Group): Match[] {
-  const groupMatches: Match[] = [];
-  const groupAthletes = group.athletes;
-
-  for (let i = 0; i < groupAthletes.length; i++) {
-    for (let j = i + 1; j < groupAthletes.length; j++) {
-      const match: Match = {
-        id: uuidv4(),
-        player1Id: groupAthletes[i].id,
-        player2Id: groupAthletes[j].id,
-        player1: groupAthletes[i],
-        player2: groupAthletes[j],
-        sets: [],
-        isCompleted: false,
-        phase: "groups",
-        groupId: group.id,
-        timeoutsUsed: { player1: false, player2: false },
-        createdAt: new Date(),
-      };
-      groupMatches.push(match);
-    }
-  }
-
-  return groupMatches;
-}
+// generateGroupMatches foi movido para utils/group-utils.ts e é importado no topo do arquivo
 
 function updateStandingsWithMatch(
   standings: GroupStanding[],

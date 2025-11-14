@@ -4,9 +4,11 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
-import { Toaster } from "sonner";
+import { Toaster } from "./components/ui/sonner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Layout } from "./components/Layout";
+import { ConfirmDialogProvider } from "./providers/ConfirmDialogProvider";
+import { ThemeProvider } from "./providers/ThemeProvider";
 import { Dashboard } from "./pages/Dashboard";
 import { GroupsManagement } from "./pages/GroupsManagement";
 import { KnockoutBracket } from "./pages/KnockoutBracket";
@@ -57,15 +59,24 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary>
-      <Router>
-        <AppContent />
-        <Toaster
-          position="top-right"
-          expand={true}
-          richColors={true}
-          closeButton={true}
-        />
-      </Router>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <ConfirmDialogProvider>
+          <Router>
+            <AppContent />
+            <Toaster
+              position="top-right"
+              expand={true}
+              richColors={true}
+              closeButton={true}
+            />
+          </Router>
+        </ConfirmDialogProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }
