@@ -3,17 +3,9 @@ import { devtools, persist } from "zustand/middleware";
 import {
   validateData,
   ChampionshipSchema,
-  CreateChampionshipSchema,
   AthleteSchema,
   CreateAthleteSchema,
-  UpdateAthleteSchema,
   TournamentConfigSchema,
-  type Championship as ZodChampionship,
-  type CreateChampionship,
-  type Athlete as ZodAthlete,
-  type CreateAthlete,
-  type UpdateAthlete,
-  type TournamentConfig as ZodTournamentConfig,
 } from "../schemas/validation";
 import { generateId } from "../utils/id-generator";
 import { errorHandler, createError } from "../lib/error-handler";
@@ -69,7 +61,7 @@ interface ChampionshipActions {
   ) => Promise<void>;
   loadChampionship: (id: string) => void;
   updateChampionship: (championship: Championship) => Promise<void>;
-  // ✅ NOVA FUNÇÃO: Excluir campeonato
+  // NOVA FUNÇÃO: Excluir campeonato
   deleteChampionship: (id: string) => Promise<void>;
   addAthlete: (athlete: Omit<Athlete, "id">) => Promise<void>;
   updateAthlete: (athlete: Athlete) => Promise<void>;
@@ -205,7 +197,11 @@ export const useChampionshipStore = create<
                 id: athlete.id || generateId(),
                 // Somente definir seed se não houver um pré-definido
                 isSeeded: hasExistingSeed ? athlete.isSeeded : index < maxSeeds,
-                seedNumber: hasExistingSeed ? athlete.seedNumber : (index < maxSeeds ? index + 1 : undefined),
+                seedNumber: hasExistingSeed
+                  ? athlete.seedNumber
+                  : index < maxSeeds
+                  ? index + 1
+                  : undefined,
               };
             });
 
@@ -1009,7 +1005,7 @@ export const useChampionshipStore = create<
               }
             }
           } catch (error) {
-            console.error("❌ [DELETE] Erro ao excluir campeonato:", error);
+            console.error("[DELETE] Erro ao excluir campeonato:", error);
             const errorMessage =
               error instanceof Error
                 ? error.message

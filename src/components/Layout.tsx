@@ -119,9 +119,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <Trophy className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-primary">
-                  CBTM Manager
-                </h1>
+                <h1 className="text-lg font-bold text-primary">Ranking</h1>
                 {currentChampionship && (
                   <p className="text-xs text-secondary hidden sm:block">
                     {currentChampionship.name}
