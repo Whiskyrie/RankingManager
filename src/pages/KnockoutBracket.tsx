@@ -243,8 +243,8 @@ export const KnockoutBracket: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-4">
-              <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-lg">
-                <Trophy className="h-6 w-6 text-white" />
+              <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-gray-700 dark:to-gray-600 rounded-lg">
+                <Trophy className="h-6 w-6 text-white dark:text-blue-400" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -271,7 +271,7 @@ export const KnockoutBracket: React.FC = () => {
                 </div>
                 <div className="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
                   <div
-                    className="bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-400 dark:to-indigo-500 h-2 rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-gray-500 dark:to-gray-400 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${progress.progressPercentage}%` }}
                   />
                 </div>
