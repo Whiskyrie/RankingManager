@@ -61,7 +61,7 @@
 }
 
 .dark .match-third-place {
-  @apply from-amber-900/30 to-amber-800/30 border-amber-400;
+  @apply from-amber-900/40 to-amber-800/40 border-amber-500;
 }
 
 /* Estilo para vencedores */
@@ -70,7 +70,7 @@
 }
 
 .dark .player-winner {
-  @apply from-green-900/40 to-green-800/40 border-green-400 text-green-100;
+  @apply from-green-900/50 to-green-800/50 border-green-500 text-green-100;
 }
 
 .player-loser {
@@ -78,7 +78,7 @@
 }
 
 .dark .player-loser {
-  @apply bg-slate-700/30 text-slate-300;
+  @apply bg-gray-700/40 text-gray-400;
 }
 
 .player-tbd {
@@ -86,7 +86,7 @@
 }
 
 .dark .player-tbd {
-  @apply bg-slate-700/20 text-slate-400;
+  @apply bg-gray-700/30 text-gray-500;
 }
 
 /* Efeitos hover para cards de partida */
@@ -139,7 +139,7 @@
 }
 
 .dark .progress-bar {
-  @apply from-gray-600/50 to-gray-500/50;
+  @apply from-gray-700/60 to-gray-600/60;
 }
 
 .progress-fill {
@@ -180,7 +180,7 @@
 }
 
 .dark .bracket-scroll::-webkit-scrollbar-track {
-  @apply bg-slate-700/30 rounded;
+  @apply bg-gray-700/40 rounded;
 }
 
 .bracket-scroll::-webkit-scrollbar-thumb {
@@ -188,7 +188,7 @@
 }
 
 .dark .bracket-scroll::-webkit-scrollbar-thumb {
-  @apply from-slate-500/70 to-slate-400/70 rounded;
+  @apply from-gray-500/70 to-gray-400/70 rounded;
 }
 
 .bracket-scroll::-webkit-scrollbar-thumb:hover {
@@ -196,7 +196,7 @@
 }
 
 .dark .bracket-scroll::-webkit-scrollbar-thumb:hover {
-  @apply from-slate-400/90 to-slate-500/90;
+  @apply from-gray-400/90 to-gray-500/90;
 }
 
 /* Loading state para partidas */
@@ -229,7 +229,7 @@
 }
 
 .dark .badge-completed {
-  @apply from-green-900/50 to-green-800/50 text-green-300 border-green-400;
+  @apply from-green-900/60 to-green-800/60 text-green-200 border-green-500;
 }
 
 .badge-pending {
@@ -237,7 +237,7 @@
 }
 
 .dark .badge-pending {
-  @apply from-orange-900/50 to-orange-800/50 text-orange-300 border-orange-400;
+  @apply from-orange-900/60 to-orange-800/60 text-orange-200 border-orange-500;
 }
 
 .badge-walkover {
@@ -245,7 +245,7 @@
 }
 
 .dark .badge-walkover {
-  @apply from-amber-900/50 to-amber-800/50 text-amber-300 border-amber-400;
+  @apply from-amber-900/60 to-amber-800/60 text-amber-200 border-amber-500;
 }
 
 /* Efeitos de entrada para as estatísticas */
