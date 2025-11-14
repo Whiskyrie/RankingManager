@@ -3,7 +3,8 @@ import { useChampionshipStore } from "../store/championship";
 import { AthleteForm } from "../components/championship/AthleteForm";
 import { ManualGroupsForm } from "../components/championship/ManualGroupsForm";
 import { Athlete } from "../types";
-import { validateAthlete } from "../utils";
+import { CreateAthleteSchema, validateData } from "../schemas/validation";
+import { ValidationError } from "../lib/error-handler";
 import {
   Card,
   CardContent,
@@ -87,15 +88,19 @@ export const AthletesManagement: React.FC = () => {
   const unseededAthletes = athletes.length - seededAthletes;
 
   const handleSubmitAdd = async () => {
-    const validation = validateAthlete(formData);
-    if (!validation.isValid) {
-      setFormErrors(validation.errors);
-      return;
+    try {
+      // Validar com Zod
+      validateData(CreateAthleteSchema, formData);
+      await addAthlete(formData as Omit<Athlete, "id">);
+      setIsAddDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        setFormErrors(error.details || [error.message]);
+      } else {
+        setFormErrors(["Erro ao adicionar atleta"]);
+      }
     }
-
-    await addAthlete(formData as Omit<Athlete, "id">);
-    setIsAddDialogOpen(false);
-    resetForm();
   };
 
   const handleBulkAdd = async () => {
@@ -109,12 +114,18 @@ export const AthletesManagement: React.FC = () => {
       if (!name) continue;
 
       const athleteData = { name };
-      const validation = validateAthlete(athleteData);
 
-      if (validation.isValid) {
+      try {
+        // Validar com Zod
+        validateData(CreateAthleteSchema, athleteData);
         await addAthlete(athleteData);
-      } else {
-        errors.push(`Erro em ${name}: ${validation.errors.join(", ")}`);
+      } catch (error) {
+        if (error instanceof ValidationError) {
+          const errorMessages = error.details || [error.message];
+          errors.push(`Erro em "${name}": ${errorMessages.join(", ")}`);
+        } else {
+          errors.push(`Erro em "${name}": Erro desconhecido`);
+        }
       }
     }
 
@@ -178,16 +189,20 @@ export const AthletesManagement: React.FC = () => {
   const handleSubmitEdit = async () => {
     if (!editingAthlete) return;
 
-    const validation = validateAthlete(formData);
-    if (!validation.isValid) {
-      setFormErrors(validation.errors);
-      return;
+    try {
+      // Validar com Zod - usa CreateAthleteSchema para validar campos editáveis
+      validateData(CreateAthleteSchema, formData);
+      await updateAthlete({ ...editingAthlete, ...formData } as Athlete);
+      setIsEditDialogOpen(false);
+      setEditingAthlete(null);
+      resetForm();
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        setFormErrors(error.details || [error.message]);
+      } else {
+        setFormErrors(["Erro ao atualizar atleta"]);
+      }
     }
-
-    await updateAthlete({ ...editingAthlete, ...formData } as Athlete);
-    setIsEditDialogOpen(false);
-    setEditingAthlete(null);
-    resetForm();
   };
 
   const handleEdit = (athlete: Athlete) => {
@@ -428,6 +443,7 @@ Pedro Henrique"
                   onSubmit={handleSubmitAdd}
                   onCancel={() => setIsAddDialogOpen(false)}
                   submitLabel="Adicionar"
+                  showSeedingOptions={true}
                 />
               </DialogContent>
             </Dialog>
