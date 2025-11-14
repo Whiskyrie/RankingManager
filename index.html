@@ -1,10 +1,28 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR" suppressHydrationWarning>
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sistema do Ranking</title>
+  <meta name="description" content="Sistema de Gerenciamento de Campeonatos CBTM" />
+  <title>CBTM Manager - Sistema de Ranking</title>
+
+  <!-- Prevent flash of unstyled content (FOUC) for dark mode -->
+  <script>
+    try {
+      const theme = localStorage.getItem('theme') || 'system';
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      const effectiveTheme = theme === 'system' ? systemTheme : theme;
+
+      if (effectiveTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    } catch (e) {
+      console.error('Error setting theme:', e);
+    }
+  </script>
 </head>
 
 <body>

@@ -114,14 +114,14 @@ export const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Ranking</h1>
-              <p className="text-gray-600 mt-1">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Ranking</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
                 Gerenciamento completo de campeonatos de tênis de mesa
               </p>
             </div>
@@ -296,10 +296,10 @@ export const Dashboard: React.FC = () => {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <Trophy className="h-8 w-8 text-yellow-600" />
+                <Trophy className="h-8 w-8 text-yellow-600 dark:text-yellow-500" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {totalChampionships}
                   </p>
                 </div>
@@ -310,10 +310,10 @@ export const Dashboard: React.FC = () => {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <BarChart3 className="h-8 w-8 text-blue-600" />
+                <BarChart3 className="h-8 w-8 text-blue-600 dark:text-blue-500" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Ativos</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Ativos</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {activeChampionships}
                   </p>
                 </div>
@@ -324,12 +324,12 @@ export const Dashboard: React.FC = () => {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <Calendar className="h-8 w-8 text-green-600" />
+                <Calendar className="h-8 w-8 text-green-600 dark:text-green-500" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                     Concluídos
                   </p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {completedChampionships}
                   </p>
                 </div>
@@ -340,10 +340,10 @@ export const Dashboard: React.FC = () => {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <Users className="h-8 w-8 text-purple-600" />
+                <Users className="h-8 w-8 text-purple-600 dark:text-purple-500" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Atletas</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Atletas</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {totalAthletes}
                   </p>
                 </div>
@@ -358,7 +358,7 @@ export const Dashboard: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
                   <Input
                     placeholder="Buscar campeonatos..."
                     value={searchTerm}
@@ -391,7 +391,7 @@ export const Dashboard: React.FC = () => {
         {error && (
           <Card className="mb-6">
             <CardContent className="p-6">
-              <div className="text-red-600 text-center">
+              <div className="text-red-600 dark:text-red-400 text-center">
                 <p>{error}</p>
               </div>
             </CardContent>
@@ -413,13 +413,13 @@ export const Dashboard: React.FC = () => {
           <Card>
             <CardContent className="p-12">
               <div className="text-center">
-                <Trophy className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <Trophy className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                   {championships.length === 0
                     ? "Nenhum campeonato criado"
                     : "Nenhum campeonato encontrado"}
                 </h3>
-                <p className="text-gray-500 mb-6">
+                <p className="text-gray-500 dark:text-gray-400 mb-6">
                   {championships.length === 0
                     ? "Comece criando seu primeiro campeonato de tênis de mesa"
                     : "Tente ajustar os filtros de busca"}
@@ -427,7 +427,7 @@ export const Dashboard: React.FC = () => {
                 {championships.length === 0 && (
                   <Button
                     onClick={() => setIsCreateDialogOpen(true)}
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Criar Primeiro Campeonato
