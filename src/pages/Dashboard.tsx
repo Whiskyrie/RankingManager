@@ -114,14 +114,14 @@ export const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#1a1f2e]">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white dark:bg-[#1e2433] shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Ranking</h1>
-              <p className="text-gray-600 mt-1">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ranking</h1>
+              <p className="text-gray-600 dark:text-gray-300 mt-1">
                 Gerenciamento completo de campeonatos de tênis de mesa
               </p>
             </div>
@@ -298,8 +298,8 @@ export const Dashboard: React.FC = () => {
               <div className="flex items-center">
                 <Trophy className="h-8 w-8 text-yellow-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {totalChampionships}
                   </p>
                 </div>
@@ -312,8 +312,8 @@ export const Dashboard: React.FC = () => {
               <div className="flex items-center">
                 <BarChart3 className="h-8 w-8 text-blue-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Ativos</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Ativos</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {activeChampionships}
                   </p>
                 </div>
@@ -326,10 +326,10 @@ export const Dashboard: React.FC = () => {
               <div className="flex items-center">
                 <Calendar className="h-8 w-8 text-green-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
                     Concluídos
                   </p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {completedChampionships}
                   </p>
                 </div>
@@ -342,8 +342,8 @@ export const Dashboard: React.FC = () => {
               <div className="flex items-center">
                 <Users className="h-8 w-8 text-purple-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Atletas</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Atletas</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {totalAthletes}
                   </p>
                 </div>
@@ -413,13 +413,13 @@ export const Dashboard: React.FC = () => {
           <Card>
             <CardContent className="p-12">
               <div className="text-center">
-                <Trophy className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <Trophy className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                   {championships.length === 0
                     ? "Nenhum campeonato criado"
                     : "Nenhum campeonato encontrado"}
                 </h3>
-                <p className="text-gray-500 mb-6">
+                <p className="text-gray-500 dark:text-gray-400 mb-6">
                   {championships.length === 0
                     ? "Comece criando seu primeiro campeonato de tênis de mesa"
                     : "Tente ajustar os filtros de busca"}
