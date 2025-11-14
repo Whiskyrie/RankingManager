@@ -243,8 +243,8 @@ export const KnockoutBracket: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-4">
-              <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-lg">
-                <Trophy className="h-6 w-6 text-white" />
+              <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-gray-700 dark:to-gray-600 rounded-lg">
+                <Trophy className="h-6 w-6 text-white dark:text-blue-400" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -271,7 +271,7 @@ export const KnockoutBracket: React.FC = () => {
                 </div>
                 <div className="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
                   <div
-                    className="bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-400 dark:to-indigo-500 h-2 rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-gray-500 dark:to-gray-400 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${progress.progressPercentage}%` }}
                   />
                 </div>
@@ -329,11 +329,11 @@ export const KnockoutBracket: React.FC = () => {
 
         {/* Estatísticas melhoradas */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="hover:shadow-lg transition-shadow border-blue-200 dark:border-blue-800">
+          <Card className="hover:shadow-lg transition-shadow border-blue-200 dark:border-blue-700">
             <CardContent className="p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <div className="flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                  <div className="flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-gray-700 rounded-lg">
                     <Target className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                   </div>
                 </div>
@@ -369,11 +369,11 @@ export const KnockoutBracket: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow border-orange-200 dark:border-orange-800">
+          <Card className="hover:shadow-lg transition-shadow border-orange-200 dark:border-orange-700">
             <CardContent className="p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <div className="flex items-center justify-center w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                  <div className="flex items-center justify-center w-12 h-12 bg-orange-100 dark:bg-gray-700 rounded-lg">
                     <Award className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                   </div>
                 </div>
@@ -410,11 +410,11 @@ export const KnockoutBracket: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow border-green-200 dark:border-green-800">
+          <Card className="hover:shadow-lg transition-shadow border-green-200 dark:border-green-700">
             <CardContent className="p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <div className="flex items-center justify-center w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg">
+                  <div className="flex items-center justify-center w-12 h-12 bg-green-100 dark:bg-gray-700 rounded-lg">
                     <BarChart3 className="h-6 w-6 text-green-600 dark:text-green-400" />
                   </div>
                 </div>
@@ -436,11 +436,11 @@ export const KnockoutBracket: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow border-yellow-200 dark:border-yellow-800">
+          <Card className="hover:shadow-lg transition-shadow border-yellow-200 dark:border-yellow-700">
             <CardContent className="p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <div className="flex items-center justify-center w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+                  <div className="flex items-center justify-center w-12 h-12 bg-yellow-100 dark:bg-gray-700 rounded-lg">
                     <Trophy className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
                   </div>
                 </div>

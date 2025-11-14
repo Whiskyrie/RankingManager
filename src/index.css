@@ -50,40 +50,40 @@
 }
 
 .dark {
-  --background: 222.2 47% 11%;
-  --foreground: 210 40% 98%;
+  --background: 0 0% 9%;
+  --foreground: 0 0% 98%;
 
-  --card: 222.2 47% 14%;
-  --card-foreground: 210 40% 98%;
+  --card: 0 0% 12%;
+  --card-foreground: 0 0% 98%;
 
-  --popover: 222.2 47% 14%;
-  --popover-foreground: 210 40% 98%;
+  --popover: 0 0% 12%;
+  --popover-foreground: 0 0% 98%;
 
   --primary: 217.2 91.2% 59.8%;
-  --primary-foreground: 222.2 47% 11%;
+  --primary-foreground: 0 0% 9%;
 
-  --secondary: 217.2 32.6% 20%;
-  --secondary-foreground: 210 40% 98%;
+  --secondary: 0 0% 16%;
+  --secondary-foreground: 0 0% 98%;
 
-  --muted: 217.2 32.6% 20%;
-  --muted-foreground: 215 20.2% 70%;
+  --muted: 0 0% 16%;
+  --muted-foreground: 0 0% 70%;
 
-  --accent: 217.2 32.6% 20%;
-  --accent-foreground: 210 40% 98%;
+  --accent: 0 0% 16%;
+  --accent-foreground: 0 0% 98%;
 
   --destructive: 0 62.8% 50%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive-foreground: 0 0% 98%;
 
-  --border: 217.2 32.6% 25%;
-  --input: 217.2 32.6% 25%;
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
   --ring: 217.2 91.2% 59.8%;
 
   /* Custom semantic tokens for dark mode */
-  --surface: 222.2 47% 11%;
-  --surface-elevated: 222.2 47% 14%;
-  --text-primary: 210 40% 98%;
-  --text-secondary: 215 20.2% 70%;
-  --text-tertiary: 215 20.2% 60%;
+  --surface: 0 0% 10%;
+  --surface-elevated: 0 0% 14%;
+  --text-primary: 0 0% 98%;
+  --text-secondary: 0 0% 70%;
+  --text-tertiary: 0 0% 60%;
 
   --chart-1: 220 70% 55%;
   --chart-2: 160 60% 50%;

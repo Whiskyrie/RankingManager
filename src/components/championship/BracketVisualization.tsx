@@ -30,23 +30,23 @@ const BracketMatch = memo<{
 
   // ✅ Memoizar estilos para evitar recálculo
   const cardStyles = useMemo(() => {
-    if (isThirdPlace) return "border-yellow-400 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900/20";
-    if (isCompleted) return "border-green-400 dark:border-green-600 bg-green-50 dark:bg-green-900/20";
-    return "border-orange-400 dark:border-orange-600 bg-orange-50 dark:bg-orange-900/20";
+    if (isThirdPlace) return "border-yellow-400 dark:border-yellow-500 bg-yellow-50 dark:bg-yellow-900/30";
+    if (isCompleted) return "border-green-400 dark:border-green-500 bg-green-50 dark:bg-green-900/30";
+    return "border-orange-400 dark:border-orange-500 bg-orange-50 dark:bg-orange-900/30";
   }, [isThirdPlace, isCompleted]);
 
   const getPlayerStyles = useCallback(
     (playerId: string) => {
       if (winner === playerId) {
-        return "bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 font-semibold text-gray-900 dark:text-gray-100";
+        return "bg-green-100 dark:bg-green-900/40 border-green-300 dark:border-green-600 font-semibold text-gray-900 dark:text-green-100";
       }
       if (winner && winner !== playerId) {
-        return "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400";
+        return "bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400";
       }
       if (!match.player1?.name || !match.player2?.name) {
-        return "bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500";
+        return "bg-gray-50 dark:bg-gray-700/30 text-gray-400 dark:text-gray-500";
       }
-      return "bg-white dark:bg-gray-800 border dark:border-gray-700 text-gray-900 dark:text-gray-100";
+      return "bg-white dark:bg-gray-700/40 border dark:border-gray-600 text-gray-900 dark:text-gray-100";
     },
     [winner, match.player1?.name, match.player2?.name]
   );
@@ -506,9 +506,9 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
 
           {/* Primeira Divisão */}
           <TabsContent value="primeira" className="mt-6">
-            <Card className="shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
-                <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+            <Card className="shadow-lg dark:bg-gray-900/40">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30">
+                <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
                   <Trophy className="h-5 w-5" />
                   Chave Principal - Primeira Divisão
                 </CardTitle>
@@ -525,9 +525,9 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
 
           {/* Segunda Divisão */}
           <TabsContent value="segunda" className="mt-6">
-            <Card className="shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950">
-                <CardTitle className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
+            <Card className="shadow-lg dark:bg-gray-900/40">
+              <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/30 dark:to-amber-900/30">
+                <CardTitle className="flex items-center gap-2 text-orange-700 dark:text-orange-400">
                   <Award className="h-5 w-5" />
                   Chave de Repescagem - Segunda Divisão
                 </CardTitle>
@@ -552,9 +552,9 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
         {/* Resumo estatístico otimizado */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {mainMatches.length > 0 && (
-            <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10">
+            <Card className="border-blue-200 dark:border-blue-700 bg-blue-50/50 dark:bg-gray-800/30">
               <CardHeader className="pb-3">
-                <CardTitle className="text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                <CardTitle className="text-blue-700 dark:text-blue-400 flex items-center gap-2">
                   <Trophy className="h-5 w-5" />
                   Primeira Divisão
                 </CardTitle>
@@ -608,9 +608,9 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
           )}
 
           {secondDivMatches.length > 0 && (
-            <Card className="border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/10">
+            <Card className="border-orange-200 dark:border-orange-700 bg-orange-50/50 dark:bg-gray-800/30">
               <CardHeader className="pb-3">
-                <CardTitle className="text-orange-700 dark:text-orange-300 flex items-center gap-2">
+                <CardTitle className="text-orange-700 dark:text-orange-400 flex items-center gap-2">
                   <Award className="h-5 w-5" />
                   Segunda Divisão
                 </CardTitle>

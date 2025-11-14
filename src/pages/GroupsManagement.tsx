@@ -373,7 +373,7 @@ export const GroupsManagement: React.FC = () => {
                 {qualifiedAthletes.map((athlete, index) => (
                   <Card key={athlete.id} className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-sm font-semibold text-blue-800 dark:text-blue-200">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-gray-700 flex items-center justify-center text-sm font-semibold text-blue-800 dark:text-blue-400">
                         {index + 1}
                       </div>
                       <div>
