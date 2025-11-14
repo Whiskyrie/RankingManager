@@ -55,30 +55,51 @@
 }
 
 .dark {
-  --background: 222.2 84% 4.9%;
+  /* Background mais suave - não tão escuro */
+  --background: 222.2 47% 11%;
   --foreground: 210 40% 98%;
-  --card: 222.2 84% 4.9%;
+
+  /* Cards com contraste sutil */
+  --card: 222.2 47% 14%;
   --card-foreground: 210 40% 98%;
-  --popover: 222.2 84% 4.9%;
+
+  /* Popovers */
+  --popover: 222.2 47% 14%;
   --popover-foreground: 210 40% 98%;
+
+  /* Primary mais vibrante para dark mode */
   --primary: 217.2 91.2% 59.8%;
-  --primary-foreground: 222.2 84% 4.9%;
-  --secondary: 217.2 32.6% 17.5%;
+  --primary-foreground: 222.2 47% 11%;
+
+  /* Secondary com melhor contraste */
+  --secondary: 217.2 32.6% 20%;
   --secondary-foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 217.2 32.6% 17.5%;
+
+  /* Muted mais claro para melhor legibilidade */
+  --muted: 217.2 32.6% 20%;
+  --muted-foreground: 215 20.2% 70%;
+
+  /* Accent */
+  --accent: 217.2 32.6% 20%;
   --accent-foreground: 210 40% 98%;
-  --destructive: 0 62.8% 30.6%;
+
+  /* Destructive */
+  --destructive: 0 62.8% 50%;
   --destructive-foreground: 210 40% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 224.3 76.3% 94.1%;
-  --chart-1: 220 70% 50%;
-  --chart-2: 160 60% 45%;
-  --chart-3: 30 80% 55%;
-  --chart-4: 280 65% 60%;
-  --chart-5: 340 75% 55%;
+
+  /* Borders mais visíveis */
+  --border: 217.2 32.6% 25%;
+  --input: 217.2 32.6% 25%;
+
+  /* Ring */
+  --ring: 217.2 91.2% 59.8%;
+
+  /* Chart colors mais vibrantes */
+  --chart-1: 220 70% 55%;
+  --chart-2: 160 60% 50%;
+  --chart-3: 30 80% 60%;
+  --chart-4: 280 65% 65%;
+  --chart-5: 340 75% 60%;
 }
 
 /* Base styles */
@@ -321,15 +342,15 @@ h6 {
 
 /* Dark mode específico para componentes CBTM */
 .dark .group-standings-table th {
-  @apply bg-gray-800 text-gray-200;
+  @apply bg-gray-700/50 text-gray-200;
 }
 
 .dark .group-standings-table td {
-  @apply text-gray-100 border-gray-700;
+  @apply text-gray-200 border-gray-600/50;
 }
 
 .dark .group-standings-table tr:hover {
-  @apply bg-gray-800;
+  @apply bg-gray-700/30;
 }
 
 /* Dark mode para background principal */
