@@ -196,12 +196,18 @@ export const useChampionshipStore = create<
             });
 
             const maxSeeds = Math.min(4, Math.ceil(validAthletes.length / 4));
-            const seededAthletes = validAthletes.map((athlete, index) => ({
-              ...athlete,
-              id: athlete.id || generateId(),
-              isSeeded: index < maxSeeds,
-              seedNumber: index < maxSeeds ? index + 1 : undefined,
-            }));
+            const seededAthletes = validAthletes.map((athlete, index) => {
+              // Preservar seeds pré-definidos
+              const hasExistingSeed = athlete.isSeeded && athlete.seedNumber;
+
+              return {
+                ...athlete,
+                id: athlete.id || generateId(),
+                // Somente definir seed se não houver um pré-definido
+                isSeeded: hasExistingSeed ? athlete.isSeeded : index < maxSeeds,
+                seedNumber: hasExistingSeed ? athlete.seedNumber : (index < maxSeeds ? index + 1 : undefined),
+              };
+            });
 
             const championshipData = {
               id: generateId(),

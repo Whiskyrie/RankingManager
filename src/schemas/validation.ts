@@ -26,7 +26,7 @@ const BaseAthleteSchema = z.object({
     .min(2, "Nome deve ter pelo menos 2 caracteres")
     .max(100, "Nome deve ter no máximo 100 caracteres")
     .regex(
-      /^[a-zA-ZÀ-ÿ\s'-]+$/,
+      /^[a-zA-ZÀ-ÖØ-öø-ÿ\s'-]+$/,
       "Nome deve conter apenas letras, espaços, hífens e apostrofes"
     )
     .transform((val) => val.trim()),
@@ -263,10 +263,26 @@ const ChampionshipSchema = BaseChampionshipSchema.refine(
     message: "Total de atletas deve coincidir com o número real de atletas",
     path: ["totalAthletes"],
   }
-).refine((data) => data.completedMatches <= data.totalMatches, {
-  message: "Partidas completadas não podem ser maiores que o total",
-  path: ["completedMatches"],
-});
+)
+  .refine((data) => data.completedMatches <= data.totalMatches, {
+    message: "Partidas completadas não podem ser maiores que o total",
+    path: ["completedMatches"],
+  })
+  .refine(
+    (data) => {
+      // Validar que não há seedNumbers duplicados
+      const seedNumbers = data.athletes
+        .filter((a) => a.seedNumber !== undefined)
+        .map((a) => a.seedNumber);
+
+      const uniqueSeeds = new Set(seedNumbers);
+      return seedNumbers.length === uniqueSeeds.size;
+    },
+    {
+      message: "Não pode haver atletas com o mesmo número de seed",
+      path: ["athletes"],
+    }
+  );
 
 // Schema para criação de campeonato (sem ID)
 const CreateChampionshipSchema = BaseChampionshipSchema.omit({ id: true });
