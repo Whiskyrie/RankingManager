@@ -30,23 +30,23 @@ const BracketMatch = memo<{
 
   // ✅ Memoizar estilos para evitar recálculo
   const cardStyles = useMemo(() => {
-    if (isThirdPlace) return "border-yellow-400 bg-yellow-50";
-    if (isCompleted) return "border-green-400 bg-green-50";
-    return "border-orange-400 bg-orange-50";
+    if (isThirdPlace) return "border-yellow-400 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900/20";
+    if (isCompleted) return "border-green-400 dark:border-green-600 bg-green-50 dark:bg-green-900/20";
+    return "border-orange-400 dark:border-orange-600 bg-orange-50 dark:bg-orange-900/20";
   }, [isThirdPlace, isCompleted]);
 
   const getPlayerStyles = useCallback(
     (playerId: string) => {
       if (winner === playerId) {
-        return "bg-green-100 border-green-300 font-semibold";
+        return "bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 font-semibold text-gray-900 dark:text-gray-100";
       }
       if (winner && winner !== playerId) {
-        return "bg-gray-100 text-gray-600";
+        return "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400";
       }
       if (!match.player1?.name || !match.player2?.name) {
-        return "bg-gray-50 text-gray-400";
+        return "bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500";
       }
-      return "bg-white border";
+      return "bg-white dark:bg-gray-800 border dark:border-gray-700 text-gray-900 dark:text-gray-100";
     },
     [winner, match.player1?.name, match.player2?.name]
   );
@@ -76,12 +76,12 @@ const BracketMatch = memo<{
             <Badge
               variant="outline"
               className={`text-xs ${
-                isThirdPlace ? "bg-yellow-100 text-yellow-800" : ""
+                isThirdPlace ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200" : ""
               }`}
             >
               {match.round?.replace(" 2ª Div", "")}
             </Badge>
-            {isThirdPlace && <Medal className="h-3 w-3 text-yellow-600" />}
+            {isThirdPlace && <Medal className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />}
           </div>
 
           {/* Player 1 */}
@@ -119,14 +119,14 @@ const BracketMatch = memo<{
                 <Badge
                   className={
                     match.isWalkover
-                      ? "bg-orange-100 text-orange-800"
-                      : "bg-green-100 text-green-800"
+                      ? "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200"
+                      : "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
                   }
                 >
                   {match.isWalkover ? "W.O." : "Finalizada"}
                 </Badge>
               ) : (
-                <Badge variant="outline" className="text-blue-600">
+                <Badge variant="outline" className="text-blue-600 dark:text-blue-400">
                   Pendente
                 </Badge>
               )}
@@ -134,7 +134,7 @@ const BracketMatch = memo<{
 
             {/* Placar dos sets */}
             {getSetScore && (
-              <div className="text-center text-xs text-gray-600 font-medium">
+              <div className="text-center text-xs text-gray-600 dark:text-gray-400 font-medium">
                 Sets: {getSetScore}
               </div>
             )}
@@ -191,7 +191,7 @@ const RoundColumn = memo<{
       <div className="flex flex-col items-center min-w-[220px]">
         <h3
           className={`text-lg font-bold mb-6 text-center ${
-            title.includes("2ª Div") ? "text-orange-600" : "text-blue-600"
+            title.includes("2ª Div") ? "text-orange-600 dark:text-orange-400" : "text-blue-600 dark:text-blue-400"
           }`}
         >
           {title}
@@ -229,12 +229,12 @@ const BracketDisplay = memo<{
   if (!hasMatches) {
     return (
       <div className="text-center py-12">
-        <Target className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
+        <Target className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
           {isSecondDivision ? "Segunda Divisão" : "Primeira Divisão"} não
           disponível
         </h3>
-        <p className="text-gray-500">
+        <p className="text-gray-500 dark:text-gray-400">
           {isSecondDivision
             ? "A segunda divisão será gerada após a conclusão da fase de grupos"
             : "Complete a fase de grupos para gerar o mata-mata"}
@@ -283,7 +283,7 @@ const BracketDisplay = memo<{
         <div className="flex flex-col items-center space-y-8 min-w-[240px]">
           {bracket.final?.length > 0 && (
             <div className="flex flex-col items-center">
-              <h3 className="text-lg font-bold mb-6 text-center text-yellow-600">
+              <h3 className="text-lg font-bold mb-6 text-center text-yellow-600 dark:text-yellow-400">
                 Final
               </h3>
               {bracket.final.map((match: Match) => (
@@ -300,7 +300,7 @@ const BracketDisplay = memo<{
 
           {bracket.terceiro?.length > 0 && (
             <div className="flex flex-col items-center">
-              <h3 className="text-lg font-bold mb-6 text-center text-amber-600">
+              <h3 className="text-lg font-bold mb-6 text-center text-amber-600 dark:text-amber-400">
                 3º Lugar
               </h3>
               {bracket.terceiro.map((match: Match) => (
@@ -507,8 +507,8 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
           {/* Primeira Divisão */}
           <TabsContent value="primeira" className="mt-6">
             <Card className="shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
-                <CardTitle className="flex items-center gap-2 text-blue-700">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950">
+                <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
                   <Trophy className="h-5 w-5" />
                   Chave Principal - Primeira Divisão
                 </CardTitle>
@@ -526,8 +526,8 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
           {/* Segunda Divisão */}
           <TabsContent value="segunda" className="mt-6">
             <Card className="shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50">
-                <CardTitle className="flex items-center gap-2 text-orange-700">
+              <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950">
+                <CardTitle className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
                   <Award className="h-5 w-5" />
                   Chave de Repescagem - Segunda Divisão
                 </CardTitle>
@@ -552,34 +552,34 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
         {/* Resumo estatístico otimizado */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {mainMatches.length > 0 && (
-            <Card className="border-blue-200 bg-blue-50/50">
+            <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10">
               <CardHeader className="pb-3">
-                <CardTitle className="text-blue-700 flex items-center gap-2">
+                <CardTitle className="text-blue-700 dark:text-blue-300 flex items-center gap-2">
                   <Trophy className="h-5 w-5" />
                   Primeira Divisão
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700">Total de partidas:</span>
+                  <span className="text-gray-700 dark:text-gray-300">Total de partidas:</span>
                   <Badge variant="secondary" className="font-semibold">
                     {mainMatches.length}
                   </Badge>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700">Concluídas:</span>
-                  <Badge className="bg-green-100 text-green-800">
+                  <span className="text-gray-700 dark:text-gray-300">Concluídas:</span>
+                  <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
                     {mainMatches.filter((m) => m.isCompleted).length}
                   </Badge>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700">Pendentes:</span>
-                  <Badge className="bg-orange-100 text-orange-800">
+                  <span className="text-gray-700 dark:text-gray-300">Pendentes:</span>
+                  <Badge className="bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200">
                     {mainMatches.filter((m) => !m.isCompleted).length}
                   </Badge>
                 </div>
                 <div className="mt-3">
-                  <div className="flex justify-between text-sm text-gray-600 mb-1">
+                  <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
                     <span>Progresso</span>
                     <span>
                       {Math.round(
@@ -590,9 +590,9 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
                       %
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div
-                      className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500"
+                      className="bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 h-2 rounded-full transition-all duration-500"
                       style={{
                         width: `${
                           (mainMatches.filter((m) => m.isCompleted).length /
@@ -608,34 +608,34 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
           )}
 
           {secondDivMatches.length > 0 && (
-            <Card className="border-orange-200 bg-orange-50/50">
+            <Card className="border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/10">
               <CardHeader className="pb-3">
-                <CardTitle className="text-orange-700 flex items-center gap-2">
+                <CardTitle className="text-orange-700 dark:text-orange-300 flex items-center gap-2">
                   <Award className="h-5 w-5" />
                   Segunda Divisão
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700">Total de partidas:</span>
+                  <span className="text-gray-700 dark:text-gray-300">Total de partidas:</span>
                   <Badge variant="secondary" className="font-semibold">
                     {secondDivMatches.length}
                   </Badge>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700">Concluídas:</span>
-                  <Badge className="bg-green-100 text-green-800">
+                  <span className="text-gray-700 dark:text-gray-300">Concluídas:</span>
+                  <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
                     {secondDivMatches.filter((m) => m.isCompleted).length}
                   </Badge>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700">Pendentes:</span>
-                  <Badge className="bg-orange-100 text-orange-800">
+                  <span className="text-gray-700 dark:text-gray-300">Pendentes:</span>
+                  <Badge className="bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200">
                     {secondDivMatches.filter((m) => !m.isCompleted).length}
                   </Badge>
                 </div>
                 <div className="mt-3">
-                  <div className="flex justify-between text-sm text-gray-600 mb-1">
+                  <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
                     <span>Progresso</span>
                     <span>
                       {Math.round(
@@ -646,9 +646,9 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
                       %
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div
-                      className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full transition-all duration-500"
+                      className="bg-gradient-to-r from-orange-500 to-orange-600 dark:from-orange-400 dark:to-orange-500 h-2 rounded-full transition-all duration-500"
                       style={{
                         width: `${
                           (secondDivMatches.filter((m) => m.isCompleted)
