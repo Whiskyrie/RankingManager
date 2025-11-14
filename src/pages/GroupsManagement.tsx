@@ -52,14 +52,14 @@ export const GroupsManagement: React.FC = () => {
 
   if (!currentChampionship) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="p-8 text-center">
-            <Trophy className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            <Trophy className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
               Nenhum campeonato selecionado
             </h2>
-            <p className="text-gray-500">
+            <p className="text-gray-500 dark:text-gray-400">
               Selecione um campeonato para gerenciar os grupos
             </p>
           </CardContent>
@@ -99,16 +99,16 @@ export const GroupsManagement: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 Fase de Grupos - {currentChampionship.name}
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
                 {new Date(currentChampionship.date).toLocaleDateString("pt-BR")}
               </p>
             </div>
@@ -156,10 +156,10 @@ export const GroupsManagement: React.FC = () => {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <Users className="h-8 w-8 text-blue-600" />
+                <Users className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Grupos</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Grupos</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {currentChampionship.groups.length}
                   </p>
                 </div>
@@ -170,13 +170,13 @@ export const GroupsManagement: React.FC = () => {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <BarChart3 className="h-8 w-8 text-green-600" />
+                <BarChart3 className="h-8 w-8 text-green-600 dark:text-green-400" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Partidas</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Partidas</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {stats.completedMatches}/{stats.totalMatches}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Grupos: {stats.groupMatchesCompleted}/{stats.groupMatches}
                     {stats.knockoutMatches > 0 && (
                       <span>
@@ -194,12 +194,12 @@ export const GroupsManagement: React.FC = () => {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <Trophy className="h-8 w-8 text-yellow-600" />
+                <Trophy className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                     Concluídos
                   </p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {stats.groupsCompleted}/{stats.totalGroups}
                   </p>
                 </div>
@@ -210,12 +210,12 @@ export const GroupsManagement: React.FC = () => {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <Target className="h-8 w-8 text-purple-600" />
+                <Target className="h-8 w-8 text-purple-600 dark:text-purple-400" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                     Classificados
                   </p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {qualifiedAthletes.length}
                   </p>
                 </div>
@@ -228,15 +228,15 @@ export const GroupsManagement: React.FC = () => {
         <Card className="mb-8">
           <CardContent className="p-6">
             <div className="flex justify-between items-center mb-2">
-              <h3 className="text-lg font-semibold">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 Progresso da Fase de Grupos
               </h3>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-gray-500 dark:text-gray-400">
                 {stats.progress.toFixed(1)}%
               </span>
             </div>
             <Progress value={stats.progress} className="h-3" />
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
               {stats.completedMatches} de {stats.totalMatches} partidas
               disputadas
             </p>
@@ -255,7 +255,7 @@ export const GroupsManagement: React.FC = () => {
               {currentChampionship.groups.map((group) => (
                 <div key={group.id}>
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold">{group.name}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{group.name}</h3>
                     <Button
                       variant="outline"
                       size="sm"
@@ -275,7 +275,7 @@ export const GroupsManagement: React.FC = () => {
             {/* Seletor de Grupo */}
             <Card>
               <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Selecionar Grupo</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Selecionar Grupo</h3>
                 <div className="flex flex-wrap gap-2">
                   <Button
                     variant={selectedGroup === "" ? "default" : "outline"}
@@ -306,7 +306,7 @@ export const GroupsManagement: React.FC = () => {
               {filteredGroups.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center">
-                    <div className="text-gray-500">
+                    <div className="text-gray-500 dark:text-gray-400">
                       <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>Nenhum grupo encontrado</p>
                     </div>
@@ -334,7 +334,7 @@ export const GroupsManagement: React.FC = () => {
 
                     <CardContent>
                       {group.matches.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
+                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                           <p>Nenhuma partida neste grupo</p>
                         </div>
                       ) : (
@@ -373,11 +373,11 @@ export const GroupsManagement: React.FC = () => {
                 {qualifiedAthletes.map((athlete, index) => (
                   <Card key={athlete.id} className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-semibold text-blue-800">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-sm font-semibold text-blue-800 dark:text-blue-200">
                         {index + 1}
                       </div>
                       <div>
-                        <div className="font-medium">{athlete.name}</div>
+                        <div className="font-medium text-gray-900 dark:text-gray-100">{athlete.name}</div>
                       </div>
                       {athlete.isSeeded && (
                         <Badge variant="outline" className="ml-auto">

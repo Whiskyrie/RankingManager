@@ -52,33 +52,33 @@ export const GroupStandingsTable: React.FC<GroupStandingsTableProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-2 px-1 font-medium text-gray-700">
+              <tr className="border-b border-gray-200 dark:border-gray-700">
+                <th className="text-left py-2 px-1 font-medium text-gray-700 dark:text-gray-300">
                   Pos
                 </th>
-                <th className="text-left py-2 px-2 font-medium text-gray-700">
+                <th className="text-left py-2 px-2 font-medium text-gray-700 dark:text-gray-300">
                   Atleta
                 </th>
-                <th className="text-center py-2 px-1 font-medium text-gray-700">
+                <th className="text-center py-2 px-1 font-medium text-gray-700 dark:text-gray-300">
                   J
                 </th>
-                <th className="text-center py-2 px-1 font-medium text-gray-700">
+                <th className="text-center py-2 px-1 font-medium text-gray-700 dark:text-gray-300">
                   V
                 </th>
-                <th className="text-center py-2 px-1 font-medium text-gray-700">
+                <th className="text-center py-2 px-1 font-medium text-gray-700 dark:text-gray-300">
                   D
                 </th>
-                <th className="text-center py-2 px-1 font-medium text-gray-700">
+                <th className="text-center py-2 px-1 font-medium text-gray-700 dark:text-gray-300">
                   Pts
                 </th>
-                <th className="text-center py-2 px-1 font-medium text-gray-700 hidden sm:table-cell">
+                <th className="text-center py-2 px-1 font-medium text-gray-700 dark:text-gray-300 hidden sm:table-cell">
                   Sets
                 </th>
-                <th className="text-center py-2 px-1 font-medium text-gray-700 hidden md:table-cell">
+                <th className="text-center py-2 px-1 font-medium text-gray-700 dark:text-gray-300 hidden md:table-cell">
                   Pontos
                 </th>
                 {showQualificationStatus && (
-                  <th className="text-center py-2 px-1 font-medium text-gray-700">
+                  <th className="text-center py-2 px-1 font-medium text-gray-700 dark:text-gray-300">
                     Status
                   </th>
                 )}
@@ -88,14 +88,14 @@ export const GroupStandingsTable: React.FC<GroupStandingsTableProps> = ({
               {group.standings.map((standing, _index) => (
                 <tr
                   key={standing.athleteId}
-                  className={`border-b border-gray-100 hover:bg-gray-50 ${
-                    standing.qualified ? "bg-green-50" : ""
+                  className={`border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 ${
+                    standing.qualified ? "bg-green-50 dark:bg-green-900/20" : ""
                   }`}
                 >
                   <td className="py-3 px-1">
                     <div className="flex items-center gap-2">
                       {getPositionIcon(standing.position)}
-                      <span className="font-medium">
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
                         {getOrdinalPosition(standing.position)}
                       </span>
                     </div>
@@ -103,7 +103,7 @@ export const GroupStandingsTable: React.FC<GroupStandingsTableProps> = ({
 
                   <td className="py-3 px-2">
                     <div>
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-gray-900 dark:text-gray-100">
                         {standing.athlete.name}
                       </div>
                       {standing.athlete.isSeeded && (
@@ -114,29 +114,29 @@ export const GroupStandingsTable: React.FC<GroupStandingsTableProps> = ({
                     </div>
                   </td>
 
-                  <td className="py-3 px-1 text-center text-sm">
+                  <td className="py-3 px-1 text-center text-sm text-gray-900 dark:text-gray-100">
                     {standing.matches}
                   </td>
 
-                  <td className="py-3 px-1 text-center text-sm font-medium text-green-600">
+                  <td className="py-3 px-1 text-center text-sm font-medium text-green-600 dark:text-green-400">
                     {standing.wins}
                   </td>
 
-                  <td className="py-3 px-1 text-center text-sm font-medium text-red-600">
+                  <td className="py-3 px-1 text-center text-sm font-medium text-red-600 dark:text-red-400">
                     {standing.losses}
                   </td>
 
-                  <td className="py-3 px-1 text-center text-sm font-bold">
+                  <td className="py-3 px-1 text-center text-sm font-bold text-gray-900 dark:text-gray-100">
                     {standing.points}
                   </td>
 
                   <td className="py-3 px-1 text-center text-sm hidden sm:table-cell">
                     <div>
-                      <span className="text-green-600">{standing.setsWon}</span>
-                      <span className="text-gray-400 mx-1">-</span>
-                      <span className="text-red-600">{standing.setsLost}</span>
+                      <span className="text-green-600 dark:text-green-400">{standing.setsWon}</span>
+                      <span className="text-gray-400 dark:text-gray-500 mx-1">-</span>
+                      <span className="text-red-600 dark:text-red-400">{standing.setsLost}</span>
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
                       ({standing.setsDiff >= 0 ? "+" : ""}
                       {standing.setsDiff})
                     </div>
@@ -144,15 +144,15 @@ export const GroupStandingsTable: React.FC<GroupStandingsTableProps> = ({
 
                   <td className="py-3 px-1 text-center text-sm hidden md:table-cell">
                     <div>
-                      <span className="text-green-600">
+                      <span className="text-green-600 dark:text-green-400">
                         {standing.pointsWon}
                       </span>
-                      <span className="text-gray-400 mx-1">-</span>
-                      <span className="text-red-600">
+                      <span className="text-gray-400 dark:text-gray-500 mx-1">-</span>
+                      <span className="text-red-600 dark:text-red-400">
                         {standing.pointsLost}
                       </span>
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
                       ({standing.pointsDiff >= 0 ? "+" : ""}
                       {standing.pointsDiff})
                     </div>
@@ -170,12 +170,12 @@ export const GroupStandingsTable: React.FC<GroupStandingsTableProps> = ({
         </div>
 
         {group.standings.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             <p>Nenhuma partida disputada ainda</p>
           </div>
         )}
 
-        <div className="mt-4 text-xs text-gray-500">
+        <div className="mt-4 text-xs text-gray-500 dark:text-gray-400">
           <p>
             <strong>Critérios de classificação:</strong>
           </p>
