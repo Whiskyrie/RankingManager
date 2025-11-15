@@ -320,21 +320,30 @@ export const MatchCard: React.FC<MatchCardProps> = ({
     if (match.isCompleted) {
       if (match.isWalkover) {
         return (
-          <Badge variant="secondary" className="bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200">
+          <Badge
+            variant="secondary"
+            className="bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200"
+          >
             <XCircle className="h-3 w-3 mr-1" />
             W.O.
           </Badge>
         );
       }
       return (
-        <Badge variant="secondary" className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+        <Badge
+          variant="secondary"
+          className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
+        >
           <CheckCircle className="h-3 w-3 mr-1" />
           Finalizada
         </Badge>
       );
     }
     return (
-      <Badge variant="outline" className="bg-blue-100 dark:bg-gray-700/40 text-blue-800 dark:text-blue-300">
+      <Badge
+        variant="outline"
+        className="bg-gray-100 dark:bg-gray-800/60 text-gray-800 dark:text-gray-200"
+      >
         <PlayCircle className="h-3 w-3 mr-1" />
         Pendente
       </Badge>
@@ -348,7 +357,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
           ? "border-yellow-300 dark:border-yellow-600 bg-yellow-50/30 dark:bg-yellow-900/20"
           : match.isCompleted
           ? "border-green-300 dark:border-green-600 bg-green-50/30 dark:bg-green-900/20"
-          : "border-blue-300 dark:border-gray-600 bg-blue-50/30 dark:bg-gray-800/30"
+          : "border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-900/20"
       }`}
     >
       <CardHeader className="pb-3">
@@ -357,7 +366,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
             {isThirdPlace ? (
               <Medal className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
             ) : (
-              <Trophy className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <Trophy className="h-4 w-4 text-gray-600 dark:text-gray-300" />
             )}
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {match.round}
@@ -378,7 +387,9 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                 : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
             }`}
           >
-            <span className="font-medium text-gray-900 dark:text-gray-100">{match.player1?.name || "TBD"}</span>
+            <span className="font-medium text-gray-900 dark:text-gray-100">
+              {match.player1?.name || "TBD"}
+            </span>
             {match.isCompleted && match.winnerId === match.player1Id && (
               <Trophy className="h-4 w-4 text-green-600 dark:text-green-400" />
             )}
@@ -391,7 +402,9 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                 : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
             }`}
           >
-            <span className="font-medium text-gray-900 dark:text-gray-100">{match.player2?.name || "TBD"}</span>
+            <span className="font-medium text-gray-900 dark:text-gray-100">
+              {match.player2?.name || "TBD"}
+            </span>
             {match.isCompleted && match.winnerId === match.player2Id && (
               <Trophy className="h-4 w-4 text-green-600 dark:text-green-400" />
             )}
@@ -401,7 +414,9 @@ export const MatchCard: React.FC<MatchCardProps> = ({
         {/* Match Score */}
         {match.isCompleted && (
           <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{formatMatchScore(match)}</div>
+            <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
+              {formatMatchScore(match)}
+            </div>
             {match.sets && match.sets.length > 0 && (
               <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 Sets: {match.sets.map(formatSetScore).join(", ")}
@@ -498,13 +513,15 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                         className={`p-4 rounded-lg border ${
                           isThirdPlace
                             ? "bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700"
-                            : "bg-blue-50 dark:bg-gray-800/50 border-blue-200 dark:border-gray-700"
+                            : "bg-gray-50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700"
                         }`}
                       >
                         <div className="flex justify-between items-center mb-2">
                           <h4
                             className={`font-medium ${
-                              isThirdPlace ? "text-yellow-900 dark:text-yellow-100" : "text-blue-900 dark:text-blue-100"
+                              isThirdPlace
+                                ? "text-yellow-900 dark:text-yellow-100"
+                                : "text-gray-900 dark:text-gray-100"
                             }`}
                           >
                             {isThirdPlace
@@ -528,7 +545,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                               className={`font-medium ${
                                 isThirdPlace
                                   ? "text-yellow-700 dark:text-yellow-300"
-                                  : "text-blue-700 dark:text-blue-300"
+                                  : "text-gray-800 dark:text-gray-200"
                               }`}
                             >
                               {match.player1.name}
@@ -537,7 +554,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                               className={`text-2xl font-bold ${
                                 isThirdPlace
                                   ? "text-yellow-900 dark:text-yellow-100"
-                                  : "text-blue-900 dark:text-blue-100"
+                                  : "text-gray-900 dark:text-gray-100"
                               }`}
                             >
                               {matchStats.player1Sets}
@@ -546,7 +563,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                               className={`text-xs ${
                                 isThirdPlace
                                   ? "text-yellow-600 dark:text-yellow-400"
-                                  : "text-blue-600 dark:text-blue-400"
+                                  : "text-gray-600 dark:text-gray-400"
                               }`}
                             >
                               sets ganhos
@@ -557,14 +574,14 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                             className={`text-center border-x px-4 ${
                               isThirdPlace
                                 ? "border-yellow-200 dark:border-yellow-800"
-                                : "border-blue-200 dark:border-gray-700"
+                                : "border-gray-200 dark:border-gray-700"
                             }`}
                           >
                             <div
                               className={`font-medium ${
                                 isThirdPlace
                                   ? "text-yellow-700 dark:text-yellow-300"
-                                  : "text-blue-700 dark:text-blue-300"
+                                  : "text-gray-800 dark:text-gray-200"
                               }`}
                             >
                               Para vencer
@@ -573,7 +590,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                               className={`text-2xl font-bold ${
                                 isThirdPlace
                                   ? "text-yellow-900 dark:text-yellow-100"
-                                  : "text-blue-900 dark:text-blue-100"
+                                  : "text-gray-900 dark:text-gray-100"
                               }`}
                             >
                               {setsToWin}
@@ -582,7 +599,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                               className={`text-xs ${
                                 isThirdPlace
                                   ? "text-yellow-600 dark:text-yellow-400"
-                                  : "text-blue-600 dark:text-blue-400"
+                                  : "text-gray-600 dark:text-gray-400"
                               }`}
                             >
                               sets necessários
@@ -594,7 +611,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                               className={`font-medium ${
                                 isThirdPlace
                                   ? "text-yellow-700 dark:text-yellow-300"
-                                  : "text-blue-700 dark:text-blue-300"
+                                  : "text-gray-800 dark:text-gray-200"
                               }`}
                             >
                               {match.player2.name}
@@ -603,7 +620,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                               className={`text-2xl font-bold ${
                                 isThirdPlace
                                   ? "text-yellow-900 dark:text-yellow-100"
-                                  : "text-blue-900 dark:text-blue-100"
+                                  : "text-gray-900 dark:text-gray-100"
                               }`}
                             >
                               {matchStats.player2Sets}
@@ -612,7 +629,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                               className={`text-xs ${
                                 isThirdPlace
                                   ? "text-yellow-600 dark:text-yellow-400"
-                                  : "text-blue-600 dark:text-blue-400"
+                                  : "text-gray-600 dark:text-gray-400"
                               }`}
                             >
                               sets ganhos
@@ -825,7 +842,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                                   )}
 
                                   {impactAnalysis && isSetValid && (
-                                    <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400 ml-20">
+                                    <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 ml-20">
                                       <Trophy className="h-3 w-3" />
                                       {impactAnalysis}
                                     </div>
@@ -892,21 +909,21 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                   </TabsContent>
 
                   <TabsContent value="quick" className="space-y-6">
-                    <div className="p-4 rounded-lg border bg-blue-50 dark:bg-gray-800/50 border-blue-200 dark:border-gray-700">
+                    <div className="p-4 rounded-lg border bg-gray-50 dark:bg-gray-900/30 border-gray-200 dark:border-gray-700">
                       <div className="flex items-center gap-2 mb-4">
-                        <Zap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                        <h4 className="font-medium text-blue-900 dark:text-blue-100">
+                        <Zap className="h-5 w-5 text-gray-700 dark:text-gray-200" />
+                        <h4 className="font-medium text-gray-900 dark:text-gray-100">
                           Entrada Rápida de Resultado
                         </h4>
                       </div>
-                      <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
+                      <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
                         Insira apenas o placar final dos sets (ex: 3 a 1 para
                         melhor de 5, ou 2 a 1 para melhor de 3)
                       </p>
 
                       <div className="grid grid-cols-3 gap-4 items-center">
                         <div className="text-center">
-                          <Label className="text-sm font-medium text-blue-700 dark:text-blue-300 block mb-2">
+                          <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">
                             {match.player1.name}
                           </Label>
                           <Input
@@ -923,25 +940,25 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                             className="text-center text-2xl font-bold h-16"
                             placeholder="0"
                           />
-                          <p className="text-xs text-blue-600 mt-1">
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                             Sets ganhos
                           </p>
                         </div>
 
                         <div className="text-center">
-                          <div className="text-lg font-bold text-blue-700 mb-2">
+                          <div className="text-lg font-bold text-gray-700 dark:text-gray-200 mb-2">
                             ×
                           </div>
-                          <div className="text-sm text-blue-600">
+                          <div className="text-sm text-gray-700 dark:text-gray-300">
                             Melhor de {bestOf}
                           </div>
-                          <div className="text-xs text-blue-500 mt-1">
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             {setsToWin} sets para vencer
                           </div>
                         </div>
 
                         <div className="text-center">
-                          <Label className="text-sm font-medium text-blue-700 dark:text-blue-300 block mb-2">
+                          <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">
                             {match.player2.name}
                           </Label>
                           <Input
@@ -958,7 +975,7 @@ export const MatchCard: React.FC<MatchCardProps> = ({
                             className="text-center text-2xl font-bold h-16"
                             placeholder="0"
                           />
-                          <p className="text-xs text-blue-600 mt-1">
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                             Sets ganhos
                           </p>
                         </div>

@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Trophy, Crown, Medal, Target, Award } from "lucide-react";
 import { Match } from "../../types";
 import { getAthleteDisplayName, isRealAthlete, matchHasBye } from "../../utils";
-import { SecondDivisionStatus } from "./SecondDivisionStatus";
 
 interface BracketVisualizationProps {
   onMatchClick?: (match: Match) => void;
@@ -30,8 +29,10 @@ const BracketMatch = memo<{
 
   // ✅ Memoizar estilos para evitar recálculo
   const cardStyles = useMemo(() => {
-    if (isThirdPlace) return "border-yellow-400 dark:border-yellow-500 bg-yellow-50 dark:bg-yellow-900/30";
-    if (isCompleted) return "border-green-400 dark:border-green-500 bg-green-50 dark:bg-green-900/30";
+    if (isThirdPlace)
+      return "border-yellow-400 dark:border-yellow-500 bg-yellow-50 dark:bg-yellow-900/30";
+    if (isCompleted)
+      return "border-green-400 dark:border-green-500 bg-green-50 dark:bg-green-900/30";
     return "border-orange-400 dark:border-orange-500 bg-orange-50 dark:bg-orange-900/30";
   }, [isThirdPlace, isCompleted]);
 
@@ -76,12 +77,16 @@ const BracketMatch = memo<{
             <Badge
               variant="outline"
               className={`text-xs ${
-                isThirdPlace ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200" : ""
+                isThirdPlace
+                  ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200"
+                  : ""
               }`}
             >
               {match.round?.replace(" 2ª Div", "")}
             </Badge>
-            {isThirdPlace && <Medal className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />}
+            {isThirdPlace && (
+              <Medal className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
+            )}
           </div>
 
           {/* Player 1 */}
@@ -126,7 +131,10 @@ const BracketMatch = memo<{
                   {match.isWalkover ? "W.O." : "Finalizada"}
                 </Badge>
               ) : (
-                <Badge variant="outline" className="text-blue-600 dark:text-blue-400">
+                <Badge
+                  variant="outline"
+                  className="text-blue-600 dark:text-blue-400"
+                >
                   Pendente
                 </Badge>
               )}
@@ -191,7 +199,9 @@ const RoundColumn = memo<{
       <div className="flex flex-col items-center min-w-[220px]">
         <h3
           className={`text-lg font-bold mb-6 text-center ${
-            title.includes("2ª Div") ? "text-orange-600 dark:text-orange-400" : "text-blue-600 dark:text-blue-400"
+            title.includes("2ª Div")
+              ? "text-orange-600 dark:text-orange-400"
+              : "text-blue-600 dark:text-blue-400"
           }`}
         >
           {title}
@@ -324,7 +334,7 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
   ({ onMatchClick }) => {
     // ✅ CORREÇÃO: Desestruturação mais segura com fallbacks
     const store = useChampionshipStore();
-    const { currentChampionship, getEliminatedAthletes } = store;
+    const { currentChampionship } = store;
 
     // ✅ CORREÇÃO: Memoizar funções do store para evitar recriação
     const getCachedBracket = useMemo(
@@ -538,12 +548,6 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
                   isSecondDivision={true}
                   onMatchClick={handleMatchClick}
                 />
-
-                {/* Status das correções da segunda divisão */}
-                <SecondDivisionStatus
-                  eliminatedAthletes={getEliminatedAthletes()}
-                  secondDivMatches={secondDivMatches}
-                />
               </CardContent>
             </Card>
           </TabsContent>
@@ -561,19 +565,25 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700 dark:text-gray-300">Total de partidas:</span>
+                  <span className="text-gray-700 dark:text-gray-300">
+                    Total de partidas:
+                  </span>
                   <Badge variant="secondary" className="font-semibold">
                     {mainMatches.length}
                   </Badge>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700 dark:text-gray-300">Concluídas:</span>
+                  <span className="text-gray-700 dark:text-gray-300">
+                    Concluídas:
+                  </span>
                   <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
                     {mainMatches.filter((m) => m.isCompleted).length}
                   </Badge>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700 dark:text-gray-300">Pendentes:</span>
+                  <span className="text-gray-700 dark:text-gray-300">
+                    Pendentes:
+                  </span>
                   <Badge className="bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200">
                     {mainMatches.filter((m) => !m.isCompleted).length}
                   </Badge>
@@ -617,19 +627,25 @@ export const BracketVisualization: React.FC<BracketVisualizationProps> = memo(
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700 dark:text-gray-300">Total de partidas:</span>
+                  <span className="text-gray-700 dark:text-gray-300">
+                    Total de partidas:
+                  </span>
                   <Badge variant="secondary" className="font-semibold">
                     {secondDivMatches.length}
                   </Badge>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700 dark:text-gray-300">Concluídas:</span>
+                  <span className="text-gray-700 dark:text-gray-300">
+                    Concluídas:
+                  </span>
                   <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
                     {secondDivMatches.filter((m) => m.isCompleted).length}
                   </Badge>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-700 dark:text-gray-300">Pendentes:</span>
+                  <span className="text-gray-700 dark:text-gray-300">
+                    Pendentes:
+                  </span>
                   <Badge className="bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200">
                     {secondDivMatches.filter((m) => !m.isCompleted).length}
                   </Badge>

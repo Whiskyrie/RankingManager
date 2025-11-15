@@ -11,22 +11,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
-import {
-  Trophy,
-  Award,
-  Download,
-  Target,
-  BarChart3,
-  Crown,
-} from "lucide-react";
+import { Trophy, Download, Target, BarChart3, Crown } from "lucide-react";
 import { Match } from "../types";
-import { SecondDivisionMonitor } from "../components/championship/SecondDivisionMonitor";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "../components/ui/tabs";
 
 export const KnockoutBracket: React.FC = () => {
   const { currentChampionship, updateMatchResult, setWalkover } =
@@ -152,7 +138,7 @@ export const KnockoutBracket: React.FC = () => {
 
   if (!currentChampionship || !bracketData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+      <div className="min-h-screen bg-surface flex items-center justify-center px-4">
         <Card className="max-w-md shadow-xl">
           <CardContent className="p-8 text-center">
             <Trophy className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
@@ -183,7 +169,9 @@ export const KnockoutBracket: React.FC = () => {
         <CardContent className="p-6">
           <h3
             className={`text-xl font-bold text-center mb-6 ${
-              isDivision2 ? "text-orange-700 dark:text-orange-400" : "text-blue-700 dark:text-blue-400"
+              isDivision2
+                ? "text-orange-700 dark:text-orange-400"
+                : "text-blue-700 dark:text-blue-400"
             }`}
           >
             {title}
@@ -199,7 +187,9 @@ export const KnockoutBracket: React.FC = () => {
                 <div className="font-medium text-gray-900 dark:text-gray-100">
                   {getAthleteName(runnerUp)}
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Vice-Campeão</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Vice-Campeão
+                </div>
               </div>
             )}
 
@@ -225,7 +215,9 @@ export const KnockoutBracket: React.FC = () => {
                 <div className="font-medium text-gray-900 dark:text-gray-100">
                   {getAthleteName(thirdPlace)}
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">3º Lugar</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  3º Lugar
+                </div>
               </div>
             )}
           </div>
@@ -237,14 +229,14 @@ export const KnockoutBracket: React.FC = () => {
   const { champions, progress } = bracketData;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-surface">
       {/* Header melhorado */}
-      <div className="bg-white dark:bg-gray-800 shadow-lg border-b dark:border-gray-700">
+      <div className="bg-surface-elevated shadow-lg border-b border-default">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center space-x-4">
-              <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-gray-700 dark:to-gray-600 rounded-lg">
-                <Trophy className="h-6 w-6 text-white dark:text-blue-400" />
+              <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-400 dark:from-gray-700 dark:via-gray-700 dark:to-gray-600 rounded-lg">
+                <Trophy className="h-6 w-6 text-gray-800 dark:text-gray-200" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -265,23 +257,25 @@ export const KnockoutBracket: React.FC = () => {
             <div className="flex items-center gap-4">
               {/* Progresso geral */}
               <div className="text-right">
-                <div className="text-sm text-gray-600 dark:text-gray-400">Progresso Geral</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Progresso Geral
+                </div>
                 <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   {progress.completedMatches}/{progress.totalMatches} partidas
                 </div>
                 <div className="w-32 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
                   <div
-                    className="bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-gray-500 dark:to-gray-400 h-2 rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-gray-900 via-gray-700 to-gray-500 dark:from-gray-400 dark:via-gray-500 dark:to-gray-300 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${progress.progressPercentage}%` }}
                   />
                 </div>
               </div>
 
               <Badge
-                className={`px-3 py-1 ${
+                className={`px-3 py-1 border transition-colors ${
                   currentChampionship.status === "completed"
-                    ? "bg-green-100 text-green-800 border-green-200"
-                    : "bg-orange-100 text-orange-800 border-orange-200"
+                    ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/40 dark:text-green-200 dark:border-green-700/60"
+                    : "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/40 dark:text-orange-200 dark:border-orange-700/60"
                 }`}
               >
                 {currentChampionship.status === "completed"
@@ -292,7 +286,7 @@ export const KnockoutBracket: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={handleDownloadBracket}
-                className="flex items-center gap-2 hover:bg-gray-50"
+                className="flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-white/10"
               >
                 <Download className="h-4 w-4" />
                 Baixar Chave
@@ -308,7 +302,7 @@ export const KnockoutBracket: React.FC = () => {
           <div className="mb-8 space-y-6">
             {/* Primeira Divisão */}
             <MinimalPodium
-              title="🏆 Pódium - Primeira Divisão"
+              title="Pódium - Primeira Divisão"
               champion={champions.champion}
               runnerUp={champions.runnerUp}
               thirdPlace={champions.thirdPlace}
@@ -317,7 +311,7 @@ export const KnockoutBracket: React.FC = () => {
             {/* Segunda Divisão */}
             {champions.champion2Div && (
               <MinimalPodium
-                title="🥉 Pódium - Segunda Divisão"
+                title="Pódium - Segunda Divisão"
                 champion={champions.champion2Div}
                 runnerUp={champions.runnerUp2Div}
                 thirdPlace={champions.thirdPlace2Div}
@@ -328,13 +322,13 @@ export const KnockoutBracket: React.FC = () => {
         )}
 
         {/* Estatísticas melhoradas */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="hover:shadow-lg transition-shadow border-blue-200 dark:border-gray-700">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="hover:shadow-lg transition-shadow border border-default">
             <CardContent className="p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <div className="flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-gray-700 rounded-lg">
-                    <Target className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-muted text-gray-900 dark:bg-gray-800 dark:text-gray-100">
+                    <Target className="h-6 w-6" />
                   </div>
                 </div>
                 <div className="ml-4 flex-1">
@@ -348,9 +342,9 @@ export const KnockoutBracket: React.FC = () => {
                     }
                     /{bracketData.mainMatches.length}
                   </p>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-2">
+                  <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-1.5 mt-2">
                     <div
-                      className="bg-blue-600 dark:bg-gray-500 h-1.5 rounded-full transition-all duration-500"
+                      className="bg-emerald-500 dark:bg-emerald-400 h-1.5 rounded-full transition-all duration-500"
                       style={{
                         width: `${
                           bracketData.mainMatches.length > 0
@@ -358,47 +352,6 @@ export const KnockoutBracket: React.FC = () => {
                                 (m) => m.isCompleted
                               ).length /
                                 bracketData.mainMatches.length) *
-                              100
-                            : 0
-                        }%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-lg transition-shadow border-orange-200 dark:border-orange-700">
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="flex items-center justify-center w-12 h-12 bg-orange-100 dark:bg-gray-700 rounded-lg">
-                    <Award className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                  </div>
-                </div>
-                <div className="ml-4 flex-1">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Segunda Divisão
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {
-                      bracketData.secondDivisionMatches.filter(
-                        (m) => m.isCompleted
-                      ).length
-                    }
-                    /{bracketData.secondDivisionMatches.length}
-                  </p>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mt-2">
-                    <div
-                      className="bg-orange-600 dark:bg-orange-500 h-1.5 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${
-                          bracketData.secondDivisionMatches.length > 0
-                            ? (bracketData.secondDivisionMatches.filter(
-                                (m) => m.isCompleted
-                              ).length /
-                                bracketData.secondDivisionMatches.length) *
                               100
                             : 0
                         }%`,
@@ -445,7 +398,9 @@ export const KnockoutBracket: React.FC = () => {
                   </div>
                 </div>
                 <div className="ml-4 flex-1">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Status</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Status
+                  </p>
                   <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                     {currentChampionship.status === "completed"
                       ? "Finalizado"
@@ -460,31 +415,14 @@ export const KnockoutBracket: React.FC = () => {
           </Card>
         </div>
 
-        {/* ✅ NOVA SEÇÃO: Abas para Visualização e Monitoramento */}
-        <div className="mb-8">
-          <Tabs defaultValue="bracket" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="bracket" className="flex items-center gap-2">
-                <Trophy className="h-4 w-4" />
-                Visualização da Chave
-              </TabsTrigger>
-              <TabsTrigger value="monitor" className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Monitor 2ª Divisão
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="bracket" className="mt-6">
-              {/* ✅ Visualização da Chave com Cache mas sem key que força reset */}
-              <div className="bracket-container">
-                <BracketVisualization onMatchClick={handleMatchClick} />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="monitor" className="mt-6">
-              <SecondDivisionMonitor />
-            </TabsContent>
-          </Tabs>
+        <div className="mb-8 rounded-2xl border border-default bg-surface-elevated p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">
+            <Trophy className="h-4 w-4" />
+            Visualização da Chave
+          </div>
+          <div className="bracket-container">
+            <BracketVisualization onMatchClick={handleMatchClick} />
+          </div>
         </div>
 
         {/* Modal para detalhes da partida */}
@@ -507,12 +445,12 @@ export const KnockoutBracket: React.FC = () => {
                     <Badge variant="outline">{selectedMatch.round}</Badge>
                     {(selectedMatch.round === "3º Lugar" ||
                       selectedMatch.round === "3º Lugar 2ª Div") && (
-                      <Badge className="bg-yellow-100 text-yellow-800">
+                      <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-200 dark:border-yellow-800/60">
                         Disputa de 3º Lugar
                       </Badge>
                     )}
                     {selectedMatch.isCompleted && (
-                      <Badge className="bg-green-100 text-green-800">
+                      <Badge className="bg-green-100 text-green-800 border border-green-200 dark:bg-green-900/40 dark:text-green-200 dark:border-green-800/60">
                         Finalizada
                       </Badge>
                     )}

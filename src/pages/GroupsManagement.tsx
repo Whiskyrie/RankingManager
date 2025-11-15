@@ -52,7 +52,7 @@ export const GroupsManagement: React.FC = () => {
 
   if (!currentChampionship) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-surface flex items-center justify-center px-4">
         <Card className="max-w-md">
           <CardContent className="p-8 text-center">
             <Trophy className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
@@ -99,9 +99,9 @@ export const GroupsManagement: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-surface">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm border-b dark:border-gray-700">
+      <div className="bg-surface-elevated shadow-sm border-b border-default">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
@@ -115,11 +115,11 @@ export const GroupsManagement: React.FC = () => {
 
             <div className="flex items-center gap-4">
               <Badge
-                className={
+                className={`border ${
                   allGroupsCompleted
-                    ? "bg-green-100 text-green-800"
-                    : "bg-blue-100 text-blue-800"
-                }
+                    ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/40 dark:text-green-200 dark:border-green-700/60"
+                    : "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800/60 dark:text-gray-100 dark:border-gray-700"
+                }`}
               >
                 {allGroupsCompleted ? "Fase Concluída" : "Em Andamento"}
               </Badge>
@@ -129,7 +129,7 @@ export const GroupsManagement: React.FC = () => {
                 <Button
                   variant="outline"
                   onClick={handleFillGroupsWithResults}
-                  className="bg-yellow-50 border-yellow-300 text-yellow-700 hover:bg-yellow-100"
+                  className="bg-yellow-50 border-yellow-300 text-yellow-700 hover:bg-yellow-100 dark:bg-yellow-500/10 dark:border-yellow-400/40 dark:text-yellow-200 dark:hover:bg-yellow-500/20"
                 >
                   🎲 Preencher Automaticamente
                 </Button>
@@ -158,7 +158,9 @@ export const GroupsManagement: React.FC = () => {
               <div className="flex items-center">
                 <Users className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Grupos</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Grupos
+                  </p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {currentChampionship.groups.length}
                   </p>
@@ -172,7 +174,9 @@ export const GroupsManagement: React.FC = () => {
               <div className="flex items-center">
                 <BarChart3 className="h-8 w-8 text-green-600 dark:text-green-400" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Partidas</p>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Partidas
+                  </p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {stats.completedMatches}/{stats.totalMatches}
                   </p>
@@ -245,17 +249,22 @@ export const GroupsManagement: React.FC = () => {
 
         {/* Tabs para Classificação e Resultados */}
         <Tabs defaultValue="standings" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-2 rounded-2xl border border-default bg-surface-elevated shadow-inner">
             <TabsTrigger value="standings">Classificação</TabsTrigger>
             <TabsTrigger value="matches">Resultados</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="standings" className="space-y-6">
+          <TabsContent
+            value="standings"
+            className="space-y-6 rounded-2xl border border-default bg-surface-elevated p-6 shadow-sm"
+          >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {currentChampionship.groups.map((group) => (
                 <div key={group.id}>
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{group.name}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      {group.name}
+                    </h3>
                     <Button
                       variant="outline"
                       size="sm"
@@ -271,11 +280,16 @@ export const GroupsManagement: React.FC = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="matches" className="space-y-6">
+          <TabsContent
+            value="matches"
+            className="space-y-6 rounded-2xl border border-default bg-surface-elevated p-6 shadow-sm"
+          >
             {/* Seletor de Grupo */}
             <Card>
               <CardContent className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Selecionar Grupo</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                  Selecionar Grupo
+                </h3>
                 <div className="flex flex-wrap gap-2">
                   <Button
                     variant={selectedGroup === "" ? "default" : "outline"}
@@ -320,11 +334,11 @@ export const GroupsManagement: React.FC = () => {
                         <span>{group.name}</span>
                         <Badge
                           variant={group.isCompleted ? "secondary" : "outline"}
-                          className={
+                          className={`border ${
                             group.isCompleted
-                              ? "bg-green-100 text-green-800 border-green-300"
-                              : "bg-blue-100 text-blue-800 border-blue-300"
-                          }
+                              ? "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/40 dark:text-green-200 dark:border-green-800/60"
+                              : "bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-800/60 dark:text-gray-100 dark:border-gray-700"
+                          }`}
                         >
                           {group.matches.filter((m) => m.isCompleted).length}/
                           {group.matches.length} partidas
@@ -373,11 +387,13 @@ export const GroupsManagement: React.FC = () => {
                 {qualifiedAthletes.map((athlete, index) => (
                   <Card key={athlete.id} className="p-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-gray-700 flex items-center justify-center text-sm font-semibold text-blue-800 dark:text-blue-400">
+                      <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-sm font-semibold text-gray-800 dark:text-gray-100">
                         {index + 1}
                       </div>
                       <div>
-                        <div className="font-medium text-gray-900 dark:text-gray-100">{athlete.name}</div>
+                        <div className="font-medium text-gray-900 dark:text-gray-100">
+                          {athlete.name}
+                        </div>
                       </div>
                       {athlete.isSeeded && (
                         <Badge variant="outline" className="ml-auto">

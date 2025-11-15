@@ -317,6 +317,7 @@ export function validateData<T>(schema: z.ZodSchema<T>, data: unknown): T {
         return `${path}${err.message}`;
       });
 
+      console.error("[validation]", errorMessages);
       throw new ValidationError("Dados inválidos", errorMessages);
     }
     throw error;

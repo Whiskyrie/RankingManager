@@ -1,12 +1,16 @@
-import { Athlete, Match, Group, Championship, TournamentConfig } from "../../types";
+import {
+  Athlete,
+  Match,
+  Group,
+  Championship,
+  TournamentConfig,
+} from "../../types";
 import { v4 as uuidv4 } from "uuid";
 
 /**
  * Cria um atleta mock para testes
  */
-export function createMockAthlete(
-  overrides?: Partial<Athlete>
-): Athlete {
+export function createMockAthlete(overrides?: Partial<Athlete>): Athlete {
   return {
     id: uuidv4(),
     name: "Atleta Teste",
@@ -22,8 +26,9 @@ export function createMockAthlete(
 export function createMockAthletes(count: number): Athlete[] {
   return Array.from({ length: count }, (_, i) => {
     const isSeeded = i < 4; // Primeiros 4 são cabeças de chave
+    const baseName = `Atleta ${String.fromCharCode(65 + (i % 26))}`;
     return createMockAthlete({
-      name: `Atleta ${i + 1}`,
+      name: baseName,
       isSeeded,
       seedNumber: isSeeded ? i + 1 : undefined,
     });
@@ -33,11 +38,11 @@ export function createMockAthletes(count: number): Athlete[] {
 /**
  * Cria uma partida mock
  */
-export function createMockMatch(
-  overrides?: Partial<Match>
-): Match {
-  const athlete1 = overrides?.player1 || createMockAthlete({ name: "Jogador 1" });
-  const athlete2 = overrides?.player2 || createMockAthlete({ name: "Jogador 2" });
+export function createMockMatch(overrides?: Partial<Match>): Match {
+  const athlete1 =
+    overrides?.player1 || createMockAthlete({ name: "Jogador Alpha" });
+  const athlete2 =
+    overrides?.player2 || createMockAthlete({ name: "Jogador Beta" });
 
   const baseMatch = {
     id: uuidv4(),
@@ -76,23 +81,36 @@ export function createCompletedMatch(
   let player2Sets = 0;
 
   // Gerar sets até alguém vencer
-  for (let i = 0; i < bestOf && Math.max(player1Sets, player2Sets) < setsNeededToWin; i++) {
-    const setWinner = (winnerId === player1Id && player1Sets < setsNeededToWin)
-      ? player1Id
-      : player2Id;
+  for (
+    let i = 0;
+    i < bestOf && Math.max(player1Sets, player2Sets) < setsNeededToWin;
+    i++
+  ) {
+    const setWinner =
+      winnerId === player1Id && player1Sets < setsNeededToWin
+        ? player1Id
+        : player2Id;
 
     if (setWinner === player1Id) {
-      sets.push({ player1Score: 11, player2Score: Math.floor(Math.random() * 9) });
+      sets.push({
+        player1Score: 11,
+        player2Score: Math.floor(Math.random() * 9),
+      });
       player1Sets++;
     } else {
-      sets.push({ player1Score: Math.floor(Math.random() * 9), player2Score: 11 });
+      sets.push({
+        player1Score: Math.floor(Math.random() * 9),
+        player2Score: 11,
+      });
       player2Sets++;
     }
   }
 
   // Criar atletas se não fornecidos
-  const athlete1 = player1 || createMockAthlete({ id: player1Id, name: "Atleta 1" });
-  const athlete2 = player2 || createMockAthlete({ id: player2Id, name: "Atleta 2" });
+  const athlete1 =
+    player1 || createMockAthlete({ id: player1Id, name: "Atleta Alpha" });
+  const athlete2 =
+    player2 || createMockAthlete({ id: player2Id, name: "Atleta Beta" });
 
   return {
     id: uuidv4(),
